@@ -1,0 +1,9 @@
+.panel-buttons { display: flex; gap: 8px; }
+.path-input { display: flex; align-items: center; gap: 8px; }
+.path-input input { flex: 1; }
+.path-input .btn { margin-top: 7px; padding: 11px 13px; }
+.scan-note { margin: 4px 0; color: #718078; font-size: 11px; line-height: 1.6; }
+@media (max-width: 680px) {
+  .panel-title { align-items: flex-start; gap: 12px; }
+  .panel-buttons { flex-direction: column; }
+}

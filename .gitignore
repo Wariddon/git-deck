@@ -1,0 +1,21 @@
+# Local repository inventory, activity and saved UI state
+/git-repositories.txt
+/git-scan-locations.txt
+/git-repository-cache.json
+/git-action-journal.json
+/git-deck-ui-state.json
+/jobs/
+/exports/
+/.playwright-cli/
+/bin/
+/GitDeck.exe
+/check-knowledge-freshness.ps1
+*.log
+*.tmp
+*.bak
+.env
+.env.*
+*.pem
+*.key
+node_modules/
+
