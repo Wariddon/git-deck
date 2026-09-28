@@ -1,0 +1,26 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync(require('node:path').join(__dirname,'../web/app.js'),'utf8');
+function node(tag,cls='',text=''){return {tag,cls,text,children:[],events:{},isConnected:true,value:'',classList:{toggle(){}},append(...items){this.children.push(...items)},replaceChildren(...items){this.children=items},setAttribute(){},addEventListener(name,fn){this.events[name]=fn}}}
+const elements={'tree-content':node('div'),'tree-search':node('input')},storage=new Map(),actions=[];
+const context={el:node,$:id=>elements[id],document:{createElement:node,createTextNode:text=>node('text','',text)},localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},state:{workspaceRepo:{path:'A'},workspaceTab:'history',meta:{historyViews:{}}},repoKey:r=>r.path,saveMeta(){},selectWorkspaceTab:tab=>actions.push(tab),branchContextItems:()=>[{label:'Checkout',run:()=>actions.push('checkout')}],showContextMenu:(event,items)=>context.menu=items,tagContextItems:()=>[],showTagDetails(){}};
+vm.createContext(context);vm.runInContext(source.slice(source.indexOf("let activeTreeRepo="),source.indexOf('async function api(')),context);
+const data={branches:[{name:'main',current:true,upstream:'origin/main'},{name:'feature/one',upstream:'origin/feature/one',ahead:2,behind:1},{name:'dev'}],remoteBranches:[{name:'origin/main'}],remotes:[{name:'origin'}],tags:['v1'],stashes:[{ref:'stash@{0}',message:'draft'}],sync:{ahead:0,behind:1}};
+const all=(n=elements['tree-content'])=>[n,...n.children.flatMap(x=>all(x))];
+const find=(cls,text)=>all().find(n=>n.cls===cls&&(text===undefined||n.text===text));
+const branch=name=>all().find(n=>n.cls==='ref-view'&&n.children.some(c=>c.text===name));
+const render=()=>context.renderWorkbenchTree(data);
+render();assert.equal(all().filter(n=>n.tag==='summary'&&n.children[0].text==='REMOTES').length,1);
+assert(find('ref-current'));assert.equal(find('ref-sync','↑2 ↓1').text,'↑2 ↓1');
+assert(!branch('dev').children.some(n=>n.cls==='ref-sync'));
+branch('one').onclick();assert.deepEqual(actions,['history']);assert.equal(context.state.meta.historyViews.A.scope,'ref:feature/one');assert(find('ref-viewed'));
+const row=all().find(n=>n.cls==='ref-branch-row'&&n.children[0]===branch('one'));row.events.contextmenu({});assert(context.menu.some(i=>i.label==='Checkout'));assert(!actions.includes('checkout'));
+row.children[1].onclick();assert(all().some(n=>n.tag==='summary'&&n.children[0].text==='PINNED'));
+const section=all().find(n=>n.tag==='details'&&n.children[0].children[0].text==='BRANCHES');section.open=false;section.events.toggle();
+elements['tree-search'].value='draft';render();assert(find('ref-simple','stash@{0} · draft'));assert(!find('ref-name'));
+elements['tree-search'].value='feature';render();assert(all().filter(n=>n.tag==='details').every(n=>n.open));
+elements['tree-search'].value='';render();assert.equal(all().find(n=>n.tag==='details'&&n.children[0].children[0].text==='BRANCHES').open,false);
+context.state.workspaceRepo.path='B';render();assert(!all().some(n=>n.tag==='summary'&&n.children[0].text==='PINNED'));
+context.state.workspaceRepo.path='A';render();assert(all().some(n=>n.tag==='summary'&&n.children[0].text==='PINNED'));
+data.tags=[];data.stashes=[];render();assert(!all().some(n=>n.tag==='summary'&&n.children[0].text==='TAGS'));
+const empty=all().find(n=>n.tag==='input');empty.checked=true;empty.onchange();assert(all().some(n=>n.tag==='summary'&&n.children[0].text==='TAGS'));
+console.log('PASS: view-only branch click, explicit checkout, unified remotes, search, pin/fold isolation, tracking and empty groups');

@@ -1401,3 +1401,49 @@ body[data-layout="comfortable"] .change-file{min-height:42px}
 .theme-dark .diff-add{background:#143324;color:#b6edc5}.theme-dark .diff-remove{background:#41232a;color:#ffd2d5}
 .theme-dark .tree-section-head b{background:#303943;color:#d5dee7}
 .theme-dark .file-folder-heading{background:#20262e;color:#c9d1d9}
+/* All rows share one lane coordinate system; SVG fills the entire row height. */
+.commit-list-header,.commit-row{grid-template-columns:var(--commit-graph-width,56px) minmax(var(--commit-subject-width),1fr) var(--commit-author-width) var(--commit-date-width) 64px;width:max(100%,calc(var(--commit-graph-width,56px) + var(--commit-subject-width) + var(--commit-author-width) + var(--commit-date-width) + 106px))}
+.commit-list .commit-row{height:32px;min-height:32px;padding:0 7px;border-bottom:0}
+.commit-list.dense .commit-row{height:26px;min-height:26px;padding:0 7px}
+body[data-layout="comfortable"] .commit-list .commit-row{height:36px;min-height:36px}
+.commit-list .commit-graph,.commit-list.dense .commit-graph{width:var(--commit-graph-width,56px);height:100%;align-self:stretch}
+.commit-list .commit-graph,.commit-list.dense .commit-graph{min-height:0}
+.commit-list .commit-graph svg{position:absolute;inset:0;width:100%;height:100%;overflow:hidden}
+.graph-filtered .graph-edge{display:none}
+.history-message-search .graph-edge{display:none}
+.history-paging{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:5px 0;font-size:11px}
+.history-paging input{flex:1;min-width:180px;max-width:360px}.history-paging button{padding:5px 8px;font-size:11px}.history-paging span{color:var(--text-secondary)}
+.history-paging input,.history-paging button{min-height:28px;border:1px solid var(--border-default);border-radius:6px;background:var(--surface);color:var(--text-primary);font:inherit}.history-paging input{padding:5px 8px}.history-paging button:disabled{opacity:.5;cursor:default}.history-paging button:not(:disabled):hover{background:var(--surface-subtle)}
+.commit-description .commit-refs{order:-1;flex-shrink:0;max-width:55%;overflow:hidden}.commit-description>strong{font-weight:500}.commit-row.selected .commit-description>strong{font-weight:700}
+.history-unified-search{display:flex;align-items:center;gap:4px;flex:1;min-width:260px}.history-unified-search .history-search{min-width:120px;flex:1}.history-unified-search select{max-width:155px}
+.commit-list .history-paging{position:sticky;left:0;padding:7px;min-height:35px;background:var(--surface);border-top:1px solid var(--border-default)}
+.commit-refs-more{display:inline-block;padding:2px 5px;border:1px solid var(--border-default);border-radius:4px;cursor:pointer;font-size:10px;color:var(--text-primary);background:var(--surface)}
+.commit-refs-more:focus-visible{outline:2px solid var(--green)}
+.commit-detail>.commit-detail-split{flex:1;min-height:0;max-height:none;height:100%}
+.commit-files>.commit-detail-meta{flex:0 0 auto;max-height:45%;overflow:auto;padding:9px;border-bottom:1px solid var(--border-default)}
+.commit-files>.commit-detail-meta h3{font-size:12px;line-height:1.4;white-space:normal;overflow-wrap:anywhere}
+.commit-message-fold{font-size:11px;margin-top:6px}.commit-message-fold summary{cursor:pointer}.commit-message-fold .commit-message{max-height:130px;overflow:auto}
+.commit-detail-actions{flex-wrap:wrap}.commit-action-menu{position:relative;font-size:11px}.commit-action-menu summary{cursor:pointer;padding:7px;border:1px solid var(--border-default);border-radius:5px}.commit-action-menu[open]{display:grid;gap:5px;padding:5px;border:1px solid var(--border-default);background:var(--surface)}.commit-action-menu small{display:block;overflow-wrap:anywhere}
+.commit-files .commit-detail-actions{order:-1;flex:0 0 100%;align-items:start}.commit-files .commit-detail-actions>button,.commit-files .commit-action-menu button{width:auto;padding:5px 7px;flex:none;font-size:10px}.commit-files>.commit-detail-meta{max-height:55%}
+.ref-tree-options{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px;padding:6px 9px;color:var(--text-secondary);font-size:10px}
+.ref-tree-options label{display:flex;align-items:center;gap:5px}.ref-tree-options input{width:12px;height:12px;margin:0}
+.ref-section{min-width:0;border-bottom:1px solid var(--border-default)}
+.ref-section>summary{cursor:pointer;padding:8px 9px;font-size:10px;font-weight:650;background:var(--surface-subtle);color:var(--text-secondary);user-select:none}
+.ref-section>summary small{float:right;font-size:10px;font-weight:500}
+.ref-section .ref-section{margin-left:12px;border-bottom:0}.ref-section .ref-section>summary{background:transparent;padding:6px 8px;text-transform:none}
+.ref-branch-row{display:flex;align-items:center;min-width:0;border-left:3px solid transparent}
+.ref-branch-row.viewing{border-left-color:var(--green);background:var(--surface-subtle)}
+#tree-content .ref-view{display:flex;align-items:center;gap:5px;flex:1;min-width:0;padding:6px 5px 6px 8px;border:0;border-radius:0;background:transparent;color:var(--text-primary);text-align:left;min-height:30px;font-size:12px}
+.ref-name{flex:1;min-width:35px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ref-current,.ref-viewed,.ref-sync{flex:none;font-size:9px;font-weight:500;white-space:nowrap}.ref-current{color:var(--green);font-weight:650}.ref-viewed{color:var(--text-secondary)}
+#tree-content .ref-pin{width:25px;min-height:28px;padding:3px;border:0;background:transparent;color:var(--text-secondary);font-size:14px;flex:none}
+#tree-content .ref-simple,#tree-content .ref-manage{display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:7px 12px;border:0;border-radius:0;text-align:left;background:transparent;color:var(--text-primary);font-size:11px}
+#tree-content .ref-manage{color:var(--text-secondary);font-size:10px}
+.ref-branch-row:hover,#tree-content .ref-simple:hover,#tree-content .ref-manage:hover{background:var(--surface-subtle)}
+#tree-content button:focus-visible,.ref-section>summary:focus-visible{outline:2px solid var(--green);outline-offset:-2px}
+.ref-help{display:block;margin:10px;font-size:10px;line-height:1.6;color:var(--text-secondary)}.ref-empty{padding:10px;font-size:11px;color:var(--text-secondary)}
+.history-context{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid var(--border-default);background:var(--surface-subtle);color:var(--text-primary);font-size:11px;flex:none}
+.history-context>span{flex:1;overflow-wrap:anywhere;min-width:100px}.history-context button{font-size:10px;padding:4px 7px;max-width:100%;overflow-wrap:anywhere}
+#tree-content .ref-more{flex:none;width:24px;border:0;background:transparent;color:var(--text-primary);padding:4px;opacity:.35}
+.ref-branch-row:hover .ref-more,.ref-branch-row:focus-within .ref-more{opacity:1}
+#tree-content .ref-branch-row .ref-simple{flex:1;width:0;min-width:0}

@@ -22,12 +22,17 @@ jobs:
           node tests/workspace-loading.test.cjs
           node tests/release-tools.test.cjs
           node tests/working-diff-ui.test.cjs
+          node tests/commit-graph.test.cjs
+          node tests/history-races.test.cjs
+          node tests/ref-tree.test.cjs
+          node tests/navigation-ux.test.cjs
       - name: PowerShell tests
         shell: powershell
         run: |
           ./tests/working-diff.test.ps1
           ./tests/release-server.test.ps1
           ./tests/commit-safety.test.ps1
+          ./tests/history-page.test.ps1
       - name: Build portable package
         shell: powershell
         run: ./Build-Release.ps1

@@ -10,6 +10,7 @@ let workspaceLoadVersion=0;
 const state={workspaceRepo:null,workspace:null,workspaceTab:'history'};
 const node={textContent:'',removeAttribute(){},replaceChildren(){}};
 const $=()=>node;const repoKey=r=>r.path;
+const document={getElementById(){return null}};const showWorkspaceRetry=()=>{};
 let calls=[],paints=0,fail=false;
 const showLoading=()=>{},hideLoading=()=>{},setOutput=()=>{},setNotice=()=>{};
 const renderSyncSummary=()=>{},renderWorkspaceStatus=()=>{},renderWorkbenchTree=()=>{},renderWorkspace=()=>{paints++};

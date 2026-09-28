@@ -382,10 +382,12 @@ function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
     }
     $branch = (Invoke-GitOrThrow $Path @('branch','--show-current')).Trim()
     $branches = New-Object 'System.Collections.Generic.List[object]'
-    $branchText = Invoke-GitOrThrow $Path @('for-each-ref','--format=%(refname:short)|%(HEAD)|%(upstream:short)','refs/heads')
+    $branchText = Invoke-GitOrThrow $Path @('for-each-ref','--format=%(refname:short)|%(HEAD)|%(upstream:short)|%(upstream:track)','refs/heads')
     foreach ($line in @($branchText -split "`r?`n" | Where-Object { $_ })) {
-        $parts = $line -split '\|',3
-        $branches.Add([ordered]@{name=$parts[0];current=($parts[1] -eq '*');upstream=$(if($parts.Count -gt 2){$parts[2]}else{''})})
+        $parts = $line -split '\|',4
+        $track=if($parts.Count -gt 3){$parts[3]}else{''};$ahead=0;$behind=0
+        if($track -match 'ahead (\d+)'){$ahead=[int]$Matches[1]};if($track -match 'behind (\d+)'){$behind=[int]$Matches[1]}
+        $branches.Add([ordered]@{name=$parts[0];current=($parts[1] -eq '*');upstream=$(if($parts.Count -gt 2){$parts[2]}else{''});ahead=$(if($track -match 'gone'){$null}else{$ahead});behind=$(if($track -match 'gone'){$null}else{$behind})})
     }
     $remoteBranches = New-Object 'System.Collections.Generic.List[object]'
     $remoteBranchText = Invoke-GitOrThrow $Path @('for-each-ref','--format=%(refname:short)|%(objectname:short)','refs/remotes')
@@ -444,11 +446,15 @@ function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
         $lfsVersion=Invoke-GitCapture $Path @('lfs','version')
         if($lfsVersion.Code -eq 0){$lfsCount=@((Invoke-GitCapture $Path @('lfs','ls-files','--name-only')).Output -split "`r?`n"|Where-Object{$_}).Count}
     }
-    return [ordered]@{branch=$branch;files=$files.ToArray();protectedUntracked=[ordered]@{count=$protectedPaths.Count;paths=$protectedPaths.ToArray()};branches=$branches.ToArray();remoteBranches=$remoteBranches.ToArray();history=$history.ToArray();tags=@($tags);tagDetails=$tagDetails.ToArray();stashes=$stashes.ToArray();remotes=$remotes.ToArray();remote=(Get-OriginUrl $Path);sync=$sync;operation=$operation;headMessage=$headMessage;settings=[ordered]@{extrasLoaded=$IncludeExtras;userName=$userName;userEmail=$userEmail;gitignore=$gitignore;submodules=$submodules.ToArray();lfsAvailable=($lfsVersion.Code -eq 0);lfsVersion=$lfsVersion.Output.Trim();lfsFiles=$lfsCount}}
+    $previousResult=Invoke-GitCapture $Path @('rev-parse','--symbolic-full-name','@{-1}')
+    $previousBranch='';if($previousResult.Code -eq 0 -and $previousResult.Output.Trim().StartsWith('refs/heads/')){$previousBranch=$previousResult.Output.Trim().Substring(11)}
+    return [ordered]@{previousBranch=$previousBranch;branch=$branch;files=$files.ToArray();protectedUntracked=[ordered]@{count=$protectedPaths.Count;paths=$protectedPaths.ToArray()};branches=$branches.ToArray();remoteBranches=$remoteBranches.ToArray();history=$history.ToArray();tags=@($tags);tagDetails=$tagDetails.ToArray();stashes=$stashes.ToArray();remotes=$remotes.ToArray();remote=(Get-OriginUrl $Path);sync=$sync;operation=$operation;headMessage=$headMessage;settings=[ordered]@{extrasLoaded=$IncludeExtras;userName=$userName;userEmail=$userEmail;gitignore=$gitignore;submodules=$submodules.ToArray();lfsAvailable=($lfsVersion.Code -eq 0);lfsVersion=$lfsVersion.Output.Trim();lfsFiles=$lfsCount}}
 }
 
-function Get-CommitHistory([string]$Path,[string]$Scope,[string]$Ref,[bool]$IncludeRemote,[string]$Order) {
+function Get-CommitHistory([string]$Path,[string]$Scope,[string]$Ref,[bool]$IncludeRemote,[string]$Order,[int]$Skip=0,[string]$Query='') {
     Assert-Registered $Path
+    if($Skip -lt 0 -or $Skip -gt 1000000){throw 'Invalid history offset.'}
+    if($Query.Length -gt 200){throw 'Search text must not exceed 200 characters.'}
     $args = New-Object 'System.Collections.Generic.List[string]'
     $args.Add('log')
     if ($Scope -eq 'current') { $args.Add('HEAD') }
@@ -461,7 +467,9 @@ function Get-CommitHistory([string]$Path,[string]$Scope,[string]$Ref,[bool]$Incl
     } elseif ($IncludeRemote) { $args.Add('--all') }
     else { $args.Add('--branches') }
     $args.Add($(if($Order -eq 'date'){'--date-order'}else{'--topo-order'}))
-    $args.Add('-250');$args.Add('--date=short');$args.Add('--format=%h%x1f%H%x1f%P%x1f%ad%x1f%an%x1f%s%x1f%D')
+    $args.Add('-251');$args.Add("--skip=$Skip")
+    if($Query){$args.Add('--fixed-strings');$args.Add('--regexp-ignore-case');$args.Add("--grep=$Query")}
+    $args.Add('--date=short');$args.Add('--format=%h%x1f%H%x1f%P%x1f%ad%x1f%an%x1f%s%x1f%D')
     $result = Invoke-GitCapture $Path $args.ToArray()
     if ($result.Code -ne 0) { throw $result.Output }
     $history = New-Object 'System.Collections.Generic.List[object]'
@@ -1557,7 +1565,7 @@ try {
                     '/api/repos' { Write-Json $context (Get-RepositoryCache) }
                     '/api/repo/details' { $repoPath=$request.QueryString['path']; Write-Json $context @{details=(Get-RepositoryDetails $repoPath)} }
                     '/api/repo/workspace' { $repoPath=$request.QueryString['path']; Write-Json $context @{workspace=(Get-WorkspaceDetails $repoPath ($request.QueryString['extras'] -eq 'true'))} }
-                    '/api/repo/history' { $repoPath=$request.QueryString['path'];$scope=$request.QueryString['scope'];$ref=$request.QueryString['ref'];$includeRemote=($request.QueryString['includeRemote'] -ne 'false');$order=$request.QueryString['order'];Write-Json $context @{history=@(Get-CommitHistory $repoPath $scope $ref $includeRemote $order)} }
+                    '/api/repo/history' { $repoPath=$request.QueryString['path'];$scope=$request.QueryString['scope'];$ref=$request.QueryString['ref'];$includeRemote=($request.QueryString['includeRemote'] -ne 'false');$order=$request.QueryString['order'];$skip=0;if($request.QueryString['skip'] -and -not [int]::TryParse($request.QueryString['skip'],[ref]$skip)){throw 'Invalid history offset.'};$items=@(Get-CommitHistory $repoPath $scope $ref $includeRemote $order $skip $request.QueryString['q']);Write-Json $context @{history=@($items | Select-Object -First 250);hasMore=($items.Count -gt 250);nextSkip=($skip+[Math]::Min(250,$items.Count))} }
                     '/api/repo/history-search' { $repoPath=$request.QueryString['path'];$query=$request.QueryString['q'];$mode=$request.QueryString['mode'];Write-Json $context @{history=@(Search-HistoryContent $repoPath $query $mode)} }
                     '/api/repo/compare' { $repoPath=$request.QueryString['path'];$source=$request.QueryString['source'];$target=$request.QueryString['target'];$remote=$request.QueryString['remote'];Write-Json $context @{compare=(Get-BranchCompare $repoPath $source $target $remote)} }
                     '/api/repo/compare-diff' { $repoPath=$request.QueryString['path'];$source=$request.QueryString['source'];$target=$request.QueryString['target'];$file=$request.QueryString['file'];Write-Json $context @{result=(Get-CompareDiff $repoPath $source $target $file)} }
