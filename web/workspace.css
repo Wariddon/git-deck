@@ -1380,3 +1380,24 @@ body.compact-workbench .file-status-d,body.compact-workbench .file-status-u { ba
 .push-review-actions button:disabled { opacity:.5; cursor:not-allowed; }
 @media(hover:none){body.compact-workbench .change-file-tools{opacity:1}}
 @media(max-width:760px){body.compact-workbench.workbench-mode .workspace-modal-head{flex-wrap:wrap}body.compact-workbench .workspace-modal-head>div:first-child{max-width:none}.workbench-secondary{margin-left:auto}body.compact-workbench .workspace-modal-head .sync-actions{order:3;width:100%;justify-content:space-between}body.compact-workbench .changes-layout{grid-template-columns:minmax(170px,42%) 7px minmax(220px,1fr);overflow:auto}body.compact-workbench #status-activity{max-width:45%}}
+/* Scan-friendly workbench refinements. Status never relies on color alone. */
+.repo-tab-open{display:flex;align-items:center;gap:7px;max-width:230px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.repo-tab-status{flex-shrink:0;font-size:10px;font-weight:500;color:var(--muted)}
+.workbench-layout-controls{display:flex;gap:6px;padding:8px;border-top:1px solid var(--border)}
+.workspace-freshness{min-width:0;max-width:40vw;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:10px;color:var(--muted)}
+.file-folder-heading{padding:7px 10px;font-size:11px;font-weight:600;background:var(--surface);overflow-wrap:anywhere;border-bottom:1px solid var(--border)}
+.change-file[hidden]{display:none!important}
+.commit-scope-note{font-size:10px;color:var(--muted);margin:3px 0;line-height:1.4}
+.file-risk-warning{font-size:11px;max-height:85px;overflow:auto}.file-risk-warning p{white-space:pre-wrap;overflow-wrap:anywhere}
+.changes-commandbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.changes-commandbar .changes-summary{margin-right:auto}.changes-commandbar select{width:auto;max-width:150px}.changes-commandbar input{width:180px;min-width:100px}
+.commit-composer{flex-shrink:0}.commit-editor{min-width:0}
+.commit-options{display:grid}.commit-composer{grid-template-columns:minmax(110px,1fr) minmax(180px,3fr) auto auto;gap:10px}
+.compact-workbench .change-file{min-height:36px}.compact-workbench .change-file-path small{font-size:10px}
+.commit-refs i{background:var(--surface);color:var(--muted);border:1px solid var(--border)}
+.commit-row.selected .commit-description strong{color:var(--text)}
+@media(max-width:900px){.commit-composer{grid-template-columns:minmax(150px,1fr) auto}.commit-identity{display:none}.commit-editor{grid-row:span 2}.commit-options{font-size:10px}.changes-commandbar .changes-summary{flex-basis:100%}}
+body[data-layout="comfortable"] .change-file{min-height:42px}
+@media(max-width:800px){.workspace-freshness{max-width:35vw}.changes-commandbar select{max-width:140px}.repo-tab-open{max-width:180px}}
+.theme-dark .diff-add{background:#143324;color:#b6edc5}.theme-dark .diff-remove{background:#41232a;color:#ffd2d5}
+.theme-dark .tree-section-head b{background:#303943;color:#d5dee7}
+.theme-dark .file-folder-heading{background:#20262e;color:#c9d1d9}

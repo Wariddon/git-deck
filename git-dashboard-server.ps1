@@ -1265,7 +1265,9 @@ function Invoke-Action($Body) {
             $status = Invoke-GitCapture $path @('status','--porcelain')
             $visibleStatus = @(Get-GitDeckVisibleStatusLines $status.Output)
             if (-not $visibleStatus.Count -and -not $amend) { throw 'There are no visible changes to commit. Generated IntelliJ files are protected.' }
-            if($visibleStatus.Count){$staged=Invoke-GitCapture $path @('diff','--cached','--quiet');if($staged.Code -eq 0){[void](Invoke-GitDeckStageAll $path)}}
+            $staged=Invoke-GitCapture $path @('diff','--cached','--quiet')
+            if($staged.Code -notin @(0,1)){throw 'Unable to verify staged changes. Nothing was committed.'}
+            if($staged.Code -eq 0 -and -not $amend){throw 'No staged changes. Review and stage files before committing.'}
             if($amend){$output=Invoke-GitOrThrow $path @('commit','--amend','-m',$message);return @{message='Latest commit amended locally. Nothing was pushed.';output=$output}}
             $output = Invoke-GitOrThrow $path @('commit','-m',$message)
             return @{message='Changes committed locally. Staged files were used when present; nothing was pushed.';output=$output}

@@ -135,3 +135,108 @@ const originalDetailResizer=initializeCommitDetailResizer;initializeCommitDetail
 document.addEventListener('pointerup',event=>{if(!event.target.matches('#tree-resizer,.commit-detail-resizer'))return;const body=document.querySelector('.workbench-body');const split=document.querySelector('.commit-detail-split');GitDeckRelease.write(localStorage,paneKey(),{tree:body.style.getPropertyValue('--tree-width'),files:split?.style.getPropertyValue('--commit-files-width')});});
 const compactOpenWorkspace=openWorkspace;openWorkspace=async function(...args){await compactOpenWorkspace(...args);restorePaneLayout();renderWorkspaceStatus();};
 enhanceChangeFiles();renderWorkspaceStatus();
+
+// Small, explicit controls; no additional Git reads are needed to render them.
+const baseRepoTabs=renderRepoTabs;
+renderRepoTabs=function(){
+  baseRepoTabs();
+  document.querySelectorAll('.repo-tab').forEach((tab,index)=>{
+    const repo=state.repos.find(r=>repoKey(r)===state.meta.openRepos[index]);if(!repo)return;
+    const cached=workspaceSnapshots.get(repoKey(repo))?.data;
+    const data=state.workspaceRepo&&repoKey(state.workspaceRepo)===repoKey(repo)?state.workspace:cached;
+    const changes=data?.files?.length??repo.changes;
+    const sync=data?.sync||repo;
+    const button=tab.querySelector('.repo-tab-open');
+    button.title=`${repo.name}\n${repo.path}\n${data?.branch||repo.branch||'Branch not checked'}\nSync based on local tracking refs`;
+    const badge=el('small','repo-tab-status',`${Number(changes)>0?'● '+changes+' ':''}${Number(sync.ahead)>0?'↑'+sync.ahead+' ':''}${Number(sync.behind)>0?'↓'+sync.behind:''}`.trim());
+    if(badge.textContent){badge.setAttribute('aria-label',`${changes||0} changes, ${sync.ahead||0} ahead, ${sync.behind||0} behind`);button.append(badge);}
+  });
+};
+const basePaletteEntries=commandPaletteEntries;
+commandPaletteEntries=function(){
+  const tags=(state.workspace?.tags||[]).map(tag=>typeof tag==='string'?((state.workspace.tagDetails||[]).find(t=>t.name===tag)||{name:tag,hash:''}):tag);
+  return basePaletteEntries().concat((state.workspace?.branches||[]).map(branch=>({label:branch.name,group:'Local branch · switch',shortcut:branch.current?'Current':'',search:`branch ${branch.name}`,run:()=>{if(!branch.current)runWorkspaceAction('branch-switch',{branch:branch.name},`Switch to ${branch.name}?`);}})),tags.map(tag=>({label:tag.name,group:'Tag · details',shortcut:tag.hash||'',search:`tag ${tag.name}`,run:()=>showTagDetails(tag)})));
+};
+
+function fileRisk(path){return /(^|[\\/])(\.env(?:\..*)?|id_rsa|id_ed25519|credentials(?:\..*)?)$|\.(pem|p12|pfx|key)$|(^|[\\/])\.idea([\\/]|$)|\.iml$/i.test(path);}
+function changeKind(status){return /U|AA|DD/.test(status)?'conflict':status.includes('D')?'deleted':/[A?]/.test(status)?'new':'modified';}
+const baseChangesView=renderChangesView;
+renderChangesView=function(content,data){
+  baseChangesView(content,data);
+  const shell=content.querySelector('.changes-workspace'),bar=shell.querySelector('.changes-commandbar');
+  const key='git-deck-change-view:'+repoKey(state.workspaceRepo);
+  const saved=GitDeckRelease.read(localStorage,key,{});
+  const filter=document.createElement('select');filter.setAttribute('aria-label','Filter file status');
+  [['all','All changes'],['modified','Modified'],['new','New'],['deleted','Deleted'],['conflict','Conflicts']].forEach(([v,t])=>filter.append(new Option(t,v)));
+  filter.value=['modified','new','deleted','conflict'].includes(saved.filter)?saved.filter:'all';
+  const mode=document.createElement('select');mode.setAttribute('aria-label','File list layout');mode.append(new Option('List','list'),new Option('Folders','tree'));mode.value=saved.mode==='tree'?'tree':'list';
+  bar.insertBefore(filter,bar.querySelector('.changes-search'));bar.insertBefore(mode,filter);
+  const apply=()=>{
+    shell.querySelectorAll('.file-folder-heading').forEach(n=>n.remove());
+    shell.querySelectorAll('.change-group').forEach(group=>{
+      const rows=[...group.querySelectorAll('.change-file')];
+      if(mode.value==='tree')rows.sort((a,b)=>a.querySelector('.change-file-main').title.localeCompare(b.querySelector('.change-file-main').title));
+      let previous=null;
+      for(const row of rows){
+        const path=row.querySelector('.change-file-main').title,file=data.files.find(f=>f.path===path);
+        row.hidden=filter.value!=='all'&&changeKind(file?.status||'')!==filter.value;
+        if(mode.value==='tree'){
+          const folder=path.replaceAll('\\','/').split('/').slice(0,-1).join('/')||'Repository root';
+          if(!row.hidden&&folder!==previous){group.append(el('div','file-folder-heading',folder));previous=folder;}
+          group.append(row);
+        }
+      }
+    });
+    const active=shell.querySelector('.change-file-main.active');
+    if(active?.closest('.change-file').hidden){
+      const next=shell.querySelector('.change-file:not([hidden]) .change-file-main');
+      if(next)next.click();else shell.querySelector('.working-diff').replaceChildren(workspaceEmpty('No matching files','Change the status filter or search.'));
+    }
+    GitDeckRelease.write(localStorage,key,{mode:mode.value,filter:filter.value});
+  };
+  filter.onchange=mode.onchange=apply;
+  shell.querySelector('.changes-search').addEventListener('input',apply);
+  bar.querySelector('[aria-label="Sort changed files"]').addEventListener('change',apply);apply();
+  const risky=data.files.filter(f=>fileRisk(f.path));
+  const note=el('p','commit-scope-note',`Commit uses staged files only · ${data.files.filter(f=>f.staged).length} staged. Stage all is a separate action.`);
+  shell.querySelector('.commit-editor').append(note);
+  if(risky.length){const warning=el('details','file-risk-warning');warning.append(el('summary','',`Review ${risky.length} potentially sensitive / IDE files`),el('p','',risky.map(f=>f.path).join('\n')));shell.querySelector('.commit-editor').append(warning);}
+  shell.querySelector('form').addEventListener('submit',event=>{
+    if(!data.files.some(f=>f.staged)&&!shell.querySelector('.commit-option input').checked){event.preventDefault();event.stopImmediatePropagation();setNotice('Stage files before committing.');}
+  },true);
+};
+const baseRunWorkspaceAction=runWorkspaceAction;
+runWorkspaceAction=async function(action,payload={},confirmation='',options={}){
+  if(action==='stage-all'&&!confirmation)confirmation=`Stage all visible changes in ${state.workspaceRepo?.name}? Review the list before committing.`;
+  const paths=action==='stage-all'?(state.workspace?.files||[]).filter(f=>f.unstaged).map(f=>f.path):action==='stage-file'?[payload.file]:action==='files-bulk'&&payload.mode==='stage'?payload.files:action==='commit'?(state.workspace?.files||[]).filter(f=>f.staged).map(f=>f.path):[];
+  const risky=(paths||[]).filter(fileRisk);
+  if(risky.length)confirmation+=(confirmation?'\n\n':'')+'Potentially sensitive / IDE files — review before proceeding:\n'+risky.join('\n');
+  return baseRunWorkspaceAction(action,payload,confirmation,options);
+};
+
+function resetWorkbenchLayout(){
+  if(!confirm('Reset panel sizes and view layout? Repository tabs, drafts and theme will be kept.'))return;
+  const key=state.workspaceRepo?repoKey(state.workspaceRepo):'';
+  ['git-deck-pane-width','git-deck-tree-width','git-deck-commit-files-width','git-deck-commit-columns-v1','git-deck-file-pane:'+key,'git-deck-pane-layout:'+key,'git-deck-history-columns:'+key,'git-deck-history-graph-height:'+key].forEach(k=>{try{localStorage.removeItem(k);}catch{}});
+  if(key){delete state.meta.historyLayouts[key];delete state.meta.historyDensity[key];delete state.meta.historyColumns[key];}
+  state.meta.layoutPreset='compact';saveMeta();applyAppearance();setRepositoryPaneWidth(270);
+  document.querySelector('.workbench-body').style.setProperty('--tree-width','220px');
+  if(state.workspace)renderWorkspace();setNotice('Layout reset. Tabs and commit drafts kept.');
+}
+const layoutControls=el('div','workbench-layout-controls');
+const density=document.createElement('select');density.setAttribute('aria-label','Workspace density');density.append(new Option('Compact','compact'),new Option('Comfortable','comfortable'));density.value=state.meta.layoutPreset==='comfortable'?'comfortable':'compact';
+density.onchange=()=>{state.meta.layoutPreset=density.value;saveMeta();applyAppearance();};
+const reset=el('button','','Reset layout');reset.type='button';reset.onclick=resetWorkbenchLayout;layoutControls.append(density,reset);secondary.append(layoutControls);
+const freshness=el('span','workspace-freshness');freshness.setAttribute('role','status');$('status-job').before(freshness);
+new MutationObserver(()=>{freshness.textContent=$('workspace-branch').textContent;freshness.title=freshness.textContent;}).observe($('workspace-branch'),{childList:true,characterData:true,subtree:true});
+const refreshTabs=paintWorkspace;paintWorkspace=function(...args){const result=refreshTabs(...args);renderRepoTabs();return result;};
+const baseColumnResizers=initializeCommitColumnResizers;
+initializeCommitColumnResizers=function(list,header){
+  const key='git-deck-history-columns:'+repoKey(state.workspaceRepo);
+  const sizes=GitDeckRelease.read(localStorage,key,{});
+  GitDeckRelease.write(localStorage,'git-deck-commit-columns-v1',sizes);
+  baseColumnResizers(list,header);
+  const save=()=>GitDeckRelease.write(localStorage,key,GitDeckRelease.read(localStorage,'git-deck-commit-columns-v1',{}));
+  header.addEventListener('pointerup',()=>setTimeout(save,0));header.addEventListener('keydown',()=>setTimeout(save,0));header.addEventListener('dblclick',()=>setTimeout(save,0));
+};
+renderRepoTabs();

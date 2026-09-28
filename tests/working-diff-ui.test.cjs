@@ -1,0 +1,20 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),vm=require('node:vm');
+const source=fs.readFileSync(require('node:path').join(__dirname,'../web/app.js'),'utf8');
+const code=source.slice(source.indexOf('let workingDiffVersion=0;'),source.indexOf('function splitPatchHunks'));
+const requests=[],rendered=[];
+const button=()=>({classList:{add(){},contains(){return true}},closest:()=>({hidden:false})});
+const pane={isConnected:true,replaceChildren(){}};
+const context={state:{workspaceRepo:{path:'fixture'}},document:{querySelectorAll:()=>[]},el:()=>({}),api:()=>new Promise(resolve=>requests.push(resolve)),renderWorkingPatch:(_,diff)=>rendered.push(diff),workspaceEmpty:()=>({}),encodeURIComponent};
+vm.createContext(context);vm.runInContext(code,context);
+(async()=>{
+  const first=context.loadWorkingDiff({path:'old'},false,pane,button());
+  const second=context.loadWorkingDiff({path:'new'},false,pane,button());
+  requests[1]({result:{diff:'new'}});await second;
+  requests[0]({result:{diff:'old'}});await first;
+  assert.deepEqual(rendered,['new']);
+  const third=context.loadWorkingDiff({path:'detached'},false,pane,button());
+  pane.isConnected=false;requests[2]({result:{diff:'detached'}});await third;
+  assert.deepEqual(rendered,['new']);
+  console.log('PASS: stale working diff and detached view cannot overwrite selection');
+})().catch(error=>{console.error(error);process.exitCode=1});
