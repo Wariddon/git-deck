@@ -6,6 +6,7 @@
 /git-deck-ui-state.json
 /jobs/
 /exports/
+/sandboxes/
 /.playwright-cli/
 /bin/
 /dist/

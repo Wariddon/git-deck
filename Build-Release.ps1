@@ -9,10 +9,10 @@ $dist=Join-Path $root 'dist'
 $stage=Join-Path $dist ('stage-'+[guid]::NewGuid().ToString('N'))
 [void](New-Item -ItemType Directory -Path $stage)
 # Explicit allowlist: never package local inventories, logs, jobs or credentials.
-$files=@('GitDeck.exe','GitDeck.ico','git-dashboard.bat','git-dashboard-server.ps1','git-job-worker.ps1','git-repo-manager.bat','git-repo-manager.ps1','README.md','LICENSE')
+$files=@('GitDeck.exe','GitDeck.ico','git-dashboard.bat','git-dashboard-server.ps1','git-workflow-tools.ps1','git-diff-content.ps1','git-job-worker.ps1','git-repo-manager.bat','git-repo-manager.ps1','README.md','LICENSE')
 foreach($file in $files){Copy-Item -LiteralPath (Join-Path $root $file) -Destination $stage}
 [void](New-Item -ItemType Directory -Path (Join-Path $stage 'web'))
-foreach($file in @('index.html','app.js','release-tools.js','release-ui.js','favicon.svg','styles.css','workspace.css','search.css','scan.css','gitlab.css')){
+foreach($file in @('index.html','app.js','release-tools.js','release-ui.js','workflow-ui.js','diff-ui.js','favicon.svg','styles.css','workspace.css','search.css','scan.css','gitlab.css')){
     Copy-Item -LiteralPath (Join-Path $root ('web/'+$file)) -Destination (Join-Path $stage 'web')
 }
 $zip=Join-Path $dist "GitDeck-$Version-windows.zip"

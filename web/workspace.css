@@ -1221,7 +1221,7 @@ body.resizing-rows,body.resizing-rows * { cursor: row-resize!important; user-sel
 .commit-file-row.selected { background: color-mix(in srgb,var(--green) 10%,var(--surface)); box-shadow: inset 3px 0 var(--green); }
 .commit-files .commit-file-main {
   display: grid;
-  grid-template-columns: 20px minmax(0,1fr);
+  grid-template-columns: max-content minmax(0,1fr);
   align-items: center;
   gap: 7px;
   width: 100%;
@@ -1447,3 +1447,53 @@ body[data-layout="comfortable"] .commit-list .commit-row{height:36px;min-height:
 #tree-content .ref-more{flex:none;width:24px;border:0;background:transparent;color:var(--text-primary);padding:4px;opacity:.35}
 .ref-branch-row:hover .ref-more,.ref-branch-row:focus-within .ref-more{opacity:1}
 #tree-content .ref-branch-row .ref-simple{flex:1;width:0;min-width:0}
+.workflow-list{max-height:220px;overflow:auto;padding-left:20px;font-size:12px;overflow-wrap:anywhere;line-height:1.6}
+.workflow-report{max-height:45vh;overflow:auto;white-space:pre-wrap;font-size:11px}.workflow-warning{color:var(--text-primary);border-left:3px solid #b7791f;padding:8px;background:var(--surface-subtle)}
+.workflow-workset{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-default)}.workflow-workset strong{flex:1;overflow-wrap:anywhere}
+.workflow-toolbar{display:flex;gap:4px;flex-wrap:wrap}.workflow-toolbar button{font-size:10px;padding:4px 7px}
+.release-dialog h3,.release-dialog small{overflow-wrap:anywhere}.release-dialog select,.release-dialog input{max-width:100%;margin:4px}
+.release-dialog>div:last-child{flex-wrap:wrap}.release-dialog .workflow-input{font:inherit;padding:6px 8px;border:1px solid var(--border-default);border-radius:6px;background:var(--surface);color:var(--text-primary)}
+/* Commit reader: only the diff body scrolls horizontally; file navigation stays fixed. */
+.history-layout .commit-detail,.commit-detail>.commit-detail-split{min-width:0;max-width:100%;overflow:hidden}
+.commit-detail .commit-files{min-width:0}.commit-detail .commit-diff{display:flex;min-width:0;min-height:0;overflow:hidden;padding:0}
+.commit-detail .commit-diff>.diff-viewer{width:100%;height:100%;min-height:0;max-width:100%}
+.commit-file-status{width:auto;min-width:24px;max-width:76px;padding:3px 5px;font-size:10px}.file-line-counts{font-size:10px;color:var(--text-secondary)}
+.commit-file-tools button{min-width:25px}.commit-file-tools .ref-more{font-size:16px}
+.improved-diff{min-width:0;min-height:0;background:var(--surface);color:var(--text-primary)}
+.improved-diff .diff-viewer-toolbar{position:static;flex:none;flex-wrap:wrap;background:var(--surface-subtle);border-color:var(--border-default);padding:5px;gap:4px}
+.improved-diff .diff-viewer-toolbar strong{font-size:11px;flex:1 1 140px}.improved-diff .diff-viewer-toolbar input{width:150px;min-width:100px;font-size:11px;background:var(--surface);color:var(--text-primary);border-color:var(--border-default)}
+.improved-diff button,.improved-diff select{font:11px/1.4 system-ui,sans-serif;padding:3px 6px;min-height:26px;height:auto;border:1px solid var(--border-default);border-radius:4px;background:var(--surface);color:var(--text-primary)}
+.improved-diff button[aria-pressed=true]{box-shadow:inset 0 -2px var(--green)}.improved-diff button:focus-visible,.improved-diff input:focus-visible{outline:2px solid var(--green)}
+.diff-navigation{display:flex;flex:none;flex-wrap:wrap;align-items:center;gap:4px;padding:4px 6px;background:var(--surface-subtle);border-bottom:1px solid var(--border-default)}.diff-navigation-status{font-size:11px;color:var(--text-secondary);margin-right:auto}
+.improved-diff .diff-viewer-body{min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;font:var(--diff-font-size,12px)/1.45 Consolas,monospace}
+.diff-lines{width:max-content;min-width:100%}.diff-line{display:grid;grid-template-columns:42px 42px minmax(0,1fr);min-height:1.65em;white-space:pre;width:100%}
+.diff-line-number{color:var(--text-secondary);font-size:.85em;text-align:right;padding:0 7px;user-select:none;border-right:1px solid var(--border-default)}.diff-line-text{padding:0 8px}
+.improved-diff .diff-add{background:color-mix(in srgb,var(--diff-add-bg) 45%,var(--surface));color:var(--text-primary)}
+.improved-diff .diff-remove{background:color-mix(in srgb,var(--diff-remove-bg) 45%,var(--surface));color:var(--text-primary)}
+.improved-diff .diff-hunk{background:var(--surface-subtle);color:var(--text-secondary)}.diff-meta{color:var(--text-secondary)}
+.diff-word-change{background:color-mix(in srgb,var(--diff-add-bg) 85%,var(--green));color:inherit;border-radius:2px}.diff-remove .diff-word-change{background:var(--diff-remove-bg)}
+.diff-search-mark{background:#ffe08a;color:#302600}.diff-jump-target{outline:2px solid var(--green);outline-offset:-2px}
+.diff-file-note{display:block;padding:8px 10px;white-space:normal;overflow-wrap:anywhere;font:12px/1.6 system-ui,sans-serif;background:var(--surface-subtle);color:var(--text-primary)}
+.diff-context-fold summary{cursor:pointer;padding:5px 10px;color:var(--text-secondary);background:var(--surface-subtle)}
+.diff-side-by-side{min-width:850px}.diff-pair{display:grid;grid-template-columns:minmax(400px,1fr) minmax(400px,1fr)}.diff-pair>.diff-line{overflow:hidden;border-right:1px solid var(--border-default)}
+.wrap-lines .diff-lines{width:100%;min-width:0}.wrap-lines .diff-line{white-space:pre-wrap;overflow-wrap:anywhere}.wrap-lines .diff-pair{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.safe-markdown{padding:16px;max-width:900px;font:14px/1.7 system-ui,sans-serif;overflow-wrap:anywhere}.safe-markdown pre,.safe-file-text{padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 Consolas,monospace;background:var(--surface-subtle)}.safe-markdown blockquote{border-left:3px solid var(--border-default);margin-left:0;padding-left:12px}
+.commit-detail .commit-diff>.diff-fullscreen{position:fixed;inset:8px;width:auto;height:auto;max-width:none;z-index:120}
+.diff-side-by-side .diff-pair{grid-template-columns:var(--diff-column-width,600px) var(--diff-column-width,600px)}.wrap-lines .diff-side-by-side .diff-pair{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+
+/* Keep history controls inside their pane, including older workbench layouts. */
+.workspace-section-head:has(.history-controls){flex-wrap:wrap;gap:5px;min-width:0;align-items:flex-start}
+.workspace-section-head:has(.history-controls)>div:first-child{flex:0 1 150px;min-width:0}
+body.workbench-mode .history-controls,.history-controls{flex:1 1 600px;min-width:0;max-width:100%;flex-wrap:wrap;justify-content:flex-start;gap:4px;margin-left:0}
+body.workbench-mode .history-controls select,.history-controls select{width:auto;max-width:155px;min-width:0;height:27px;font-size:11px;padding:0 20px 0 6px}
+body.workbench-mode .history-controls .history-search,.history-controls .history-search{flex:1 1 150px;width:150px;min-width:100px;max-width:100%;height:27px;margin-left:0;font-size:11px}
+body.workbench-mode .history-remote-toggle,body.workbench-mode .history-options>summary{height:27px;font-size:11px;white-space:nowrap}
+.history-layout .commit-detail h3{font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+.history-layout .commit-detail button{font-size:11px}
+.improved-diff .diff-viewer-toolbar{padding:3px 4px;gap:3px}
+.improved-diff .diff-viewer-toolbar strong{font-size:10px;flex:1 1 120px}
+.improved-diff button,.improved-diff select{font-size:10px;min-height:24px;padding:2px 5px}
+.improved-diff .diff-viewer-toolbar input{font-size:10px;height:24px;width:120px;min-width:80px}
+.improved-diff .diff-navigation{padding:3px 4px;gap:3px}
+.history-layout .commit-file-row{min-height:38px}
+.history-layout .commit-file-status{font-size:9px;padding:2px 4px}

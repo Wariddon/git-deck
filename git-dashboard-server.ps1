@@ -4,6 +4,8 @@ param([int]$Port = 8765,[switch]$NoBrowser)
 $ErrorActionPreference = 'Continue'
 [Console]::OutputEncoding = New-Object Text.UTF8Encoding($false)
 $script:Root = $PSScriptRoot
+. (Join-Path $PSScriptRoot 'git-workflow-tools.ps1')
+. (Join-Path $PSScriptRoot 'git-diff-content.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
 $script:RepoList = Join-Path $PSScriptRoot 'git-repositories.txt'
 $script:ScanList = Join-Path $PSScriptRoot 'git-scan-locations.txt'
@@ -532,11 +534,19 @@ function Get-CommitDetails([string]$Path,[string]$Hash) {
     $parts=$meta -split ([char]31),6
     $body=(Invoke-GitOrThrow $Path @('show','-s','--format=%B',$Hash)).Trim()
     $files=New-Object 'System.Collections.Generic.List[object]'
-    $fileText=Invoke-GitOrThrow $Path @('diff-tree','--root','--no-commit-id','--name-status','-r','--find-renames',$Hash)
-    foreach($line in @($fileText -split "`r?`n" | Where-Object { $_ })) {
-        $columns=$line -split "`t"
-        if($columns.Count -lt 2){continue}
-        $files.Add([ordered]@{status=$columns[0];path=$columns[-1];oldPath=$(if($columns.Count -gt 2){$columns[1]}else{''})})
+    $fileText=Invoke-GitOrThrow $Path @('diff-tree','--root','--first-parent','-m','--no-commit-id','--name-status','-z','-r','--find-renames',$Hash)
+    $tokens=@($fileText -split [char]0);$index=0
+    while($index -lt $tokens.Count-1){
+        $status=$tokens[$index++];$oldPath='';$file=$tokens[$index++]
+        if($status -match '^[RC]'){$oldPath=$file;$file=$tokens[$index++]}
+        $files.Add([ordered]@{status=$status;path=$file;oldPath=$oldPath;added=$null;removed=$null;binary=$false})
+    }
+    $stats=Invoke-GitOrThrow $Path @('diff-tree','--root','--first-parent','-m','--no-commit-id','--numstat','-z','-r','--find-renames',$Hash)
+    $tokens=@($stats -split [char]0);$index=0
+    while($index -lt $tokens.Count){
+        $columns=$tokens[$index++] -split "`t",3;if($columns.Count -ne 3){continue};$file=$columns[2]
+        if(-not $file){$index++;$file=$tokens[$index++]}
+        foreach($item in $files){if($item.path -ceq $file){$item.binary=$columns[0] -eq '-';if(-not $item.binary){$item.added=[int]$columns[0];$item.removed=[int]$columns[1]}}}
     }
     return [ordered]@{fullHash=$parts[0];hash=$parts[1];parents=@($parts[2] -split ' ' | Where-Object { $_ });author=$parts[3];date=$parts[4];subject=$parts[5];body=$body;files=$files.ToArray()}
 }
@@ -547,7 +557,9 @@ function Get-CommitDiff([string]$Path,[string]$Hash,[string]$File) {
     $details=Get-CommitDetails $Path $Hash
     $allowed=@($details.files | ForEach-Object { @($_.path,$_.oldPath) } | Where-Object { $_ })
     if(-not ($allowed | Where-Object { [string]::Equals($_,$File,[StringComparison]::Ordinal) })){throw 'File is not part of this commit.'}
-    $output=Invoke-GitOrThrow $Path @('show','--format=','--find-renames','--unified=4',$Hash,'--',$File)
+    $selected=@($details.files | Where-Object { $_.path -ceq $File -or $_.oldPath -ceq $File })[0]
+    $filePaths=@($selected.path);if($selected.oldPath){$filePaths+=@($selected.oldPath)}
+    $output=Invoke-GitOrThrow $Path (@('diff-tree','--root','--first-parent','-m','--no-commit-id','-r','-p','--find-renames','--unified=4',$Hash,'--')+$filePaths)
     $truncated=$false
     if($output.Length -gt 500000){$output=$output.Substring(0,500000)+"`r`n… diff truncated at 500 KB …";$truncated=$true}
     return [ordered]@{diff=$output;truncated=$truncated}
@@ -921,6 +933,7 @@ function Invoke-Action($Body) {
     $action = [string]$Body.action
     $path = [string]$Body.path
     switch ($action) {
+        'training-create' { return New-TrainingRepository }
         'ui-state-save' {
             $savedPath=([string]$Body.path).Trim();$tab=([string]$Body.tab).Trim();Assert-Registered $savedPath
             $allowed=@('changes','history','compare','gitlab-inbox','search-history','rebase','conflicts','health','worktrees','patches','branches','stashes','tags','remotes','recovery','tools','settings')
@@ -1549,6 +1562,8 @@ try {
                     '/app.js' { Write-StaticFile $context 'app.js' 'text/javascript; charset=utf-8' }
                     '/release-tools.js' { Write-StaticFile $context 'release-tools.js' 'text/javascript; charset=utf-8' }
                     '/release-ui.js' { Write-StaticFile $context 'release-ui.js' 'text/javascript; charset=utf-8' }
+                    '/workflow-ui.js' { Write-StaticFile $context 'workflow-ui.js' 'text/javascript; charset=utf-8' }
+                    '/diff-ui.js' { Write-StaticFile $context 'diff-ui.js' 'text/javascript; charset=utf-8' }
                     '/styles.css' { Write-StaticFile $context 'styles.css' 'text/css; charset=utf-8' }
                     '/scan.css' { Write-StaticFile $context 'scan.css' 'text/css; charset=utf-8' }
                     '/gitlab.css' { Write-StaticFile $context 'gitlab.css' 'text/css; charset=utf-8' }
@@ -1556,6 +1571,8 @@ try {
                     '/workspace.css' { Write-StaticFile $context 'workspace.css' 'text/css; charset=utf-8' }
                     '/favicon.svg' { Write-StaticFile $context 'favicon.svg' 'image/svg+xml' }
                     '/api/health' { Write-Json $context @{status='ok'} }
+                    '/api/repo/status-snapshot' { Write-Json $context (Get-WorkflowStatus $request.QueryString['path']) }
+                    '/api/repo/checkout-review' { Write-Json $context (Get-CheckoutReview $request.QueryString['path'] $request.QueryString['target']) }
                     '/api/readiness' { Write-Json $context (Get-SetupReadiness) }
                     '/api/repo/push-preview' { Write-Json $context (Get-PushPreview $request.QueryString['path'] $request.QueryString['remote'] $request.QueryString['local'] $request.QueryString['target']) }
                     '/api/ui-state' { $ui=[ordered]@{schemaVersion=2;path='';tab='history';openRepos=@()};if(Test-Path -LiteralPath $script:UiState -PathType Leaf){try{$saved=Get-Content -LiteralPath $script:UiState -Raw|ConvertFrom-Json;$savedPath=if($saved.path){[string]$saved.path}else{''};$savedTab=if($saved.tab){[string]$saved.tab}else{'history'};[string[]]$savedOpenRepos=if($null-ne $saved.openRepos){@($saved.openRepos|ForEach-Object{[string]$_})}elseif($savedPath){@($savedPath)}else{@()};$savedSchemaVersion=if($saved.schemaVersion){[int]$saved.schemaVersion}else{1};$ui=[ordered]@{schemaVersion=$savedSchemaVersion;path=$savedPath;tab=$savedTab;openRepos=$savedOpenRepos}}catch{}};Write-Json $context @{view=$ui} }
@@ -1575,6 +1592,7 @@ try {
                     '/api/repo/journal' { $repoPath=$request.QueryString['path'];Assert-Registered $repoPath;Write-Json $context @{journal=@(Get-ActionJournal|Where-Object{[string]::Equals([string]$_.path,$repoPath,[StringComparison]::OrdinalIgnoreCase)}|Select-Object -First 50)} }
                     '/api/repo/reflog' { $repoPath=$request.QueryString['path'];Write-Json $context @{reflog=@(Get-ReflogEntries $repoPath)} }
                     '/api/repo/commit' { $repoPath=$request.QueryString['path'];$commit=$request.QueryString['commit'];Write-Json $context @{commit=(Get-CommitDetails $repoPath $commit)} }
+                    '/api/repo/commit-content' { Write-Json $context (Get-CommitFileContent $request.QueryString['path'] $request.QueryString['commit'] $request.QueryString['file']) }
                     '/api/repo/commit-diff' { $repoPath=$request.QueryString['path'];$commit=$request.QueryString['commit'];$file=$request.QueryString['file'];Write-Json $context @{result=(Get-CommitDiff $repoPath $commit $file)} }
                     '/api/repo/working-diff' { $repoPath=$request.QueryString['path'];$file=$request.QueryString['file'];$staged=($request.QueryString['staged'] -eq 'true');Write-Json $context @{result=(Get-WorkingDiff $repoPath $file $staged)} }
                     '/api/repo/stash-diff' { $repoPath=$request.QueryString['path'];$stash=$request.QueryString['stash'];Write-Json $context @{result=(Get-StashDiff $repoPath $stash)} }
