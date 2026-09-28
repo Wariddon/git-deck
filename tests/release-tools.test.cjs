@@ -1,5 +1,9 @@
 const assert=require('node:assert/strict');
 const tools=require('../web/release-tools.js');
+assert.equal(tools.githubProject('git@github.com:Wariddon/git-deck.git'),'https://github.com/Wariddon/git-deck');
+assert.equal(tools.githubProject('https://github.com/Wariddon/git-deck.git'),'https://github.com/Wariddon/git-deck');
+assert.equal(tools.githubProject('https://github.com.evil.test/a/b.git'),null);
+assert.equal(tools.githubProject('https://gitlab.com/a/b.git'),null);
 const values=new Map();const storage={getItem:k=>values.get(k),setItem:(k,v)=>values.set(k,v)};
 assert.equal(tools.write(storage,'test',{tab:'history'}),true);
 assert.deepEqual(tools.read(storage,'test',{}),{tab:'history'});

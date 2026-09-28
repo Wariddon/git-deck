@@ -946,7 +946,7 @@ function Invoke-Action($Body) {
                 if(-not ($openRepos|Where-Object{[string]::Equals($_,$candidatePath,[StringComparison]::OrdinalIgnoreCase)})){$openRepos.Add($candidatePath)}
             }
             if(-not ($openRepos|Where-Object{[string]::Equals($_,$savedPath,[StringComparison]::OrdinalIgnoreCase)})){$openRepos.Add($savedPath)}
-            $persistedRepos=@($openRepos|Select-Object -Last 10)
+            $persistedRepos=@($openRepos)
             Write-JsonFile $script:UiState ([ordered]@{schemaVersion=2;path=$savedPath;tab=$tab;openRepos=$persistedRepos;updatedAt=[DateTime]::UtcNow.ToString('o')})
             return @{message='Workspace view saved.'}
         }

@@ -1497,3 +1497,36 @@ body.workbench-mode .history-remote-toggle,body.workbench-mode .history-options>
 .improved-diff .diff-navigation{padding:3px 4px;gap:3px}
 .history-layout .commit-file-row{min-height:38px}
 .history-layout .commit-file-status{font-size:9px;padding:2px 4px}
+/* One compact command row; secondary tools remain reachable at narrow widths. */
+body.compact-workbench .workspace-modal-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 9px}
+body.compact-workbench .workspace-modal-head>div:first-child{display:flex;align-items:baseline;gap:8px;flex:1 1 160px;min-width:0}
+body.compact-workbench #workspace-title{font-size:15px;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.compact-workbench .toolbar-branch{font-size:11px;max-width:220px}
+body.compact-workbench .workspace-modal-head .sync-actions{flex-wrap:wrap;min-width:0;gap:4px}
+.toolbar-pull-group{display:flex;align-items:center;flex:none;gap:0}
+body.compact-workbench .toolbar-pull-group>button{height:30px;min-height:30px;padding:0 9px;min-width:60px;border:1px solid var(--border-default);border-radius:5px 0 0 5px;background:var(--surface);color:var(--text-primary)}
+body.compact-workbench .toolbar-pull-group small{display:none}
+body.compact-workbench .toolbar-pull-group .pull-strategy{display:flex;margin:0;height:30px;border:0;padding:0}
+body.compact-workbench .toolbar-pull-group select{height:30px;max-width:84px;padding:0 3px;border:1px solid var(--border-default);border-left:0;border-radius:0 5px 5px 0;font-size:10px;background:var(--surface);color:var(--text-primary)}
+body.compact-workbench .workbench-secondary .create-mr-button,body.compact-workbench .workbench-secondary .create-mr-button:hover{background:var(--surface);color:var(--text-primary);border-color:var(--border-default);box-shadow:none}
+body.compact-workbench .repo-tab{flex:none;max-width:235px;min-width:90px}
+body.compact-workbench .repo-tab-open{min-width:0;flex:1;max-width:205px}
+.repo-tab-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.compact-workbench .repo-tab-close{flex:none}
+body.compact-workbench .repo-tab.active{background:var(--accent-soft,var(--surface));box-shadow:inset 0 3px var(--green)}
+body.compact-workbench .repo-tab.active .repo-tab-open{font-weight:700}
+.ref-current-card{margin:4px 6px 7px;padding:8px 10px;border:1px solid var(--border-default);border-left:3px solid var(--green);border-radius:5px;background:var(--surface-subtle);display:grid;gap:3px;min-width:0}
+.ref-current-card strong{font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ref-current-card small{font-size:10px;color:var(--text-secondary);overflow-wrap:anywhere}
+.ref-filter-tabs{display:flex;gap:3px;padding:0 6px 6px}
+#tree-content .ref-filter-tabs button{flex:1;min-width:0;min-height:27px;font-size:11px;padding:3px;border:1px solid var(--border-default);border-radius:4px;background:var(--surface);color:var(--text-secondary)}
+#tree-content .ref-filter-tabs button[aria-pressed=true]{background:var(--accent-soft,var(--surface-subtle));color:var(--text-primary);border-color:var(--green)}
+#tree-content .ref-view{min-height:28px;padding-block:4px;font-size:12px}
+#tree-content .ref-current{display:none}
+#tree-content .ref-pin,#tree-content .ref-more{opacity:0;pointer-events:none}
+#tree-content .ref-branch-row:hover .ref-pin,#tree-content .ref-branch-row:hover .ref-more,#tree-content .ref-branch-row:focus-within .ref-pin,#tree-content .ref-branch-row:focus-within .ref-more{opacity:1;pointer-events:auto}
+.ref-section .ref-section{margin-left:10px;border-left:1px solid var(--border-muted)}
+.ref-section .ref-section>summary{background:var(--surface-subtle);padding:5px 8px;font-size:11px}
+.ref-tree-options{padding:3px 8px;font-size:10px}
+.ref-viewed{font-size:9px;color:var(--green)}
+@media(hover:none){#tree-content .ref-pin,#tree-content .ref-more{opacity:1;pointer-events:auto}}

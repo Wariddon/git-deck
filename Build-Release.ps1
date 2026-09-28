@@ -16,6 +16,8 @@ foreach($file in @('index.html','app.js','release-tools.js','release-ui.js','wor
     Copy-Item -LiteralPath (Join-Path $root ('web/'+$file)) -Destination (Join-Path $stage 'web')
 }
 $zip=Join-Path $dist "GitDeck-$Version-windows.zip"
+[void](New-Item -ItemType Directory -Path (Join-Path $stage 'assets/brand') -Force)
+Copy-Item -LiteralPath (Join-Path $root 'assets/brand/git-deck-banner.png') -Destination (Join-Path $stage 'assets/brand/git-deck-banner.png')
 if(Test-Path -LiteralPath $zip){throw 'Release ZIP already exists; choose a new version or move the old ZIP first.'}
 Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip
 $hash=(Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()

@@ -1,0 +1,15 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync(require('node:path').join(__dirname,'../web/app.js'),'utf8');
+const storage=new Map();const c={localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)}};
+vm.createContext(c);vm.runInContext(source.slice(source.indexOf('function commitViewMemory('),source.indexOf('function beginHistoryRead(')),c);
+const a=c.commitViewMemory('C:/RepoA','abc');a.save({file:'src/a.js',search:'src',top:80,left:12});
+assert.equal(c.commitViewMemory('c:/repoa','abc').value.top,80);
+assert.equal(c.commitViewMemory('C:/RepoB','abc').value.file,undefined);
+assert.equal(c.commitViewMemory('C:/RepoA','def').value.file,undefined);
+const diff=c.commitViewMemory('C:/RepoA','abc');diff.save({top:200});a.save({search:'a.js'});
+assert.equal(c.commitViewMemory('C:/RepoA','abc').value.top,200);
+for(let i=0;i<25;i++)c.commitViewMemory('C:/RepoA','hash'+i).save({file:'x'});
+assert.equal(Object.keys(JSON.parse(storage.get('git-deck-commit-view:c:/repoa'))).length,20);
+storage.set('git-deck-commit-view:c:/bad','invalid');c.commitViewMemory('C:/bad','x').save({top:3});
+assert.equal(c.commitViewMemory('C:/bad','x').value.top,3);
+console.log('PASS: commit/file/diff memory, repository isolation, bounded retention, stale writer merge, corrupt storage');

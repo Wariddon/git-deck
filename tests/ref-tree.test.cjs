@@ -1,6 +1,6 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../web/app.js'),'utf8');
-function node(tag,cls='',text=''){return {tag,cls,text,children:[],events:{},isConnected:true,value:'',classList:{toggle(){}},append(...items){this.children.push(...items)},replaceChildren(...items){this.children=items},setAttribute(){},addEventListener(name,fn){this.events[name]=fn}}}
+function node(tag,cls='',text=''){return {tag,cls,text,children:[],events:{},isConnected:true,value:'',classList:{toggle(){}},prepend(...items){this.children.unshift(...items)},append(...items){this.children.push(...items)},replaceChildren(...items){this.children=items},setAttribute(){},addEventListener(name,fn){this.events[name]=fn}}}
 const elements={'tree-content':node('div'),'tree-search':node('input')},storage=new Map(),actions=[];
 const context={el:node,$:id=>elements[id],document:{createElement:node,createTextNode:text=>node('text','',text)},localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},state:{workspaceRepo:{path:'A'},workspaceTab:'history',meta:{historyViews:{}}},repoKey:r=>r.path,saveMeta(){},selectWorkspaceTab:tab=>actions.push(tab),branchContextItems:()=>[{label:'Checkout',run:()=>actions.push('checkout')}],showContextMenu:(event,items)=>context.menu=items,tagContextItems:()=>[],showTagDetails(){}};
 vm.createContext(context);vm.runInContext(source.slice(source.indexOf("let activeTreeRepo="),source.indexOf('async function api(')),context);
@@ -9,6 +9,7 @@ const all=(n=elements['tree-content'])=>[n,...n.children.flatMap(x=>all(x))];
 const find=(cls,text)=>all().find(n=>n.cls===cls&&(text===undefined||n.text===text));
 const branch=name=>all().find(n=>n.cls==='ref-view'&&n.children.some(c=>c.text===name));
 const render=()=>context.renderWorkbenchTree(data);
+storage.set('git-deck-ref-tree:A',JSON.stringify({filter:'all'}));storage.set('git-deck-ref-tree:B',JSON.stringify({filter:'all'}));
 render();assert.equal(all().filter(n=>n.tag==='summary'&&n.children[0].text==='REMOTES').length,1);
 assert(find('ref-current'));assert.equal(find('ref-sync','↑2 ↓1').text,'↑2 ↓1');
 assert(!branch('dev').children.some(n=>n.cls==='ref-sync'));
@@ -24,3 +25,14 @@ context.state.workspaceRepo.path='A';render();assert(all().some(n=>n.tag==='summ
 data.tags=[];data.stashes=[];render();assert(!all().some(n=>n.tag==='summary'&&n.children[0].text==='TAGS'));
 const empty=all().find(n=>n.tag==='input');empty.checked=true;empty.onchange();assert(all().some(n=>n.tag==='summary'&&n.children[0].text==='TAGS'));
 console.log('PASS: view-only branch click, explicit checkout, unified remotes, search, pin/fold isolation, tracking and empty groups');
+all().find(n=>n.tag==='button'&&n.text==='ปักหมุด').onclick();assert(branch('feature/one'));assert(!branch('dev'));
+all().find(n=>n.tag==='button'&&n.text==='ล่าสุด').onclick();assert(branch('feature/one'));assert(!branch('dev'));
+assert(find('ref-current-card'));assert(!actions.includes('checkout'));
+all().find(n=>n.tag==='button'&&n.text==='ทั้งหมด').onclick();assert(branch('dev'));
+console.log('PASS: pinned/recent filters preserve current card and never checkout');
+all().find(n=>n.tag==='button'&&n.text==='สรุป').onclick();assert(find('ref-current-card'));assert(!branch('dev'));
+data.branches=Array.from({length:1000},(_,i)=>({name:'feature/item-'+i}));data.remoteBranches=[];data.tags=[];data.stashes=[];
+all().find(n=>n.tag==='button'&&n.text==='ทั้งหมด').onclick();assert.equal(all().filter(n=>n.cls==='ref-view').length,80);
+all().find(n=>n.tag==='button'&&n.text==='1/13 ›').onclick();assert(branch('item-80'));assert(!branch('item-0'));
+elements['tree-search'].value='item-999';render();assert(branch('item-999'));assert.equal(all().filter(n=>n.cls==='ref-view').length,1);
+console.log('PASS: summary default, 1000-branch pagination, off-page search');

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/brand/git-deck-banner.png" alt="Git Deck — emerald stacked cards with a branching commit graph" width="900">
+</p>
+
 # Git Deck
 
 A compact, local Git workspace for Windows, created by **Wariddon Rattanamalee**, with development assistance from **OpenAI Codex**.
@@ -94,6 +98,8 @@ Checkout now opens a fresh comparison and blocks confirmation while working chan
 Restart the local server after updating: the new status, checkout-review and practice endpoints require the matching server version. This workflow does not require online access except explicit remote/MR actions.
 
 ## Commit diff reader
+
+Commit inspection remembers the selected file, file filter and diff scroll position per repository and commit (up to 20 recent commits per repository, stored in this browser). Missing files fall back to a file that still exists. Rapid repository switching uses a latest-request guard when restoring the view; restoring an already-selected commit does not request its details again.
 
 Commit details show file status and added/removed line counts; per-file History/Blame live in the overflow menu. Blame explicitly reads the current working revision. Merge details compare against the first parent.
 

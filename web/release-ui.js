@@ -9,17 +9,19 @@ function rememberReleaseView(){
   GitDeckRelease.write(localStorage,'git-deck-view-details-v1',releaseViews);
 }
 const originalOpenWorkspace=openWorkspace;
+let releaseRestoreVersion=0;
 openWorkspace=async function(repo,tab='history',collapse=true,record=true){
+  const version=++releaseRestoreVersion;
   rememberReleaseView();
   const saved=releaseViews[repoKey(repo)];
   // Explicit navigation still wins; repository-tab switching restores its own view.
   if(collapse===null&&saved?.tab&&workspaceTabs.has(saved.tab))tab=saved.tab;
   await originalOpenWorkspace(repo,tab,collapse,record);
-  if(!state.workspaceRepo||repoKey(repo)!==repoKey(state.workspaceRepo)||!saved)return;
+  if(version!==releaseRestoreVersion||!state.workspaceRepo||repoKey(repo)!==repoKey(state.workspaceRepo)||!saved)return;
   restoringReleaseView=true;
   try{
     const rows=[...document.querySelectorAll('.commit-row[data-commit]')];
-    rows.find(row=>row.dataset.commit===saved.commit)?.click();
+    const selected=rows.find(row=>row.dataset.commit===saved.commit);if(selected&&!selected.classList.contains('selected'))selected.click();
     const list=document.querySelector('.commit-list');if(list){list.scrollTop=saved.scroll||0;list.scrollLeft=saved.left||0;}
   }finally{restoringReleaseView=false;}
 };
@@ -95,15 +97,28 @@ const toolbar=document.querySelector('.workspace-modal-head');
 const secondary=document.createElement('details');secondary.className='workbench-secondary';
 const secondaryLabel=el('summary','','View & tools');secondaryLabel.title='Repositories, theme, Help and application tools';secondary.append(secondaryLabel,document.querySelector('.workspace-header-actions'));
 toolbar.append(document.querySelector('.sync-actions'),secondary);
+const pullGroup=el('div','toolbar-pull-group');
+const pullButton=document.querySelector('[data-git-action="pull"]');
+pullButton.before(pullGroup);pullGroup.append(pullButton,document.querySelector('.pull-strategy'));
+document.querySelector('.pull-strategy>span').textContent='';
+$('pull-strategy').title='Pull strategy — applies when you click Pull';
+const baseSyncSummary=renderSyncSummary;
+renderSyncSummary=function(sync={}){baseSyncSummary(sync);for(const [action,count,arrow] of [['pull',sync.behind,'↓'],['push',sync.ahead,'↑']]){const button=document.querySelector(`[data-git-action="${action}"]`);button.querySelector('strong').textContent=`${action==='pull'?'Pull':'Push'}${count?' '+arrow+count:''}`;button.title=button.querySelector('small').textContent+' · local tracking refs';}};
 document.addEventListener('mousedown',event=>{if(!secondary.contains(event.target))secondary.removeAttribute('open');});
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&secondary.open){secondary.removeAttribute('open');secondaryLabel.focus();}});
 const branchLabel=el('span','toolbar-branch');toolbar.firstElementChild.append(branchLabel);
 const footer=$('workspace-statusbar');footer.before($('console'));
 $('status-activity').setAttribute('aria-label','Show operation status and output');
 $('status-activity').setAttribute('aria-live','polite');
-let operationLabel='Ready',operationStart=0;
+let operationLabel='Ready',operationStart=0,operationRepo='';
+const toolbarSetOutput=setOutput;
+setOutput=function(message,options={}){operationRepo=state.workspaceRepo?.name||'';toolbarSetOutput(message,options);};
+const currentToolbarStatus=()=>state.busy?operationLabel:`${state.workspaceRepo?.name||'Workspace'} · ${state.workspace?'Ready':'Loading…'}`;
+const currentGithubProject=()=>{const remotes=state.workspace?.remotes||[];const remote=remotes.find(r=>r.name==='origin')||remotes[0];return GitDeckRelease.githubProject(remote?.fetchUrl||remote?.pushUrl||'');};
+const gitlabMrDialog=showMrDialog;
+showMrDialog=function(repo,sourceBranch='',remote='origin'){const remotes=state.workspace?.remotes||[];const selected=remotes.find(r=>r.name===remote);const project=GitDeckRelease.githubProject(selected?.fetchUrl||selected?.pushUrl||'');if(project){const branch=sourceBranch||state.workspace?.branch||repo.branch;if(!branch||branch==='HEAD'){setNotice('Select a branch before creating a pull request');return;}window.open(project+'/compare/'+encodeURIComponent(branch)+'?expand=1','_blank','noopener,noreferrer');return;}return gitlabMrDialog(repo,sourceBranch,remote);};
 const originalStatus=renderWorkspaceStatus;
-renderWorkspaceStatus=function(){originalStatus();branchLabel.textContent=state.workspace?.branch||'No branch';branchLabel.title=branchLabel.textContent;$('status-job').textContent=operationLabel;$('status-activity').title=operationLabel;};
+renderWorkspaceStatus=function(){originalStatus();branchLabel.textContent=state.workspace?.branch||'Loading branch…';branchLabel.title=branchLabel.textContent;$('status-job').textContent=currentToolbarStatus();$('status-activity').title=`Latest output${operationRepo?' · '+operationRepo:''}: ${$('output-summary').textContent||'None'}`;const mr=document.querySelector('.create-mr-button');const github=currentGithubProject();mr.textContent=github?'Pull Request ↗':'Merge Request';mr.title=github?'Open GitHub comparison to choose target and create a pull request (does not push)':'Create GitLab merge request';};
 const originalLoading=showLoading,originalHideLoading=hideLoading;
 showLoading=function(title,detail=''){operationStart=Date.now();operationLabel=title+(detail?' · '+detail:'');originalLoading(title,detail);renderWorkspaceStatus();};
 hideLoading=function(){originalHideLoading();operationLabel=state.busy?'Working…':($('output-summary').textContent||'Ready');renderWorkspaceStatus();};
@@ -133,7 +148,7 @@ const paneKey=()=>state.workspaceRepo?'git-deck-pane-layout:'+repoKey(state.work
 const restorePaneLayout=()=>{const saved=GitDeckRelease.read(localStorage,paneKey(),{});if(saved.tree)document.querySelector('.workbench-body').style.setProperty('--tree-width',saved.tree);if(saved.files)document.querySelector('.commit-detail-split')?.style.setProperty('--commit-files-width',saved.files);};
 const originalDetailResizer=initializeCommitDetailResizer;initializeCommitDetailResizer=function(...args){originalDetailResizer(...args);restorePaneLayout();};
 document.addEventListener('pointerup',event=>{if(!event.target.matches('#tree-resizer,.commit-detail-resizer'))return;const body=document.querySelector('.workbench-body');const split=document.querySelector('.commit-detail-split');GitDeckRelease.write(localStorage,paneKey(),{tree:body.style.getPropertyValue('--tree-width'),files:split?.style.getPropertyValue('--commit-files-width')});});
-const compactOpenWorkspace=openWorkspace;openWorkspace=async function(...args){await compactOpenWorkspace(...args);restorePaneLayout();renderWorkspaceStatus();};
+const compactOpenWorkspace=openWorkspace;openWorkspace=async function(...args){const loading=compactOpenWorkspace(...args);renderWorkspaceStatus();await loading;restorePaneLayout();renderWorkspaceStatus();};
 enhanceChangeFiles();renderWorkspaceStatus();
 
 // Small, explicit controls; no additional Git reads are needed to render them.
@@ -141,12 +156,14 @@ const baseRepoTabs=renderRepoTabs;
 renderRepoTabs=function(){
   baseRepoTabs();
   document.querySelectorAll('.repo-tab').forEach((tab,index)=>{
-    const repo=state.repos.find(r=>repoKey(r)===state.meta.openRepos[index]);if(!repo)return;
+    const repo=state.repos.find(r=>repoKey(r)===tab.dataset.repoKey);if(!repo)return;
+    tab.oncontextmenu=event=>showContextMenu(event,[{label:isFavorite(repo)?'Unpin repository':'Pin repository',run:()=>{const key=repoKey(repo);if(isFavorite(repo))delete state.meta.favorites[key];else state.meta.favorites[key]=true;saveMeta();renderRepoTabs();}}]);
     const cached=workspaceSnapshots.get(repoKey(repo))?.data;
     const data=state.workspaceRepo&&repoKey(state.workspaceRepo)===repoKey(repo)?state.workspace:cached;
     const changes=data?.files?.length??repo.changes;
     const sync=data?.sync||repo;
     const button=tab.querySelector('.repo-tab-open');
+    if(button.firstChild?.nodeType===Node.TEXT_NODE){const name=el('span','repo-tab-name',button.firstChild.textContent);button.firstChild.replaceWith(name);}
     button.title=`${repo.name}\n${repo.path}\n${data?.branch||repo.branch||'Branch not checked'}\nSync based on local tracking refs`;
     const badge=el('small','repo-tab-status',`${Number(changes)>0?'● '+changes+' ':''}${Number(sync.ahead)>0?'↑'+sync.ahead+' ':''}${Number(sync.behind)>0?'↓'+sync.behind:''}`.trim());
     if(badge.textContent){badge.setAttribute('aria-label',`${changes||0} changes, ${sync.ahead||0} ahead, ${sync.behind||0} behind`);button.append(badge);}

@@ -136,6 +136,8 @@ async function showActionReasons(){
 }
 
 function readWorksets(){const value=GitDeckRelease.read(localStorage,'git-deck-worksets-v1',[]);return Array.isArray(value)?value.filter(x=>typeof x.name==='string'&&Array.isArray(x.paths)).slice(0,30):[];}
+const worksetTabs=renderRepoTabs;
+renderRepoTabs=function(){worksetTabs();const button=workflowButton('Worksets',showWorksets);button.classList.add('repo-tab-add');button.title='Save or open a group of repositories';$('repo-tabs').append(button);};
 function showWorksets(){
   const ui=releaseDialog('ชุด repository ตามงาน');const draw=()=>{ui.body.replaceChildren(el('p','','เปิดเป็นแท็บโดยคงแท็บเดิมไว้ ไม่ปิด draft และไม่ Checkout branch'));const sets=readWorksets();
     sets.forEach((set,index)=>{const row=el('div','workflow-workset');row.append(el('strong','',set.name),el('small','',set.paths.length+' repos'),workflowButton('เปิดชุดนี้',()=>{

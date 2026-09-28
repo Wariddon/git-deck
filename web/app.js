@@ -71,7 +71,7 @@ function saveMeta() {
 }
 
 const workspaceTabs=new Set(['changes','history','compare','gitlab-inbox','search-history','rebase','conflicts','health','worktrees','patches','branches','stashes','tags','remotes','recovery','tools','settings']);
-function savedOpenRepoPaths(activeRepo=null){const paths=state.meta.openRepos.map((key)=>state.repos.find((repo)=>repoKey(repo)===key)?.path).filter(Boolean);if(activeRepo?.path&&!paths.some((path)=>path.toLowerCase()===activeRepo.path.toLowerCase()))paths.push(activeRepo.path);return paths.slice(-10);}
+function savedOpenRepoPaths(activeRepo=null){const paths=state.meta.openRepos.map((key)=>state.repos.find((repo)=>repoKey(repo)===key)?.path).filter(Boolean);if(activeRepo?.path&&!paths.some((path)=>path.toLowerCase()===activeRepo.path.toLowerCase()))paths.push(activeRepo.path);return paths;}
 function saveLastView(repo,tab){if(!repo?.path||!workspaceTabs.has(tab))return;const openRepos=savedOpenRepoPaths(repo);try{localStorage.setItem('git-deck-last-view-v1',JSON.stringify({path:repo.path.toLowerCase(),tab,openRepos:openRepos.map((path)=>path.toLowerCase())}));}catch{}clearTimeout(lastViewSaveTimer);lastViewSaveTimer=setTimeout(()=>{lastViewSaveTimer=null;void api('/api/action',{method:'POST',body:JSON.stringify({action:'ui-state-save',path:repo.path,tab,openRepos})}).catch(()=>{});},120);}
 function loadLastView(){try{const saved=JSON.parse(localStorage.getItem('git-deck-last-view-v1')||'{}');return {path:typeof saved.path==='string'?saved.path:'',tab:workspaceTabs.has(saved.tab)?saved.tab:'history',openRepos:Array.isArray(saved.openRepos)?saved.openRepos:state.meta.openRepos};}catch{return {path:'',tab:'history',openRepos:state.meta.openRepos};}}
 async function loadPersistentView(){const local=loadLastView();try{const response=await api('/api/ui-state');const path=typeof response.view?.path==='string'?response.view.path.toLowerCase():'';const tab=workspaceTabs.has(response.view?.tab)?response.view.tab:'history';const remoteOpenRepos=Array.isArray(response.view?.openRepos)?response.view.openRepos:(typeof response.view?.openRepos==='string'?[response.view.openRepos]:null);let openRepos=remoteOpenRepos?remoteOpenRepos.map((item)=>String(item).toLowerCase()):local.openRepos;if(path&&Number(response.view?.schemaVersion||1)<2)openRepos=[...new Set([...(local.openRepos||[]),...openRepos])];return path||openRepos.length?{path,tab,openRepos}:local;}catch{return local;}}
@@ -107,29 +107,32 @@ function touchRecent(repo) {
   saveMeta();
 }
 
-function rememberOpenRepo(repo){const key=repoKey(repo);if(!state.meta.openRepos.includes(key))state.meta.openRepos=[...state.meta.openRepos,key].slice(-10);saveMeta();}
+function rememberOpenRepo(repo){const key=repoKey(repo);if(!state.meta.openRepos.includes(key))state.meta.openRepos=[...state.meta.openRepos,key];saveMeta();}
 
 function renderRepoTabs(){
   const tabs=$('repo-tabs');tabs.replaceChildren();
   const repos=state.meta.openRepos.map((key)=>state.repos.find((repo)=>repoKey(repo)===key)).filter(Boolean);state.meta.openRepos=repos.map(repoKey);
-  repos.forEach((repo)=>{const tab=el('span',`repo-tab ${state.workspaceRepo&&repoKey(state.workspaceRepo)===repoKey(repo)?'active':''}`);const open=el('button','repo-tab-open',repo.name);open.type='button';open.title=repo.path;open.addEventListener('click',()=>openWorkspace(repo,state.workspaceTab||'history',null));const close=el('button','repo-tab-close','×');close.type='button';close.setAttribute('aria-label',`Close ${repo.name} tab`);close.addEventListener('click',(event)=>{event.stopPropagation();const key=repoKey(repo);state.meta.openRepos=state.meta.openRepos.filter((item)=>item!==key);saveMeta();if(state.workspaceRepo&&repoKey(state.workspaceRepo)===key){const next=state.meta.openRepos.map((item)=>state.repos.find((entry)=>repoKey(entry)===item)).filter(Boolean).pop();if(next)openWorkspace(next,state.workspaceTab||'history',null);else{state.meta.lastRepo='';clearLastView();saveMeta();closeWorkspace();}}else{renderRepoTabs();if(state.workspaceRepo)saveLastView(state.workspaceRepo,state.workspaceTab||'history');}});tab.append(open,close);tabs.append(tab);});
-  const search=el('button','repo-tab-search','⌕ Find repo');search.type='button';search.title='Find or switch repository (Ctrl+P)';search.setAttribute('aria-label','Find or switch repository');search.addEventListener('click',showRepoSwitcher);
+  repos.filter(repo=>repoKey(repo)===(state.workspaceRepo?repoKey(state.workspaceRepo):'')||repos.filter(isFavorite).slice(0,11).includes(repo)).forEach((repo)=>{const tab=el('span',`repo-tab ${state.workspaceRepo&&repoKey(state.workspaceRepo)===repoKey(repo)?'active':''}`);tab.dataset.repoKey=repoKey(repo);const open=el('button','repo-tab-open',repo.name);open.type='button';open.title=repo.path;open.addEventListener('click',()=>openWorkspace(repo,state.workspaceTab||'history',null));const close=el('button','repo-tab-close','×');close.type='button';close.setAttribute('aria-label',`Close ${repo.name} tab`);close.addEventListener('click',(event)=>{event.stopPropagation();const key=repoKey(repo);state.meta.openRepos=state.meta.openRepos.filter((item)=>item!==key);saveMeta();if(state.workspaceRepo&&repoKey(state.workspaceRepo)===key){const next=state.meta.openRepos.map((item)=>state.repos.find((entry)=>repoKey(entry)===item)).filter(Boolean).pop();if(next)openWorkspace(next,state.workspaceTab||'history',null);else{state.meta.lastRepo='';clearLastView();saveMeta();closeWorkspace();}}else{renderRepoTabs();if(state.workspaceRepo)saveLastView(state.workspaceRepo,state.workspaceTab||'history');}});tab.append(open,close);tabs.append(tab);});
+  const search=el('button','repo-tab-search',`Repos · ${repos.length}`);search.type='button';search.title='Find or switch repository (Ctrl+P)';search.setAttribute('aria-label','Find or switch repository');search.addEventListener('click',showRepoSwitcher);
   const add=el('button','repo-tab-add','＋');add.type='button';add.title='Show repository library';add.addEventListener('click',()=>document.body.classList.remove('library-collapsed'));
   tabs.append(search,add);if(!$('repo-switcher').classList.contains('hidden'))renderRepoSwitcher();
 }
 
-let repoSwitcherIndex=0;
+let repoSwitcherIndex=0,repoSwitcherPage=0;
 function repoSwitcherCandidates(){
   const term=$('repo-switcher-search').value.trim();const openOrder=new Map(state.meta.openRepos.map((key,index)=>[key,index]));const recentOrder=new Map(state.meta.recent.map((key,index)=>[key,index]));
-  return state.repos.filter((repo)=>!term||matchesSearch(`${repo.name} ${repo.path} ${repo.branch||''} ${repo.remote||''}`,term,repoTags(repo))).sort((a,b)=>{const ak=repoKey(a),bk=repoKey(b),ao=openOrder.has(ak),bo=openOrder.has(bk);if(ao!==bo)return ao?-1:1;if(ao&&bo)return openOrder.get(ak)-openOrder.get(bk);const ar=recentOrder.has(ak),br=recentOrder.has(bk);if(ar!==br)return ar?-1:1;if(ar&&br)return recentOrder.get(ak)-recentOrder.get(bk);return a.name.localeCompare(b.name);}).slice(0,30);
+  return state.repos.filter((repo)=>!term||matchesSearch(`${repo.name} ${repo.path} ${repo.branch||''} ${repo.remote||''}`,term,repoTags(repo))).sort((a,b)=>{const ak=repoKey(a),bk=repoKey(b),ao=openOrder.has(ak),bo=openOrder.has(bk);if(ao!==bo)return ao?-1:1;if(ao&&bo)return openOrder.get(ak)-openOrder.get(bk);const ar=recentOrder.has(ak),br=recentOrder.has(bk);if(ar!==br)return ar?-1:1;if(ar&&br)return recentOrder.get(ak)-recentOrder.get(bk);return a.name.localeCompare(b.name);});
 }
 function renderRepoSwitcher(){
   const list=$('repo-switcher-list'),term=$('repo-switcher-search').value.trim().toLowerCase();
   $('repo-switcher-search').placeholder='Search repos, branches, tags…';$('repo-switcher-search').setAttribute('aria-label','Search repos, branches and tags');
   const refs=state.workspace?[...(state.workspace.branches||[]).map(b=>({name:b.name,kind:'Branch',ref:b.name})),...(state.workspace.remoteBranches||[]).map(b=>({name:b.name,kind:'Remote branch',ref:b.name})),...(state.workspace.tags||[]).map(name=>({name,kind:'Tag',ref:'refs/tags/'+name}))].filter(x=>!term||x.name.toLowerCase().includes(term)):[];
-  const entries=[...repoSwitcherCandidates().slice(0,term?12:20).map(repo=>({name:repo.name,kind:'Repository',detail:repo.path,run:()=>openWorkspace(repo,state.workspaceTab||'history',true)})),...refs.slice(0,30).map(ref=>({...ref,detail:'View History · '+state.workspaceRepo.name,run:()=>viewRefHistory(ref.ref)}))];
+  const allEntries=[...repoSwitcherCandidates().map(repo=>({name:repo.name,kind:'Repository',detail:repo.path,run:()=>openWorkspace(repo,state.workspaceTab||'history',true)})),...refs.map(ref=>({...ref,detail:'View History · '+state.workspaceRepo.name,run:()=>viewRefHistory(ref.ref)}))];
+  const pageCount=Math.max(1,Math.ceil(allEntries.length/40));repoSwitcherPage=Math.min(repoSwitcherPage,pageCount-1);const entries=allEntries.slice(repoSwitcherPage*40,(repoSwitcherPage+1)*40);
   repoSwitcherIndex=Math.max(0,Math.min(repoSwitcherIndex,entries.length-1));list.replaceChildren();$('repo-switcher-count').textContent=entries.length+' results · refs from current repo';
   entries.forEach((item,index)=>{const button=el('button','repo-switcher-item '+(index===repoSwitcherIndex?'active':''));button.type='button';button.setAttribute('role','option');button.setAttribute('aria-selected',String(index===repoSwitcherIndex));const text=el('span','repo-switcher-text');text.append(el('strong','',item.name),el('small','',item.detail));button.append(text,el('small','',item.kind));button.onclick=()=>{hideRepoSwitcher();item.run();};list.append(button);});
+  $('repo-switcher-count').textContent=`${allEntries.length} results · Page ${repoSwitcherPage+1}/${pageCount}`;
+  if(pageCount>1){const pager=el('div','ref-filter-tabs');for(const [label,delta] of [['Previous',-1],['Next',1]]){const button=el('button','',label);button.type='button';button.disabled=repoSwitcherPage+delta<0||repoSwitcherPage+delta>=pageCount;button.onclick=()=>{repoSwitcherPage+=delta;repoSwitcherIndex=0;renderRepoSwitcher();list.scrollTop=0;};pager.append(button);}list.append(pager);}
   if(!entries.length)list.append(el('p','repo-switcher-empty','No local match · Fetch from the sidebar to update remote refs.'));
 }
 function showRepoSwitcher(){repoSwitcherIndex=0;$('repo-switcher').classList.remove('hidden');renderRepoSwitcher();requestAnimationFrame(()=>{$('repo-switcher-search').focus();$('repo-switcher-search').select();});}
@@ -182,8 +185,15 @@ function renderWorkbenchTree(data){
   };
   const top=el('div','ref-tree-options'),emptyLabel=el('label'),empty=document.createElement('input');empty.type='checkbox';empty.checked=saved.showEmpty===true;
   emptyLabel.append(empty,document.createTextNode('Show empty groups'));empty.onchange=()=>{saved.showEmpty=empty.checked;save();renderWorkbenchTree(data);};top.append(emptyLabel);content.append(top);
+  const filter=['home','all','pinned','recent'].includes(saved.filter)?saved.filter:'home';
+  const recent=Array.isArray(saved.recent)?saved.recent.filter(id=>typeof id==='string').slice(0,20):[];
+  const filters=el('div','ref-filter-tabs');filters.setAttribute('aria-label','Branch filters');
+  for(const [id,label] of [['home','สรุป'],['all','ทั้งหมด'],['pinned','ปักหมุด'],['recent','ล่าสุด']]){const button=el('button','',label);button.type='button';button.setAttribute('aria-pressed',String(filter===id));button.onclick=()=>{saved.filter=id;save();renderWorkbenchTree(data);};filters.append(button);}content.prepend(filters);
+  const currentCard=el('section','ref-current-card');currentCard.append(el('small','','ใช้งานอยู่'),el('strong','',data.branch||'Detached HEAD'));
+  const sync=data.sync||{};currentCard.append(el('small','',[(sync.ahead>0?`รอส่ง ${sync.ahead} commits`:''),(sync.behind>0?`ตามหลัง ${sync.behind} commits`:'')].filter(Boolean).join(' · ')||'ไม่มีส่วนต่างจาก tracking ref ที่ทราบ'));currentCard.title='สถานะจาก local tracking refs ไม่ใช่การตรวจ remote สด';content.prepend(currentCard);
   let resultCount=0;
-  const openHistory=(name)=>{
+  const openHistory=(name,kind='local')=>{
+    saved.recent=[kind+':'+name,...recent.filter(id=>id!==kind+':'+name)].slice(0,20);save();
     state.meta.historyViews[key]={...(state.meta.historyViews[key]||{}),scope:'ref:'+name};
     saveMeta();selectWorkspaceTab('history');renderWorkbenchTree(data);
   };
@@ -197,10 +207,10 @@ function renderWorkbenchTree(data){
     if(branch.upstream){
       const sync=branch.current&&!Object.hasOwn(branch,'ahead')?data.sync:branch;
       if(Number.isFinite(sync?.ahead)&&Number.isFinite(sync?.behind)){
-        const badge=el('small','ref-sync',`↑${sync.ahead} ↓${sync.behind}`);badge.title='Based on local tracking refs, not a live remote check · '+branch.upstream;view.append(badge);
+        const badge=el('small','ref-sync',[sync.ahead>0?'↑'+sync.ahead:'',sync.behind>0?'↓'+sync.behind:''].filter(Boolean).join(' '));badge.title='Based on local tracking refs, not a live remote check · '+branch.upstream;if((sync.ahead>0||sync.behind>0)&&!branch.current)view.append(badge);
       }
     }
-    view.onclick=()=>openHistory(branch.name);
+    view.onclick=()=>openHistory(branch.name,kind);
     const pin=el('button','ref-pin',pins.has(id)?'★':'☆');pin.type='button';pin.title=(pins.has(id)?'Unpin ':'Pin ')+branch.name;pin.setAttribute('aria-label',pin.title);
     const togglePin=()=>{pins.has(id)?pins.delete(id):pins.add(id);save();renderWorkbenchTree(data);};pin.onclick=togglePin;
     row.append(view,pin,refMenuButton(()=>[{label:'View History',run:()=>openHistory(branch.name)},...branchContextItems(data,branch,kind)],'Actions for '+branch.name));row.addEventListener('contextmenu',event=>showContextMenu(event,[
@@ -217,9 +227,24 @@ function renderWorkbenchTree(data){
     }
     for(const [folder,children] of folders){const box=section(id+'/'+prefix+folder,folder,children.length,true);grouped(box,children,kind,prefix+folder,id);parent.append(box);}
   };
-  const local=(data.branches||[]).filter(b=>matches(b.name)),remote=(data.remoteBranches||[]).filter(b=>matches(b.name));
+  if(filter==='home'&&!term){
+    const entries=[...(data.branches||[]).map(b=>({b,kind:'local'})),...(data.remoteBranches||[]).map(b=>({b,kind:'remote'}))];
+    const pinned=entries.filter(({b,kind})=>pins.has(kind+':'+b.name));
+    const pinBox=section('home-pins','ปักหมุด',pinned.length,true);pinned.slice(0,10).forEach(({b,kind})=>pinBox.append(branchRow(b,kind)));if(pinned.length)content.append(pinBox);
+    const last=recent.map(id=>entries.find(({b,kind})=>kind+':'+b.name===id)).filter(Boolean).slice(0,5);
+    const lastBox=section('home-recent','ดูประวัติล่าสุด',last.length,true);last.forEach(({b,kind})=>lastBox.append(branchRow(b,kind)));if(last.length)content.append(lastBox);
+    const all=el('button','ref-manage',`ดูทั้งหมด · ${entries.length} branches`);all.type='button';all.onclick=()=>{saved.filter='all';save();renderWorkbenchTree(data);};content.append(all);return;
+  }
+  const accepts=(b,kind)=>matches(b.name)&&(['all','home'].includes(filter)||filter==='pinned'&&pins.has(kind+':'+b.name)||filter==='recent'&&recent.includes(kind+':'+b.name));
+  const allRefs=[...(data.branches||[]).filter(b=>accepts(b,'local')).map(b=>'local:'+b.name),...(data.remoteBranches||[]).filter(b=>accepts(b,'remote')).map(b=>'remote:'+b.name),...(data.tags||[]).filter(matches).map(t=>'tag:'+t),...(data.stashes||[]).filter(s=>matches(s.ref+' '+s.message)).map(s=>'stash:'+s.ref)];
+  const pageKey=filter+'|'+term;if(saved.pageKey!==pageKey){saved.pageKey=pageKey;saved.page=0;}
+  const pages=Math.max(1,Math.ceil(allRefs.length/80)),page=Math.min(Math.max(0,Number(saved.page)||0),pages-1),visibleIds=new Set(allRefs.slice(page*80,(page+1)*80)),paged=['home','all'].includes(filter);
+  if(paged&&pages>1){const pager=el('div','ref-filter-tabs');for(const [label,delta] of [['‹',-1],[`${page+1}/${pages} ›`,1]]){const button=el('button','',label);button.type='button';button.disabled=page+delta<0||page+delta>=pages;button.onclick=()=>{saved.page=page+delta;save();renderWorkbenchTree(data);};pager.append(button);}content.append(pager);}
+  const local=(data.branches||[]).filter(b=>accepts(b,'local')&&(!paged||visibleIds.has('local:'+b.name))),remote=(data.remoteBranches||[]).filter(b=>accepts(b,'remote')&&(!paged||visibleIds.has('remote:'+b.name)));
+  if(filter==='recent'){const box=section('recent','ดูประวัติล่าสุด',local.length+remote.length,true);recent.forEach(id=>{const kind=id.startsWith('remote:')?'remote':'local';const branch=(kind==='remote'?remote:local).find(b=>kind+':'+b.name===id);if(branch)box.append(branchRow(branch,kind));});content.append(box);if(!local.length&&!remote.length)box.append(el('p','ref-empty','ยังไม่มี branch ที่ดูล่าสุดตรงกับคำค้น'));return;}
   const pinned=[...local.map(b=>({b,kind:'local'})),...remote.map(b=>({b,kind:'remote'}))].filter(({b,kind})=>pins.has(kind+':'+b.name));
   if(pinned.length){const box=section('pinned','PINNED',pinned.length,true);pinned.forEach(({b,kind})=>box.append(branchRow(b,kind)));content.append(box);}
+  if(filter==='pinned'){if(!pinned.length)content.append(el('p','ref-empty','ยังไม่มี branch ที่ปักหมุดตรงกับคำค้น · ใช้ปุ่มดาวหรือเมนูคลิกขวา'));return;}
   const branches=section('local','BRANCHES',local.length,true);grouped(branches,local.filter(b=>!pins.has('local:'+b.name)),'local');if(local.length||saved.showEmpty)content.append(branches);resultCount+=local.length;
   const remoteNames=[...new Set([...(data.remotes||[]).map(r=>r.name),...(data.remoteBranches||[]).map(b=>b.name.split('/')[0])])];
   const remotes=section('remotes','REMOTES',remote.length);
@@ -229,10 +254,10 @@ function renderWorkbenchTree(data){
     grouped(box,all.filter(b=>!pins.has('remote:'+b.name)),'remote',name+'/','remote:'+name);remotes.append(box);
   }
   if(remote.length||(!term&&remoteNames.length)||saved.showEmpty)content.append(remotes);resultCount+=remote.length;
-  const tags=(data.tags||[]).filter(matches),tagBox=section('tags','TAGS',tags.length);
+  const tags=(data.tags||[]).filter(t=>matches(t)&&(!paged||visibleIds.has('tag:'+t))),tagBox=section('tags','TAGS',tags.length);
   tags.forEach(tag=>{const detail=(data.tagDetails||[]).find(t=>t.name===tag)||{name:tag,hash:''};const button=el('button','ref-simple',tag);button.type='button';button.title=tag;button.onclick=()=>showTagDetails(detail);button.oncontextmenu=event=>showContextMenu(event,tagContextItems(data,detail));const row=el('div','ref-branch-row');row.append(button,refMenuButton(()=>tagContextItems(data,detail),'Actions for tag '+tag));tagBox.append(row);});
   if(tags.length||saved.showEmpty)content.append(tagBox);resultCount+=tags.length;
-  const stashes=(data.stashes||[]).filter(s=>matches(s.ref+' '+s.message)),stashBox=section('stashes','STASHES',stashes.length);
+  const stashes=(data.stashes||[]).filter(s=>matches(s.ref+' '+s.message)&&(!paged||visibleIds.has('stash:'+s.ref))),stashBox=section('stashes','STASHES',stashes.length);
   stashes.forEach(stash=>{const button=el('button','ref-simple',stash.ref+' · '+stash.message);button.type='button';button.title=stash.message;button.onclick=()=>selectWorkspaceTab('stashes');stashBox.append(button);});
   if(stashes.length||saved.showEmpty)content.append(stashBox);resultCount+=stashes.length;
   if(term)top.append(el('span','ref-result-count',resultCount+' matches'));
@@ -874,6 +899,12 @@ function createDiffViewer(diff,title='Diff'){const preferences=state.meta.diffPr
   mode.addEventListener('change',()=>{preferences.mode=mode.value;saveMeta();draw();});search.addEventListener('input',draw);wrap.addEventListener('click',()=>{preferences.wrap=!preferences.wrap;wrap.classList.toggle('active',preferences.wrap);saveMeta();draw();});smaller.addEventListener('click',()=>{preferences.fontSize=Math.max(8,preferences.fontSize-1);saveMeta();draw();});larger.addEventListener('click',()=>{preferences.fontSize=Math.min(14,preferences.fontSize+1);saveMeta();draw();});copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(diff);setNotice('Diff copied.');}catch{setNotice('Copy failed.');}});full.addEventListener('click',()=>viewer.classList.toggle('diff-fullscreen'));viewer.addEventListener('keydown',(event)=>{if(event.key==='Escape')viewer.classList.remove('diff-fullscreen');});draw();return viewer;}
 
 const historyReadTokens=new WeakMap();
+function commitViewMemory(path,hash){
+  const key='git-deck-commit-view:'+String(path).toLowerCase();let values={};
+  try{const parsed=JSON.parse(localStorage.getItem(key)||'{}');if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))values=parsed;}catch{}
+  const value=values[hash]&&typeof values[hash]==='object'?values[hash]:{};
+  return {value,save(update){try{const latest=JSON.parse(localStorage.getItem(key)||'{}');if(latest&&typeof latest==='object'&&!Array.isArray(latest))values=latest;}catch{}Object.assign(value,values[hash]||{},update);delete values[hash];values[hash]=value;values=Object.fromEntries(Object.entries(values).slice(-20));try{localStorage.setItem(key,JSON.stringify(values));}catch{}}};
+}
 function beginHistoryRead(pane){
   const token={},path=state.workspaceRepo?.path;historyReadTokens.set(pane,token);
   return ()=>historyReadTokens.get(pane)===token&&pane.isConnected&&state.workspaceRepo?.path===path;
@@ -884,7 +915,11 @@ async function loadCommitDiff(commit,file,diffPane) {
   diffPane.replaceChildren(el('div','diff-loading','กำลังโหลด diff…'));
   try{
     const repo=state.workspaceRepo;const data=await api(`/api/repo/commit-diff?path=${encodeURIComponent(repo.path)}&commit=${encodeURIComponent(commit.fullHash)}&file=${encodeURIComponent(file.path)}`);
-    if(current())diffPane.replaceChildren(createDiffViewer(data.result.diff||'No textual diff.',file.path,{status:file.status?.charAt(0),binary:file.binary,truncated:data.result.truncated,focus,navigate:diffPane.diffNavigate,content:()=>api('/api/repo/commit-content?'+new URLSearchParams({path:repo.path,commit:commit.fullHash,file:file.path}))}));
+    if(current()){
+      diffPane.replaceChildren(createDiffViewer(data.result.diff||'No textual diff.',file.path,{status:file.status?.charAt(0),binary:file.binary,truncated:data.result.truncated,focus,navigate:diffPane.diffNavigate,content:()=>api('/api/repo/commit-content?'+new URLSearchParams({path:repo.path,commit:commit.fullHash,file:file.path}))}));
+      const memory=commitViewMemory(repo.path,commit.fullHash),body=diffPane.querySelector?.('.diff-viewer-body');
+      if(body){if(memory.value.file===file.path){body.scrollTop=Math.max(0,Number(memory.value.top)||0);body.scrollLeft=Math.max(0,Number(memory.value.left)||0);}body.addEventListener('scroll',()=>{if(current())memory.save({file:file.path,top:body.scrollTop,left:body.scrollLeft});},{passive:true});}
+    }
   }catch(error){if(current())diffPane.replaceChildren(workspaceEmpty('Diff unavailable',error.message));}
 }
 
@@ -902,8 +937,12 @@ async function loadCommitDetail(commit,detailPane,selectedRow) {
     const split=el('div','commit-detail-split');const files=el('div','commit-files');const resize=el('div','commit-detail-resizer');resize.tabIndex=0;resize.setAttribute('role','separator');resize.setAttribute('aria-label','Resize changed files and diff panes');resize.setAttribute('aria-orientation','vertical');resize.title='ลากซ้าย–ขวาเพื่อปรับความกว้าง · ดับเบิลคลิกเพื่อคืนค่า';const diff=el('div','commit-diff');split.append(files,resize,diff);files.append(meta);detailPane.replaceChildren(split);initializeCommitDetailResizer(split,resize);
     if(!item.files.length){files.append(workspaceEmpty('No changed files','Commit นี้ไม่มี file diff'));diff.append(workspaceEmpty('No diff',''));return;}
     const fileHeader=el('div','commit-files-header');const fileHeading=el('div','commit-files-title');fileHeading.append(el('strong','','Changed files'),el('small','',`${item.files.length} files`));const fileSearch=el('input','commit-files-search','');fileSearch.type='search';fileSearch.placeholder='Search changed files…';fileSearch.setAttribute('aria-label','Search changed files');fileHeader.append(fileHeading,fileSearch);const fileList=el('div','commit-file-list');files.append(fileHeader,fileList);
-    const statusLabels={A:'Added',M:'Modified',D:'Deleted',R:'Renamed',C:'Copied',T:'Type changed',U:'Unmerged'};let selectedPath=item.files[0].path;
-    const showFile=(file,button)=>{selectedPath=file.path;fileList.querySelectorAll('.commit-file-main').forEach((node)=>node.classList.toggle('active',node===button));fileList.querySelectorAll('.commit-file-row').forEach((node)=>node.classList.toggle('selected',node.contains(button)));loadCommitDiff(item,file,diff);};
+    const fileMemory=commitViewMemory(repo.path,item.fullHash);
+    const statusLabels={A:'Added',M:'Modified',D:'Deleted',R:'Renamed',C:'Copied',T:'Type changed',U:'Unmerged'};let selectedPath=item.files.some(f=>f.path===fileMemory.value.file)?fileMemory.value.file:item.files[0].path;
+    fileSearch.value=typeof fileMemory.value.search==='string'?fileMemory.value.search:'';
+    if(fileSearch.value&&!item.files.some(f=>f.path.toLowerCase().includes(fileSearch.value.toLowerCase())))fileSearch.value='';
+    fileSearch.addEventListener('input',()=>fileMemory.save({search:fileSearch.value}));
+    const showFile=(file,button)=>{selectedPath=file.path;const same=fileMemory.value.file===file.path;fileMemory.save({file:file.path,...(!same?{top:0,left:0}:{})});fileList.querySelectorAll('.commit-file-main').forEach((node)=>node.classList.toggle('active',node===button));fileList.querySelectorAll('.commit-file-row').forEach((node)=>node.classList.toggle('selected',node.contains(button)));loadCommitDiff(item,file,diff);};
     const drawFiles=()=>{const term=fileSearch.value.trim().toLowerCase();const visible=item.files.filter((file)=>!term||file.path.toLowerCase().includes(term));fileList.replaceChildren();fileHeading.querySelector('small').textContent=term?`${visible.length} of ${item.files.length}`:`${item.files.length} files`;if(!visible.length){fileList.append(workspaceEmpty('No matching files','ลองค้นด้วยชื่อไฟล์หรือโฟลเดอร์'));return;}if(!visible.some((file)=>file.path===selectedPath))selectedPath=visible[0].path;let selectedButton=null;visible.forEach((file)=>{const normalized=file.path.replaceAll('\\','/');const parts=normalized.split('/');const name=parts.pop()||normalized;const directory=parts.join('/')||'Repository root';const status=(file.status||'M').trim().charAt(0).toUpperCase();const row=el('div','commit-file-row');row.dataset.status=status;const button=el('button','commit-file-main');button.title=file.path;button.dataset.path=file.path;const badge=el('span',`commit-file-status status-${status.toLowerCase()}`,statusLabels[status]||status);badge.title=statusLabels[status]||file.status;const text=el('span','commit-file-text');text.append(el('strong','',name),el('small','',directory),el('small','file-line-counts',file.binary?'Binary':Number.isFinite(file.added)&&Number.isFinite(file.removed)?`+${file.added} / −${file.removed}`:'Line counts unavailable'));button.append(badge,text);button.addEventListener('click',()=>showFile(file,button));const tools=el('span','commit-file-tools');const history=el('button','','History');history.title=`History of ${file.path}`;history.setAttribute('aria-label',`History of ${file.path}`);history.addEventListener('click',()=>loadFileHistory(file,diff));const blame=el('button','','Blame');blame.title=`Blame ${file.path}`;blame.setAttribute('aria-label',`Blame ${file.path}`);blame.addEventListener('click',()=>loadFileBlame(file,diff));tools.append(refMenuButton(()=>[{label:'File history',run:()=>loadFileHistory(file,diff)},{label:'Blame current working revision',run:()=>loadFileBlame(file,diff)}],'File actions for '+file.path));row.append(button,tools);fileList.append(row);if(file.path===selectedPath)selectedButton=button;});if(selectedButton)showFile(visible.find((file)=>file.path===selectedPath),selectedButton);};
     diff.diffNavigate=(delta,focus)=>{const term=fileSearch.value.trim().toLowerCase(),visible=item.files.filter(f=>!term||f.path.toLowerCase().includes(term));if(!visible.length)return;const index=visible.findIndex(f=>f.path===selectedPath),next=visible[(index+delta+visible.length)%visible.length];const button=[...fileList.querySelectorAll('.commit-file-main')].find(b=>b.dataset.path===next.path);if(button){diff.diffFocus=focus;showFile(next,button);button.scrollIntoView({block:'nearest'});}};fileSearch.addEventListener('input',drawFiles);drawFiles();
   }catch(error){if(current())detailPane.replaceChildren(workspaceEmpty('Commit details unavailable',error.message));}
@@ -1154,7 +1193,7 @@ $('command-search').addEventListener('input',()=>{state.commandIndex=0;renderCom
 $('command-search').addEventListener('keydown',(event)=>{const items=$('command-list').querySelectorAll('button');if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();if(!items.length)return;state.commandIndex=(state.commandIndex+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items.forEach((item,index)=>item.classList.toggle('active',index===state.commandIndex));items[state.commandIndex]?.scrollIntoView({block:'nearest'});}else if(event.key==='Enter'){event.preventDefault();items[state.commandIndex]?.click();}});
 $('command-palette').addEventListener('mousedown',(event)=>{if(event.target===$('command-palette'))hideCommandPalette();});
 document.addEventListener('mousedown',(event)=>{if(!event.target.closest('#context-menu'))hideContextMenu();});
-$('repo-switcher-search').addEventListener('input',()=>{repoSwitcherIndex=0;renderRepoSwitcher();});
+$('repo-switcher-search').addEventListener('input',()=>{repoSwitcherIndex=0;repoSwitcherPage=0;renderRepoSwitcher();});
 $('repo-switcher-search').addEventListener('keydown',(event)=>{const items=$('repo-switcher-list').querySelectorAll('.repo-switcher-item');if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();if(!items.length)return;repoSwitcherIndex=(repoSwitcherIndex+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;renderRepoSwitcher();$('repo-switcher-list').querySelector('.repo-switcher-item.active')?.scrollIntoView({block:'nearest'});}else if(event.key==='Enter'){event.preventDefault();items[repoSwitcherIndex]?.click();}});
 document.addEventListener('mousedown',(event)=>{if(!$('repo-switcher').classList.contains('hidden')&&!event.target.closest('#repo-switcher')&&!event.target.closest('.repo-tab-search'))hideRepoSwitcher();});
 document.querySelectorAll('.operations-open').forEach((button)=>button.addEventListener('click',()=>showOperationsCenter('fleet')));
@@ -1245,4 +1284,4 @@ updateRepositoryDensity(false);
 window.addEventListener('resize',()=>{updateLibraryPinButton();if(!document.body.classList.contains('workbench-mode'))return;if(state.meta.libraryPinned&&canPinLibrary())document.body.classList.remove('library-collapsed');else if(!canPinLibrary())document.body.classList.add('library-collapsed');});
 updateLibraryPinButton();
 closeWorkspace();
-void (async()=>{try{await refresh();if(state.launchPath){const requested=state.launchPath;history.replaceState({},'',location.pathname);try{let repo=state.repos.find(item=>item.path.toLowerCase()===requested.toLowerCase());if(!repo){await api('/api/action',{method:'POST',body:JSON.stringify({action:'add',path:requested})});await loadRepositoryCache(false);repo=state.repos.find(item=>item.path.toLowerCase()===requested.toLowerCase());}if(repo)await openWorkspace(repo,state.meta.lastWorkspaceTab||'history',true);}catch(error){setNotice(error.message);setOutput(error.message,{expand:true,status:'error'});}finally{state.launchPath='';}}else{const savedView=await loadPersistentView();const restored=(savedView.openRepos||[]).map((key)=>state.repos.find((repo)=>repoKey(repo)===String(key).toLowerCase())).filter(Boolean);state.meta.openRepos=[...new Set(restored.map(repoKey))].slice(-10);const lastKey=savedView.path||state.meta.lastRepo;const last=state.repos.find(item=>repoKey(item)===lastKey);if(last&&!state.meta.openRepos.includes(repoKey(last)))state.meta.openRepos.push(repoKey(last));saveMeta();renderRepoTabs();if(last)await openWorkspace(last,savedView.path?savedView.tab:(state.meta.lastWorkspaceTab||'history'),true);else if(lastKey){state.meta.lastRepo='';clearLastView();saveMeta();}else if(state.selected)await openWorkspace(state.selected,state.meta.lastWorkspaceTab||'history',true);}}finally{state.initializing=false;}})();
+void (async()=>{try{await refresh();if(state.launchPath){const requested=state.launchPath;history.replaceState({},'',location.pathname);try{let repo=state.repos.find(item=>item.path.toLowerCase()===requested.toLowerCase());if(!repo){await api('/api/action',{method:'POST',body:JSON.stringify({action:'add',path:requested})});await loadRepositoryCache(false);repo=state.repos.find(item=>item.path.toLowerCase()===requested.toLowerCase());}if(repo)await openWorkspace(repo,state.meta.lastWorkspaceTab||'history',true);}catch(error){setNotice(error.message);setOutput(error.message,{expand:true,status:'error'});}finally{state.launchPath='';}}else{const savedView=await loadPersistentView();const restored=(savedView.openRepos||[]).map((key)=>state.repos.find((repo)=>repoKey(repo)===String(key).toLowerCase())).filter(Boolean);state.meta.openRepos=[...new Set(restored.map(repoKey))];const lastKey=savedView.path||state.meta.lastRepo;const last=state.repos.find(item=>repoKey(item)===lastKey);if(last&&!state.meta.openRepos.includes(repoKey(last)))state.meta.openRepos.push(repoKey(last));saveMeta();renderRepoTabs();if(last)await openWorkspace(last,savedView.path?savedView.tab:(state.meta.lastWorkspaceTab||'history'),true);else if(lastKey){state.meta.lastRepo='';clearLastView();saveMeta();}else if(state.selected)await openWorkspace(state.selected,state.meta.lastWorkspaceTab||'history',true);}}finally{state.initializing=false;}})();

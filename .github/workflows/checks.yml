@@ -22,6 +22,7 @@ jobs:
           node --check web/workflow-ui.js
           node --check web/diff-ui.js
           node tests/diff-reader.test.cjs
+          node tests/commit-view-memory.test.cjs
           node tests/workflow-ui.test.cjs
           node tests/workspace-loading.test.cjs
           node tests/release-tools.test.cjs
