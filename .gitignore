@@ -8,6 +8,8 @@
 /exports/
 /.playwright-cli/
 /bin/
+/dist/
+/output/
 /GitDeck.exe
 /check-knowledge-freshness.ps1
 *.log

@@ -4,11 +4,14 @@ const state = { repos: [], scanLocations: [], selected: null, mode: null, busy: 
 let workspaceLoadVersion=0;
 // Display-only, bounded session cache. Mutations still use the live Git endpoints.
 const workspaceSnapshots=new Map();
+try{const saved=JSON.parse(localStorage.getItem('git-deck-workspaces-v2')||'[]');for(const [key,value] of saved.slice(-6)){if(value?.data&&Array.isArray(value.data.files)&&Date.now()-value.checkedAt<7*86400000)workspaceSnapshots.set(key,value);}}catch{}
+function persistWorkspaceSnapshots(){try{const values=[...workspaceSnapshots].slice(-6);const json=JSON.stringify(values);if(json.length<3000000)localStorage.setItem('git-deck-workspaces-v2',json);else localStorage.removeItem('git-deck-workspaces-v2');}catch{}}
 let workspaceReadInFlight=null;
 function rememberWorkspace(repo,data){
   const key=repoKey(repo);workspaceSnapshots.delete(key);
   workspaceSnapshots.set(key,{data,checkedAt:Date.now()});
   while(workspaceSnapshots.size>12)workspaceSnapshots.delete(workspaceSnapshots.keys().next().value);
+  persistWorkspaceSnapshots();
 }
 function workspaceNeedsExtras(){return ['settings','tools','health'].includes(state.workspaceTab);}
 function paintWorkspace(data){
@@ -144,7 +147,10 @@ function renderWorkbenchTree(data){const content=$('tree-content');content.repla
 
 async function api(path, options = {}) {
   // Never reuse a display snapshot across a write, including failed/partial writes.
-  if(options.method&&options.method.toUpperCase()!=='GET')workspaceSnapshots.clear();
+  if(options.method&&options.method.toUpperCase()!=='GET'){
+    let action='';try{action=JSON.parse(options.body||'{}').action;}catch{}
+    if(!['ui-state-save','ui-state-clear'].includes(action)){workspaceSnapshots.clear();persistWorkspaceSnapshots();}
+  }
   const response = await fetch(path, {
     ...options,
     headers: { 'Content-Type': 'application/json', 'X-Git-Deck': '1', ...(options.headers || {}) },
@@ -556,6 +562,8 @@ function closeWorkspace(){ workspaceLoadVersion++;hideRepoSwitcher();state.works
 
 async function loadWorkspace(showReady=false,loadVersion=++workspaceLoadVersion) {
   const repo=state.workspaceRepo;if(!repo)return;
+  const startedAt=Date.now();let readStage='รอคิวอ่าน';
+  const progressTimer=setInterval(()=>{if(loadVersion===workspaceLoadVersion)$('workspace-branch').textContent=`${repo.name} · ${readStage} · ${((Date.now()-startedAt)/1000).toFixed(1)}s`;},250);
   const current=()=>loadVersion===workspaceLoadVersion&&state.workspaceRepo&&repoKey(state.workspaceRepo)===repoKey(repo);
   if(!state.workspace)showLoading('กำลังอ่าน Git workspace…',repo.name);
   else $('workspace-branch').textContent=`Current branch: ${state.workspace.branch||'detached HEAD'} · กำลังตรวจล่าสุด…`;
@@ -564,6 +572,7 @@ async function loadWorkspace(showReady=false,loadVersion=++workspaceLoadVersion)
     await new Promise(resolve=>setTimeout(resolve,80));
     while(workspaceReadInFlight){try{await workspaceReadInFlight;}catch{}if(!current())return;}
     if(!current())return;
+    readStage='อ่าน status / refs / history'+(workspaceNeedsExtras()?' / LFS / submodules':'');
     const request=api(`/api/repo/workspace?path=${encodeURIComponent(repo.path)}&extras=${workspaceNeedsExtras()}`);
     workspaceReadInFlight=request;
     let data;try{data=await request;}finally{if(workspaceReadInFlight===request)workspaceReadInFlight=null;}
@@ -571,10 +580,10 @@ async function loadWorkspace(showReady=false,loadVersion=++workspaceLoadVersion)
     const unchanged=JSON.stringify(state.workspace)===JSON.stringify(data.workspace);
     rememberWorkspace(repo,data.workspace);
     if(!unchanged)paintWorkspace(data.workspace);
-    $('workspace-branch').textContent=`Current branch: ${data.workspace.branch||'detached HEAD'} · ตรวจไฟล์ ${new Date().toLocaleTimeString()} (local)`;
+    $('workspace-branch').textContent=`Current branch: ${data.workspace.branch||'detached HEAD'} · ตรวจไฟล์ ${new Date().toLocaleTimeString()} (local) · ${((Date.now()-startedAt)/1000).toFixed(2)}s`;
     if(showReady){const sync=data.workspace.sync||{};setOutput(`Ready: ${repo.name}\nBranch: ${data.workspace.branch||'detached HEAD'}\nChanges: ${data.workspace.files.length} · Ahead: ${sync.ahead||0} · Behind: ${sync.behind||0}`,{collapse:true});}
   }catch(error){if(!current())return;if(state.workspace){$('workspace-branch').textContent+=' · อัปเดตไม่สำเร็จ (ข้อมูลเดิม)';setNotice(error.message);return;}const empty=el('div','empty workspace-empty');empty.append(el('strong','','โหลด Git workspace ไม่สำเร็จ'),el('p','',error.message));$('workspace-content').replaceChildren(empty);}
-  finally{if(loadVersion===workspaceLoadVersion){$('workspace-content').removeAttribute('aria-busy');hideLoading();}}
+  finally{clearInterval(progressTimer);if(loadVersion===workspaceLoadVersion){$('workspace-content').removeAttribute('aria-busy');hideLoading();}}
 }
 
 function renderSyncSummary(sync={}){const pull=document.querySelector('[data-git-action="pull"] small');const push=document.querySelector('[data-git-action="push"] small');pull.textContent=sync.behind?`${sync.behind} commit${sync.behind===1?'':'s'} ready to pull`:'อัปเดตแบบ fast-forward';push.textContent=sync.ahead?`${sync.ahead} commit${sync.ahead===1?'':'s'} ready to push`:'ส่ง commit ขึ้น remote';}

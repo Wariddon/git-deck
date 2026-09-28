@@ -67,7 +67,7 @@ These focused checks cover workspace request scheduling and working-diff behavio
 
 ## Known limitations
 
-- Workspace snapshots are currently in memory and do not survive a browser restart.
+- Up to six recent workspace snapshots persist in this browser for up to seven days, with a size cap. Use Help > Clear workspace cache to remove them. They may contain private repository metadata; do not share your browser profile.
 - The backend still handles HTTP requests serially; large repositories can take time to refresh.
 - Cached remote-tracking information is not proof of current remote state; Fetch explicitly when needed.
 - GitLab integration needs a separately installed and authenticated CLI in `bin/glab.exe`.
@@ -76,4 +76,14 @@ These focused checks cover workspace request scheduling and working-diff behavio
 
 Creator: Wariddon Rattanamalee. Development assistance: OpenAI Codex.
 
-No open-source license has been selected yet. Public source availability does not itself grant an open-source license; contact the owner about redistribution or licensing.
+Licensed under the MIT License; see LICENSE.
+
+## Portable release and support
+
+Run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Build-Release.ps1` to build a ZIP and SHA-256 checksum in `dist/`. Extract the whole ZIP to a writable folder before opening `GitDeck.exe`. Git for Windows is still required; the launcher is unsigned.
+
+Help includes a readiness check and a privacy-safe diagnostic report. Reports contain only allowlisted version/readiness fields, not raw error output. Nothing is uploaded automatically. First launch offers the readiness check.
+
+Push now requires a review of local tracking-ref comparisons. It does not contact the remote until you explicitly Fetch or Push. A missing remote-tracking branch does not prove the remote branch is absent.
+
+The Windows GitHub Actions workflow runs focused tests and builds a downloadable artifact. It does not publish GitHub Releases automatically. Run `node tests/release-tools.test.cjs` and `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/release-server.test.ps1` for the additional local checks.

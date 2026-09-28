@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../web/app.js'),'utf8');
 const cache=source.slice(source.indexOf('const workspaceSnapshots='),source.indexOf('let repoDetailRepo='));
 const loader=source.slice(source.indexOf('async function loadWorkspace('),source.indexOf('function renderSyncSummary('));
-const context=vm.createContext({setTimeout,Date,JSON,Map,console});
+const context=vm.createContext({setTimeout,setInterval,clearInterval,Date,JSON,Map,console});
 vm.runInContext(`
 let workspaceLoadVersion=0;
 const state={workspaceRepo:null,workspace:null,workspaceTab:'history'};

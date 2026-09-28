@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const tools=require('../web/release-tools.js');
+const values=new Map();const storage={getItem:k=>values.get(k),setItem:(k,v)=>values.set(k,v)};
+assert.equal(tools.write(storage,'test',{tab:'history'}),true);
+assert.deepEqual(tools.read(storage,'test',{}),{tab:'history'});
+storage.setItem('broken','{');assert.deepEqual(tools.read(storage,'broken',{}),{});
+const report=tools.report({gitAvailable:true,gitVersion:'git version 2.50.0.windows.1',powerShellVersion:'5.1.123.456',url:'https://secret:token@private.example',path:'C:\\private',error:'secret',user:'private'});
+assert(!/secret|token|private/.test(report));assert(JSON.parse(report).gitAvailable);
+assert.equal(JSON.parse(tools.report({gitVersion:'secret',powerShellVersion:'private'})).gitVersion,'unknown');
+console.log('PASS: persistence, malformed storage, diagnostic allowlist');

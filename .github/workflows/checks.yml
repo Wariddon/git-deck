@@ -1,0 +1,38 @@
+name: Windows checks and portable build
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript checks
+        run: |
+          node --check web/app.js
+          node --check web/release-tools.js
+          node --check web/release-ui.js
+          node tests/workspace-loading.test.cjs
+          node tests/release-tools.test.cjs
+      - name: PowerShell tests
+        shell: powershell
+        run: |
+          ./tests/working-diff.test.ps1
+          ./tests/release-server.test.ps1
+      - name: Build portable package
+        shell: powershell
+        run: ./Build-Release.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GitDeck-windows
+          path: |
+            dist/*.zip
+            dist/*.sha256
+          if-no-files-found: error

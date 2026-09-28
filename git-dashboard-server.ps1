@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([int]$Port = 8765)
+param([int]$Port = 8765,[switch]$NoBrowser)
 
 $ErrorActionPreference = 'Continue'
 [Console]::OutputEncoding = New-Object Text.UTF8Encoding($false)
@@ -330,6 +330,42 @@ function Invoke-GitPatch([string]$Path,[string]$Patch,[bool]$Cached,[bool]$Rever
         if($Cached){$args.Add('--cached')};if($Reverse){$args.Add('--reverse')};if($Reverse -and -not $Cached){$args.Add('--ignore-space-change')};$args.Add($temp)
         return Invoke-GitOrThrow $Path $args.ToArray()
     } finally { Remove-Item -LiteralPath $temp -Force -ErrorAction SilentlyContinue }
+}
+
+function Get-SetupReadiness {
+    $git=Get-Command git -ErrorAction SilentlyContinue
+    $name=$false;$email=$false;$version='unavailable'
+    if($git){
+        $version=([string](& git --version 2>$null)).Trim()
+        $name=[bool]([string](& git config --global --get user.name 2>$null)).Trim()
+        $email=[bool]([string](& git config --global --get user.email 2>$null)).Trim()
+    }
+    return @{appVersion='1.1.0';gitAvailable=[bool]$git;gitVersion=$version;powerShellVersion=$PSVersionTable.PSVersion.ToString();globalIdentityReady=($name -and $email);gitlabCliAvailable=(Test-Path -LiteralPath $script:Glab -PathType Leaf);serviceReady=$true;port=$Port}
+}
+
+function Get-PushPreview([string]$Path,[string]$Remote,[string]$Local,[string]$Target) {
+    Assert-Registered $Path
+    $remotes=@((Invoke-GitOrThrow $Path @('remote')) -split "`r?`n")
+    if($Remote -notin $remotes -or $Remote.StartsWith('-')){throw 'Invalid remote'}
+    foreach($branchName in @($Local,$Target)){
+        if(-not $branchName -or $branchName.StartsWith('-')){throw 'Invalid branch'}
+        if((Invoke-GitCapture $Path @('check-ref-format',('refs/heads/'+$branchName))).Code -ne 0){throw 'Invalid branch'}
+    }
+    $source=Invoke-GitOrThrow $Path @('rev-parse','--verify',('refs/heads/'+$Local+'^{commit}'))
+    $remoteRef='refs/remotes/'+$Remote+'/'+$Target
+    $targetResult=Invoke-GitCapture $Path @('rev-parse','--verify',($remoteRef+'^{commit}'))
+    $known=$targetResult.Code -eq 0
+    $ahead=$null;$behind=$null;$commits=@()
+    if($known){
+        $range=$targetResult.Output.Trim()+'...'+$source.Trim()
+        $counts=(Invoke-GitOrThrow $Path @('rev-list','--left-right','--count',$range)).Trim() -split '\s+'
+        $behind=[int]$counts[0];$ahead=[int]$counts[1]
+        $commits=@((Invoke-GitOrThrow $Path @('log','-15','--format=%h %s',($targetResult.Output.Trim()+'..'+$source.Trim()))) -split "`r?`n" | Where-Object {$_})
+    }
+    $fetchPath=(Invoke-GitOrThrow $Path @('rev-parse','--git-path','FETCH_HEAD')).Trim()
+    if(-not [IO.Path]::IsPathRooted($fetchPath)){$fetchPath=Join-Path $Path $fetchPath}
+    $fetchedAt=$null;if(Test-Path -LiteralPath $fetchPath){$fetchedAt=(Get-Item -LiteralPath $fetchPath).LastWriteTimeUtc.ToString('o')}
+    return @{local=$Local;target=$Target;remote=$Remote;knownTarget=$known;ahead=$ahead;behind=$behind;commits=$commits;lastFetchAt=$fetchedAt;note='Local tracking refs only; FETCH_HEAD may belong to another remote. Fetch the selected remote to verify current remote state.'}
 }
 
 function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
@@ -1482,13 +1518,13 @@ $listener = New-Object Net.HttpListener
 $listener.Prefixes.Add($script:BaseUrl)
 try { $listener.Start() }
 catch {
-    try { Invoke-WebRequest -Uri ($script:BaseUrl+'api/health') -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop | Out-Null; Start-Process $script:BaseUrl; exit 0 }
+    try { Invoke-WebRequest -Uri ($script:BaseUrl+'api/health') -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop | Out-Null; if(-not $NoBrowser){Start-Process $script:BaseUrl}; exit 0 }
     catch { Write-Host "[ERROR] Cannot start Git Deck on $($script:BaseUrl)" -ForegroundColor Red; Write-Host $_.Exception.Message; exit 1 }
 }
 
 Write-Host "Git Deck is running at $($script:BaseUrl)" -ForegroundColor Green
 Write-Host 'Close this window or press Ctrl+C to stop it.' -ForegroundColor DarkGray
-Start-Process $script:BaseUrl
+if(-not $NoBrowser){Start-Process $script:BaseUrl}
 
 try {
     while ($script:Running -and $listener.IsListening) {
@@ -1501,6 +1537,8 @@ try {
                 switch ($route) {
                     '/' { Write-StaticFile $context 'index.html' 'text/html; charset=utf-8' }
                     '/app.js' { Write-StaticFile $context 'app.js' 'text/javascript; charset=utf-8' }
+                    '/release-tools.js' { Write-StaticFile $context 'release-tools.js' 'text/javascript; charset=utf-8' }
+                    '/release-ui.js' { Write-StaticFile $context 'release-ui.js' 'text/javascript; charset=utf-8' }
                     '/styles.css' { Write-StaticFile $context 'styles.css' 'text/css; charset=utf-8' }
                     '/scan.css' { Write-StaticFile $context 'scan.css' 'text/css; charset=utf-8' }
                     '/gitlab.css' { Write-StaticFile $context 'gitlab.css' 'text/css; charset=utf-8' }
@@ -1508,6 +1546,8 @@ try {
                     '/workspace.css' { Write-StaticFile $context 'workspace.css' 'text/css; charset=utf-8' }
                     '/favicon.svg' { Write-StaticFile $context 'favicon.svg' 'image/svg+xml' }
                     '/api/health' { Write-Json $context @{status='ok'} }
+                    '/api/readiness' { Write-Json $context (Get-SetupReadiness) }
+                    '/api/repo/push-preview' { Write-Json $context (Get-PushPreview $request.QueryString['path'] $request.QueryString['remote'] $request.QueryString['local'] $request.QueryString['target']) }
                     '/api/ui-state' { $ui=[ordered]@{schemaVersion=2;path='';tab='history';openRepos=@()};if(Test-Path -LiteralPath $script:UiState -PathType Leaf){try{$saved=Get-Content -LiteralPath $script:UiState -Raw|ConvertFrom-Json;$savedPath=if($saved.path){[string]$saved.path}else{''};$savedTab=if($saved.tab){[string]$saved.tab}else{'history'};[string[]]$savedOpenRepos=if($null-ne $saved.openRepos){@($saved.openRepos|ForEach-Object{[string]$_})}elseif($savedPath){@($savedPath)}else{@()};$savedSchemaVersion=if($saved.schemaVersion){[int]$saved.schemaVersion}else{1};$ui=[ordered]@{schemaVersion=$savedSchemaVersion;path=$savedPath;tab=$savedTab;openRepos=$savedOpenRepos}}catch{}};Write-Json $context @{view=$ui} }
                     '/api/jobs' { Write-Json $context @{jobs=@(Get-GitJobs)} }
                     '/api/integration' { Write-Json $context @{integration=(Get-WindowsIntegrationState)} }

@@ -1,4 +1,13 @@
 .workspace-open { overflow: hidden; }
+.release-dialog { max-width:680px; width:90vw; max-height:85vh; overflow:auto; padding:18px; border:1px solid var(--line); border-radius:10px; color:var(--ink); background:var(--paper); font:13px/1.6 system-ui,sans-serif; box-shadow:0 18px 64px #0004; }
+.release-dialog::backdrop { background:#0005; }
+.release-dialog h2 { font-size:18px; margin:0 0 12px; }
+.release-dialog h3 { font-size:14px; margin:14px 0 6px; overflow-wrap:anywhere; }
+.release-dialog p { margin:8px 0; }
+.release-dialog button { font:inherit; padding:6px 12px; border:1px solid var(--line); border-radius:6px; background:var(--paper); color:var(--ink); cursor:pointer; }
+.release-dialog button.primary { background:var(--green); color:white; }
+.release-dialog button:disabled { opacity:.5; cursor:not-allowed; }
+.release-dialog button:focus-visible { outline:2px solid var(--green); outline-offset:2px; }
 .inline-workspace {
   position: fixed;
   inset: 0 0 0 64px;
