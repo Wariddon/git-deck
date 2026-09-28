@@ -8,3 +8,12 @@ const report=tools.report({gitAvailable:true,gitVersion:'git version 2.50.0.wind
 assert(!/secret|token|private/.test(report));assert(JSON.parse(report).gitAvailable);
 assert.equal(JSON.parse(tools.report({gitVersion:'secret',powerShellVersion:'private'})).gitVersion,'unknown');
 console.log('PASS: persistence, malformed storage, diagnostic allowlist');
+const fs=require('node:fs');
+const ui=fs.readFileSync(require('node:path').join(__dirname,'../web/release-ui.js'),'utf8');
+const push=ui.slice(ui.indexOf("$('push-form').addEventListener('submit'"),ui.indexOf('const readinessTimer'));
+assert(push.includes('inlinePushReview()'));
+assert(!push.includes('releaseDialog('));
+assert(push.includes('version!==pushReviewVersion'));
+assert(push.includes("confirm.type='button'"));
+assert(push.includes('signature!==pushSignature()'));
+console.log('PASS: inline push review, stale-review guard, explicit confirmation control');
