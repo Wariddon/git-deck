@@ -699,3 +699,42 @@ html.ui-modern body .stash-layout .workspace-row { grid-template-columns: minmax
 html.ui-modern body .stash-layout .stash-label { display: grid; min-width: 0; text-align: left; border: 0 !important; background: transparent !important; }
 html.ui-modern body .stash-layout .stash-label > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html.ui-modern body .stash-layout .stash-label small { color: var(--text-tertiary); font-weight: 400; }
+
+/* ---- Compare: dashboard numbers (first line of each stat) ------------------------------------------ */
+html.ui-modern body .compare-summary { gap: 8px !important; margin: 0 12px 8px !important; }
+html.ui-modern body .compare-stat {
+  padding: 10px 14px !important; border: 1px solid var(--border-default) !important; border-radius: 10px !important;
+  background: var(--surface) !important; color: var(--text-secondary) !important; line-height: 1.35; box-shadow: none !important;
+}
+html.ui-modern body .compare-stat::first-line { color: var(--text-primary); font-size: 1.6em; font-weight: 600; letter-spacing: -.01em; }
+html.ui-modern body .compare-stat.good { border-color: color-mix(in srgb, var(--success, #1a7f37) 35%, var(--border-default)) !important; background: color-mix(in srgb, var(--success, #1a7f37) 6%, var(--surface)) !important; }
+html.ui-modern body .compare-stat.good::first-line { color: var(--success, #1a7f37); }
+html.ui-modern body .readiness-list { gap: 8px !important; margin: 0 12px 8px !important; }
+html.ui-modern body .readiness-row { border: 1px solid var(--border-default) !important; border-radius: 10px !important; background: var(--surface) !important; box-shadow: none !important; }
+html.ui-modern body .readiness-row.block { border-color: color-mix(in srgb, var(--danger, #cf222e) 40%, var(--border-default)) !important; background: color-mix(in srgb, var(--danger, #cf222e) 5%, var(--surface)) !important; }
+html.ui-modern body .readiness-row.warn { border-color: color-mix(in srgb, var(--warning, #9a6700) 40%, var(--border-default)) !important; }
+html.ui-modern body .compare-lower { gap: 8px !important; margin: 0 12px !important; }
+html.ui-modern body :is(.compare-card, .compare-diff) { border: 1px solid var(--border-default) !important; border-radius: 10px !important; background: var(--surface) !important; box-shadow: none !important; overflow: hidden; }
+html.ui-modern body .compare-card > h4 { margin: 0; padding: 8px 12px !important; border: 0 !important; border-bottom: 1px solid var(--border-default) !important; background: var(--surface-subtle) !important; font-size: .95em; }
+
+/* ---- Recovery: reflog rows read hash · message, then where/when ---------------------------------------- */
+html.ui-modern body .recovery-info { display: grid !important; grid-template-columns: auto minmax(0, 1fr) !important; column-gap: 12px; row-gap: 1px; min-width: 0; text-align: left; border: 0 !important; background: transparent !important; }
+html.ui-modern body .recovery-info > code { grid-row: 1 / span 2; align-self: center; color: var(--text-tertiary); font-family: var(--modern-mono); }
+html.ui-modern body .recovery-info > strong { overflow: hidden; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+html.ui-modern body .recovery-info > small { grid-column: 2; overflow: hidden; color: var(--text-tertiary) !important; text-overflow: ellipsis; white-space: nowrap; }
+html.ui-modern body #workspace-content > .compact-heading { margin: 16px 12px 6px !important; padding: 0 !important; border: 0 !important; background: transparent !important; }
+html.ui-modern body #workspace-content > .compact-heading h3 { font-size: 1.1em; }
+html.ui-modern body #workspace-content > .compact-heading p { margin: 2px 0 0; color: var(--text-secondary); }
+html.ui-modern body #workspace-content > :is(.recovery-list, .journal-box) { margin-left: 12px !important; margin-right: 12px !important; }
+html.ui-modern body .recovery-note { display: flex !important; gap: 10px; padding: 10px 14px !important; }
+html.ui-modern body .recovery-note > strong { flex: none; }
+
+/* ---- Settings ------------------------------------------------------------------------------------------ */
+html.ui-modern body #workspace-content input[type="color"] { width: 36px; height: 32px; padding: 2px; border: 1px solid var(--border-default); border-radius: 6px; background: var(--surface); cursor: pointer; }
+html.ui-modern body .settings-card :is(button, h4) { white-space: nowrap; }
+html.ui-modern body .settings-card h4 { margin: 0 0 4px; font-size: 1.05em; }
+html.ui-modern body .settings-card p { color: var(--text-secondary); }
+
+/* ---- Loading states: a spinner instead of an empty-state picture ---------------------------------------- */
+html.ui-modern body .modern-spinner { width: 28px; height: 28px; border: 3px solid var(--surface-muted); border-top-color: var(--green); border-radius: 50%; animation: modern-spin .8s linear infinite; }
+@keyframes modern-spin { to { transform: rotate(360deg); } }

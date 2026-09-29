@@ -378,7 +378,9 @@
       const box=baseEmpty(title,description);
       if(!isModern())return box;
       const name=(emptyIcons.find(([pattern])=>pattern.test(String(title)))||[,'inbox'])[1];
-      const art=el('span','modern-empty-icon modern-made');art.append(icon(name,28));box.prepend(art);
+      const art=el('span','modern-empty-icon modern-made');
+      // "Loading …" is progress, not an empty result: show a spinner.
+      art.append(/^Loading\b/.test(String(title))?el('span','modern-spinner'):icon(name,28));box.prepend(art);
       const action=emptyActions[title];
       if(action&&!(title==='No remotes'&&state.workspaceTab==='remotes')){const button=el('button','modern-empty-action modern-made',action[0]());button.type='button';button.addEventListener('click',action[1]);box.append(button);}
       return box;

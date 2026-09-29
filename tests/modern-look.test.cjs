@@ -114,6 +114,8 @@ assert.equal(modern.sentenceCase('เครื่องมือ'), 'เคร�
 assert.doesNotMatch(modernCss, /html\.ui-modern body \.sync-actions :is\(button, summary\)/);
 // Stash page columns fill the width (legacy .42fr/.58fr left a gap).
 assert.match(modernCss, /\.stash-layout \{ grid-template-columns: minmax\(280px, 2fr\) minmax\(0, 3fr\) !important;/);
+// "Loading …" empty states show a spinner, not an empty-result picture.
+assert.match(modernJs, /\/\^Loading\\b\/\.test\(String\(title\)\)\?el\('span','modern-spinner'\)/);
 // The rail's first item shows or hides the repository list.
 assert.match(modernJs, /railButton\(\['repos','folder',\(\)=>t\('Repos'\)\]\)/);
 // Rail items carry a visible label, not only an icon.
