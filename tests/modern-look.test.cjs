@@ -116,6 +116,12 @@ assert.doesNotMatch(modernCss, /html\.ui-modern body \.sync-actions :is\(button,
 assert.match(modernCss, /\.stash-layout \{ grid-template-columns: minmax\(280px, 2fr\) minmax\(0, 3fr\) !important;/);
 // "Loading …" empty states show a spinner, not an empty-result picture.
 assert.match(modernJs, /\/\^Loading\\b\/\.test\(String\(title\)\)\?el\('span','modern-spinner'\)/);
+// Layers: header menus above sticky page bars, but the repository drawer and switcher above the header.
+const zOf = (pattern) => Number((modernCss.match(pattern) || [])[1]);
+const headerZ = zOf(/\.workspace-modal-head \{ position: relative; z-index: (\d+); \}/);
+assert(headerZ > 4, 'header menus sit above sticky page toolbars (z-index up to 4)');
+assert(zOf(/\.repo-switcher \{ z-index: (\d+) !important; \}/) > headerZ, 'Ctrl+P switcher above the header');
+assert(zOf(/modern-library-drawer:not\(\.library-collapsed\) \.repos \{[^}]*z-index: (\d+)/) > headerZ, 'repository drawer above the header');
 // The rail's first item shows or hides the repository list.
 assert.match(modernJs, /railButton\(\['repos','folder',\(\)=>t\('Repos'\)\]\)/);
 // Rail items carry a visible label, not only an icon.

@@ -482,7 +482,7 @@ html.ui-modern body .modern-changes-column > .commit-composer > * { align-self: 
 html.ui-modern body.workbench-mode.modern-library-drawer .grid { grid-template-columns: minmax(0, 1fr) !important; }
 html.ui-modern body.workbench-mode.modern-library-drawer .pane-resizer { display: none !important; }
 html.ui-modern body.workbench-mode.modern-library-drawer:not(.library-collapsed) .repos {
-  position: fixed !important; inset: 0 auto 0 0 !important; z-index: 40; display: flex !important; width: min(360px, 100vw) !important;
+  position: fixed !important; inset: 0 auto 0 0 !important; z-index: 60 !important; display: flex !important; width: min(360px, 100vw) !important;
   height: 100vh !important; max-height: 100vh !important; border-right: 1px solid var(--border-default) !important;
   box-shadow: 16px 0 48px rgb(0 0 0 / 16%) !important; animation: modern-drawer .18s var(--modern-ease);
 }
@@ -626,7 +626,7 @@ html.ui-modern body .modern-tools-panel .workbench-layout-controls > select { fl
 html.ui-modern body .modern-tools-panel .workbench-layout-controls > button { flex: 0 0 auto; width: auto !important; }
 html.ui-modern body .modern-tools-panel .create-mr-button { color: var(--text-primary) !important; }
 /* Menus opened from the header must sit above sticky view toolbars below it. */
-html.ui-modern body .workspace-modal-head { position: relative; z-index: 50; }
+html.ui-modern body .workspace-modal-head { position: relative; z-index: 10; }
 html.ui-modern body .modern-tools-panel .workspace-header-actions { justify-content: flex-start !important; }
 html.ui-modern body .modern-tools-panel :is(#view-back, #view-forward, [data-workspace-quick="favorite"]) { order: -1; }
 html.ui-modern body .modern-tools-panel [data-workspace-quick="favorite"] { margin-left: auto !important; }
@@ -738,3 +738,8 @@ html.ui-modern body .settings-card p { color: var(--text-secondary); }
 /* ---- Loading states: a spinner instead of an empty-state picture ---------------------------------------- */
 html.ui-modern body .modern-spinner { width: 28px; height: 28px; border: 3px solid var(--surface-muted); border-top-color: var(--green); border-radius: 50%; animation: modern-spin .8s linear infinite; }
 @keyframes modern-spin { to { transform: rotate(360deg); } }
+/* Layers: page content (sticky bars <= 4) < header and its menus (10) < repo switcher and repository drawer (60). */
+html.ui-modern body .repo-switcher { z-index: 60 !important; }
+html.ui-modern body.workbench-mode:not(.library-collapsed) .repos { z-index: 60; }
+html.ui-modern body #quick-filters { display: flex !important; flex-wrap: wrap; gap: 4px; }
+html.ui-modern body #quick-filters button { flex: none; white-space: nowrap; padding: 0 10px !important; }
