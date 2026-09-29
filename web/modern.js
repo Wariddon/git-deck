@@ -160,7 +160,9 @@
       syncButton.dataset.kind=sync.kind;syncButton.title=sync.caption;setBlock(syncButton,sync.icon,sync.label,sync.caption);
       syncButton.querySelector('.modern-tb-badge')?.remove();if(sync.badge)syncButton.append(el('b','modern-tb-badge',sync.badge));
     }
-    const action=repo?primaryAction(data):null;const local=action&&localKinds.includes(action.kind);primary.hidden=!local;
+    const action=repo?primaryAction(data):null;const local=action&&localKinds.includes(action.kind);
+    // 'Review changes' only makes sense away from the Changes view.
+    primary.hidden=!local||(action.kind==='review'&&state.workspaceTab==='changes');
     if(local){primary.dataset.kind=action.kind;primary.title=action.title;primary.replaceChildren(icon(action.icon),el('span','',action.label));}
   }
 
@@ -329,7 +331,7 @@
   }
   if(typeof selectWorkspaceTab==='function'){
     const baseSelect=selectWorkspaceTab;
-    selectWorkspaceTab=function(...args){const result=baseSelect.apply(this,args);try{if(isModern())renderRail();}catch{}return result;};
+    selectWorkspaceTab=function(...args){const result=baseSelect.apply(this,args);try{if(isModern()){renderRail();renderHeader();}}catch{}return result;};
   }
   const content=$id('workspace-content');let pending=false;
   // setTimeout, not requestAnimationFrame: rAF is paused while the window is hidden.
