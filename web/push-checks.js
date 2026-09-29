@@ -10,7 +10,7 @@
     const current=++version;const node=box();const repo=state.workspaceRepo;const remote=document.getElementById('push-remote')?.value;const force=Boolean(document.getElementById('push-force')?.checked);const items=selected();
     blockers=[];
     if(!repo||!remote||!items.length){node.replaceChildren();node.hidden=true;return;}
-    node.hidden=false;node.replaceChildren(el('span','push-checks-title','Pre-push checks'),el('p','push-checks-loading','Checking for secrets, large files and protected branches…'));
+    node.hidden=false;node.replaceChildren(el('span','push-checks-title',t('Pre-push checks')),el('p','push-checks-loading',t('Checking for secrets, large files and protected branches…')));
     const rows=[];
     for(const item of items){
       try{
@@ -23,20 +23,20 @@
     const list=el('div','push-checks-list');
     rows.forEach(({item,result,error})=>{
       const group=el('div','push-checks-group');group.append(el('strong','',items.length>1?`${item.local} → ${item.target}`:''));
-      if(error){group.append(checkRow({level:'warn',label:'Checks unavailable',detail:error}));}
+      if(error){group.append(checkRow({level:'warn',label:t('Checks unavailable'),detail:error}));}
       else{
         result.checks.forEach(check=>group.append(checkRow(check)));
-        if(result.findings.length){const details=el('details','push-findings');details.append(el('summary','',`${result.findings.length} finding(s)`));result.findings.slice(0,20).forEach(finding=>details.append(el('code','',`${finding.commit} ${finding.file}: ${finding.preview}`)));group.append(details);}
+        if(result.findings.length){const details=el('details','push-findings');details.append(el('summary','',t('{count} finding(s)',{count:result.findings.length})));result.findings.slice(0,20).forEach(finding=>details.append(el('code','',`${finding.commit} ${finding.file}: ${finding.preview}`)));group.append(details);}
       }
       list.append(group);
     });
-    node.replaceChildren(el('span','push-checks-title',blockers.length?'Pre-push checks · blocked':'Pre-push checks'),list);
+    node.replaceChildren(el('span','push-checks-title',t(blockers.length?'Pre-push checks · blocked':'Pre-push checks')),list);
   }
   function checkRow(check){const row=el('div',`readiness-row ${check.level}`);row.append(el('b','',check.level==='ok'?'✓':check.level==='block'?'!':'•'),el('span','',check.label),el('small','',check.detail));return row;}
   const base=updatePushDialog;
   updatePushDialog=function(...args){const result=base(...args);clearTimeout(timer);timer=setTimeout(runChecks,350);return result;};
   document.getElementById('push-form')?.addEventListener('submit',(event)=>{
     if(!blockers.length)return;
-    if(!confirm(`Pre-push checks found blocking issues:\n\n${blockers.join('\n')}\n\nPush anyway?`)){event.preventDefault();event.stopImmediatePropagation();}
+    if(!confirm(t('Pre-push checks found blocking issues:\n\n{issues}\n\nPush anyway?',{issues:blockers.join('\n')}))){event.preventDefault();event.stopImmediatePropagation();}
   },true);
 })();

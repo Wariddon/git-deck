@@ -12,7 +12,11 @@ function issueKeyFromBranch(branch=''){
 }
 function applyCommitType(message,type){const rest=message.replace(conventionalPrefix,'');return type?`${type}: ${rest}`:rest;}
 function insertIssueKey(message,key){if(!key||message.includes(key))return message;const match=message.match(conventionalPrefix);if(match)return `${match[0]}${key} ${message.slice(match[0].length)}`;return `${key} ${message}`;}
-function commitMessageWarnings(message){const lines=String(message).split(/\r?\n/);const warnings=[];if(lines[0].length>72)warnings.push(`Subject is ${lines[0].length} characters; keep it at 72 or fewer.`);if(lines.length>1&&lines[1].trim())warnings.push('Leave the second line blank between subject and body.');if(/\.\s*$/.test(lines[0]))warnings.push('Subjects usually do not end with a period.');return warnings;}
+function commitMessageWarnings(message){
+  // Node tests load this file without web/i18n.js.
+  const t=typeof globalThis.t==='function'?globalThis.t:(text,vars={})=>text.replace(/\{(\w+)\}/g,(match,key)=>key in vars?vars[key]:match);
+  const lines=String(message).split(/\r?\n/);const warnings=[];if(lines[0].length>72)warnings.push(t('Subject is {length} characters; keep it at 72 or fewer.',{length:lines[0].length}));if(lines.length>1&&lines[1].trim())warnings.push(t('Leave the second line blank between subject and body.'));if(/\.\s*$/.test(lines[0]))warnings.push(t('Subjects usually do not end with a period.'));return warnings;
+}
 
 if(typeof module!=='undefined')module.exports={issueKeyFromBranch,applyCommitType,insertIssueKey,commitMessageWarnings};
 
@@ -26,14 +30,14 @@ if(typeof window!=='undefined'&&typeof renderChangesView==='function'){
   function enhanceCommitComposer(content,data){
     const form=content.querySelector('.commit-composer');const message=form?.querySelector('textarea');if(!message)return;
     const bar=el('div','commit-assist');
-    const type=document.createElement('select');type.setAttribute('aria-label','Conventional commit type');type.append(new Option('Type…',''),...commitTypes.map(item=>new Option(item,item)));
+    const type=document.createElement('select');type.setAttribute('aria-label',t('Conventional commit type'));type.append(new Option(t('Type…'),''),...commitTypes.map(item=>new Option(item,item)));
     const current=message.value.match(conventionalPrefix);if(current)type.value=current[1];
     const changed=()=>message.dispatchEvent(new Event('input',{bubbles:true}));
     type.addEventListener('change',()=>{message.value=applyCommitType(message.value,type.value);changed();message.focus();});
     bar.append(type);
     const key=issueKeyFromBranch(data.branch||'');
-    if(key){const issue=el('button','',`+ ${key}`);issue.type='button';issue.title=`Insert ${key} from branch ${data.branch}`;issue.addEventListener('click',()=>{message.value=insertIssueKey(message.value,key);changed();message.focus();});bar.append(issue);}
-    const ai=el('button','commit-ai','✨ Suggest');ai.type='button';ai.title='Draft a commit message from the staged diff';ai.disabled=!data.files.some(file=>file.staged);
+    if(key){const issue=el('button','',`+ ${key}`);issue.type='button';issue.title=t('Insert {key} from branch {branch}',{key,branch:data.branch});issue.addEventListener('click',()=>{message.value=insertIssueKey(message.value,key);changed();message.focus();});bar.append(issue);}
+    const ai=el('button','commit-ai',t('✨ Suggest'));ai.type='button';ai.title=t('Draft a commit message from the staged diff');ai.disabled=!data.files.some(file=>file.staged);
     ai.addEventListener('click',()=>suggestCommitMessage(message,type,ai,changed));
     bar.append(ai);
     const meter=el('small','commit-meter');
@@ -45,13 +49,13 @@ if(typeof window!=='undefined'&&typeof renderChangesView==='function'){
   }
   async function suggestCommitMessage(message,type,button,changed){
     let status;try{status=(await api('/api/ai/status')).ai;}catch(error){setNotice(error.message);return;}
-    if(!status.ready){setNotice(status.hint||'AI provider is not configured.');setOutput(status.hint||'AI provider is not configured.',{expand:true});return;}
-    if(!aiConsent){const where=status.provider==='ollama'?`Ollama (${status.model}) on this computer`:`Anthropic (${status.model})`;if(!confirm(`Send the staged diff to ${where} to draft a commit message?\n\nGit Deck will not send it if it finds anything that looks like a secret or token.`))return;aiConsent=true;}
-    const label=button.textContent;button.disabled=true;button.textContent='Drafting…';
+    if(!status.ready){setNotice(status.hint||t('AI provider is not configured.'));setOutput(status.hint||t('AI provider is not configured.'),{expand:true});return;}
+    if(!aiConsent){const where=status.provider==='ollama'?t('Ollama ({model}) on this computer',{model:status.model}):`Anthropic (${status.model})`;if(!confirm(t('Send the staged diff to {where} to draft a commit message?\n\nGit Deck will not send it if it finds anything that looks like a secret or token.',{where})))return;aiConsent=true;}
+    const label=button.textContent;button.disabled=true;button.textContent=t('Drafting…');
     try{
       const result=await api('/api/action',{method:'POST',body:JSON.stringify({action:'ai-commit-message',path:state.workspaceRepo.path,style:(type.value||conventionalPrefix.test(message.value))?'conventional':'plain'})});
       if(message.isConnected){message.value=result.message;changed();message.focus();const match=result.message.match(conventionalPrefix);type.value=match?match[1]:'';}
-      setNotice(result.note||'Draft ready — review it before committing.');
+      setNotice(result.note||t('Draft ready — review it before committing.'));
     }catch(error){setNotice(error.message);setOutput(error.message,{expand:true,status:'error'});}
     finally{button.disabled=false;button.textContent=label;}
   }

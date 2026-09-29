@@ -7,23 +7,23 @@ function undoButton(){
   let button=document.getElementById('undo-last');
   if(button)return button;
   const push=document.querySelector('.sync-actions [data-git-action="push"]');if(!push)return null;
-  button=el('button','undo-last hidden');button.id='undo-last';button.type='button';button.append(el('strong','','↶ Undo'),el('small','',''));
+  button=el('button','undo-last hidden');button.id='undo-last';button.type='button';button.append(el('strong','',t('↶ Undo')),el('small','',''));
   button.addEventListener('click',undoLastAction);push.after(button);return button;
 }
-function describeUndo(info){const what=info.action==='commit'?`commit “${info.subject||''}”`:`${info.action}${info.subject?` (${info.subject})`:''}`;return info.mode==='soft'?`Undo ${what}? Changes go back to staged.`:`Undo ${what}? HEAD returns to ${String(info.beforeHead||'').slice(0,8)}${info.beforeBranch?` on ${info.beforeBranch}`:''}.`;}
+function describeUndo(info){const what=info.action==='commit'?t('commit “{subject}”',{subject:info.subject||''}):`${info.action}${info.subject?` (${info.subject})`:''}`;const head=String(info.beforeHead||'').slice(0,8);return info.mode==='soft'?t('Undo {what}? Changes go back to staged.',{what}):info.beforeBranch?t('Undo {what}? HEAD returns to {head} on {branch}.',{what,head,branch:info.beforeBranch}):t('Undo {what}? HEAD returns to {head}.',{what,head});}
 async function refreshUndoState(){
   const repo=state.workspaceRepo;const version=++undoVersion;const button=undoButton();if(!button)return;
   if(!repo){button.classList.add('hidden');undoState={available:false};return;}
   try{const result=await api(`/api/repo/undo-preview?path=${encodeURIComponent(repo.path)}`);if(version!==undoVersion)return;undoState=result.undo||{available:false};}
   catch{if(version!==undoVersion)return;undoState={available:false};}
   button.classList.toggle('hidden',!undoState.available);
-  if(undoState.available){button.title=describeUndo(undoState);button.querySelector('small').textContent=undoState.action==='commit'?'Last commit':`Last ${undoState.action}`;}
+  if(undoState.available){button.title=describeUndo(undoState);button.querySelector('small').textContent=undoState.action==='commit'?t('Last commit'):t('Last {action}',{action:undoState.action});}
 }
 async function undoLastAction(){if(!undoState.available||state.busy)return;await runWorkspaceAction('undo-last',{id:undoState.id},describeUndo(undoState));void refreshUndoState();}
 if(typeof paintWorkspace==='function'){const baseUndoPaint=paintWorkspace;paintWorkspace=function(...args){const result=baseUndoPaint(...args);void refreshUndoState();return result;};}
 
 // ---- Keyboard shortcuts -----------------------------------------------------
-const extraShortcuts=[['Next / previous item','J / K'],['Stage / unstage selected file','S / U'],['Focus commit message','C'],['Search in current view','/'],['Refresh workspace','R'],['Fetch','F'],['Push branches…','Shift P'],['Undo last action','Ctrl Z'],['Show shortcuts','?']];
+const extraShortcuts=[[t('Next / previous item'),'J / K'],[t('Stage / unstage selected file'),'S / U'],[t('Focus commit message'),'C'],[t('Search in current view'),'/'],[t('Refresh workspace'),'R'],[t('Fetch'),'F'],[t('Push branches…'),'Shift P'],[t('Undo last action'),'Ctrl Z'],[t('Show shortcuts'),'?']];
 function isTypingTarget(target){return Boolean(target&&(target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(target.tagName)));}
 function dialogOpen(){return [...document.querySelectorAll('.backdrop')].some(node=>!node.classList.contains('hidden'))||!document.getElementById('command-palette')?.classList.contains('hidden');}
 function moveSelection(delta){
@@ -63,9 +63,9 @@ if(typeof commandPaletteEntries==='function'){
   const basePalette=commandPaletteEntries;
   commandPaletteEntries=function(){
     const extra=[
-      {label:'Undo last action',group:'Safety',shortcut:'Ctrl+Z',run:()=>undoState.available?undoLastAction():setNotice('Nothing to undo right after the last recorded action.')},
-      {label:'GitHub pull requests & runs',group:'GitHub',shortcut:'',run:()=>selectWorkspaceTab('github')},
-      {label:'Keyboard shortcuts',group:'Help',shortcut:'?',run:()=>showAboutDialog('shortcuts')}
+      {label:t('Undo last action'),group:'Safety',shortcut:'Ctrl+Z',run:()=>undoState.available?undoLastAction():setNotice(t('Nothing to undo right after the last recorded action.'))},
+      {label:t('GitHub pull requests & runs'),group:'GitHub',shortcut:'',run:()=>selectWorkspaceTab('github')},
+      {label:t('Keyboard shortcuts'),group:'Help',shortcut:'?',run:()=>showAboutDialog('shortcuts')}
     ].map(item=>({...item,search:`${item.label} ${item.group}`}));
     const entries=basePalette();const firstRepo=entries.findIndex(item=>item.group==='Switch repository');
     if(firstRepo<0)return entries.concat(extra);

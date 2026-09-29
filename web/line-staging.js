@@ -48,13 +48,13 @@ function enhanceLineStaging(pane,diff,staged,file){
     const controls=section.querySelector('.patch-hunk-actions');
     const makeButton=(label,className,mode,reverse,confirmText)=>{const button=el('button',`line-stage-button ${className}`.trim(),label);button.type='button';button.hidden=true;button.addEventListener('click',()=>{const patch=buildLinePatch(parsed.header,hunk,selected,reverse);if(!patch)return;runWorkspaceAction('apply-patch',{mode,patch},confirmText(selected.size));});return button;};
     const stageLines=staged
-      ?makeButton('Unstage lines','', 'unstage',true,(count)=>`Unstage ${count} selected line(s) in ${file.path}?`)
-      :makeButton('Stage lines','primary','stage',false,(count)=>`Stage ${count} selected line(s) in ${file.path}?`);
-    const discardLines=!staged&&file.status!=='??'?makeButton('Discard lines','danger','discard',true,(count)=>`Discard changes to ${count} selected line(s) in ${file.path}?\nThis cannot be undone.`):null;
-    const clear=el('button','line-stage-clear','Clear');clear.type='button';clear.hidden=true;
-    const hint=el('small','line-stage-hint','Click +/− lines to select only some lines');
+      ?makeButton(t('Unstage lines'),'', 'unstage',true,(count)=>t('Unstage {count} selected line(s) in {file}?',{count,file:file.path}))
+      :makeButton(t('Stage lines'),'primary','stage',false,(count)=>t('Stage {count} selected line(s) in {file}?',{count,file:file.path}));
+    const discardLines=!staged&&file.status!=='??'?makeButton(t('Discard lines'),'danger','discard',true,(count)=>t('Discard changes to {count} selected line(s) in {file}?\nThis cannot be undone.',{count,file:file.path})):null;
+    const clear=el('button','line-stage-clear',t('Clear'));clear.type='button';clear.hidden=true;
+    const hint=el('small','line-stage-hint',t('Click +/− lines to select only some lines'));
     controls?.append(hint,stageLines,...(discardLines?[discardLines]:[]),clear);
-    const update=()=>{const any=selected.size>0;[stageLines,discardLines,clear].forEach(button=>{if(button)button.hidden=!any;});hint.hidden=any;if(any)stageLines.textContent=`${staged?'Unstage':'Stage'} ${selected.size} line${selected.size===1?'':'s'}`;};
+    const update=()=>{const any=selected.size>0;[stageLines,discardLines,clear].forEach(button=>{if(button)button.hidden=!any;});hint.hidden=any;if(any)stageLines.textContent=selected.size===1?t(staged?'Unstage 1 line':'Stage 1 line'):t(staged?'Unstage {count} lines':'Stage {count} lines',{count:selected.size});};
     clear.addEventListener('click',()=>{selected.clear();section.querySelectorAll('.line-selected').forEach(row=>row.classList.remove('line-selected'));update();});
     let anchor=null;
     selectableLineIndexes(hunk).forEach((index)=>{

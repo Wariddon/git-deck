@@ -9,7 +9,7 @@ const source = fs.readFileSync(path.join(__dirname, '../web/pull-assist.js'), 'u
 function setup(preview, result) {
   const calls = [], feedback = [], tabs = [];
   const context = {
-    URLSearchParams, state: { busy: false, workspaceRepo: { name: 'demo', path: 'C:/demo' } },
+    URLSearchParams, t: (text, vars = {}) => text.replace(/\{(\w+)\}/g, (m, k) => k in vars ? String(vars[k]) : m), state: { busy: false, workspaceRepo: { name: 'demo', path: 'C:/demo' } },
     api: async (url) => { calls.push(['api', url]); if (preview instanceof Error) throw preview; return { pull: preview }; },
     runWorkspaceAction: async (action, payload, confirmation) => { calls.push(['run', action, payload, confirmation]); return result; },
     gitCommandPreview: (action, payload) => action === 'pull-ref' ? `git pull --rebase "${payload.remote}" "${payload.branch}"` : 'git pull --ff-only',

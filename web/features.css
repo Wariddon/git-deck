@@ -58,3 +58,10 @@
 .github-pr-form select,
 .github-pr-form textarea { font: inherit; font-size: 13px; }
 .github-field span { font-size: 12px; font-weight: 700; }
+
+/* Language picker (web/i18n.js) inside the theme menu */
+.language-choice { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+.language-choice strong { width: 100%; padding: 3px 5px 3px; color: var(--muted); font-size: 8px; letter-spacing: .11em; text-transform: uppercase; }
+.language-choice button { flex: 1; min-height: 28px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.language-choice button:hover { background: color-mix(in srgb, var(--green) 10%, transparent); }
+.language-choice button[aria-pressed="true"] { border-color: var(--green); color: var(--green); }
