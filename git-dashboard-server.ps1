@@ -9,6 +9,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Runtime.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Features.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Pull.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
 $script:RepoList = Join-Path $PSScriptRoot 'git-repositories.txt'
 $script:ScanList = Join-Path $PSScriptRoot 'git-scan-locations.txt'
@@ -1529,6 +1530,8 @@ function Invoke-Action($Body) {
         default {
             $feature = Invoke-GitDeckFeatureAction $Body
             if ($null -ne $feature) { return $feature }
+            $ai = Invoke-GitDeckAiAction $Body
+            if ($null -ne $ai) { return $ai }
             throw 'Action is not allowed.'
         }
     }
@@ -1578,7 +1581,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/push-checks' { Write-Json $context @{pushChecks=(Get-PushChecks $request.QueryString['path'] $request.QueryString['remote'] $request.QueryString['local'] $request.QueryString['target'] ($request.QueryString['force'] -eq 'true'))} }
         '/api/repo/pull-preview' { Write-Json $context @{pull=(Get-GitDeckPullPreview $request.QueryString['path'] ([string]$request.QueryString['remote']) ([string]$request.QueryString['branch']))} }
         '/api/repo/undo-preview' { Write-Json $context @{undo=(Get-UndoPreview $request.QueryString['path'])} }
-        '/api/ai/status' { Write-Json $context @{ai=(Get-AiStatus)} }
+        '/api/ai/status' { $repoPath=[string]$request.QueryString['path'];if($repoPath){Assert-Registered $repoPath;$aiStatus=Get-GitDeckAiRepoStatus $repoPath}else{$aiStatus=Get-AiStatus};Write-Json $context @{ai=$aiStatus} }
         '/api/github/inbox' { Write-Json $context @{inbox=(Get-GitHubInbox $request.QueryString['path'])} }
         default { if (-not (Write-GitDeckStatic $context $route)) { Write-Json $context @{error='Not found'} 404 } }
     }
@@ -1632,8 +1635,9 @@ try {
             } elseif ($request.HttpMethod -eq 'POST' -and $route -eq '/api/action') {
                 if ($request.Headers['X-Git-Deck'] -ne '1') { Write-Json $context @{error='Invalid local request'} 403; continue }
                 $body = Read-JsonBody $request
-                # The AI request can take a while and only reads Git; keep other actions responsive.
-                if ($pool -and [string]$body.action -eq 'ai-commit-message') { Start-GitDeckPooledRequest $pool ([pscustomobject]@{Request=$request;Response=$context.Response;Body=$body}) }
+                # AI requests can take a while and only read Git; keep other actions responsive.
+                # ai-policy-set writes repository config, so it stays on the serial path.
+                if ($pool -and [string]$body.action -like 'ai-*' -and [string]$body.action -ne 'ai-policy-set') { Start-GitDeckPooledRequest $pool ([pscustomobject]@{Request=$request;Response=$context.Response;Body=$body}) }
                 else { Write-Json $context (Invoke-ActionWithJournal $body) }
             } else { Write-Json $context @{error='Method not allowed'} 405 }
         } catch {

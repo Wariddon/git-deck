@@ -181,8 +181,6 @@ function New-AiCommitMessage([string]$Path, [string]$Style) {
     $diff = Invoke-GitCapture $Path @('diff', '--cached', '--no-color', '--no-ext-diff', '-U3')
     if ($diff.Code -ne 0) { throw $diff.Output }
     if (-not $diff.Output.Trim()) { throw 'Stage the changes you want described first.' }
-    $secrets = @(Find-GitDeckSecrets $diff.Output | Where-Object { $_.level -eq 'block' })
-    if ($secrets.Count) { throw "Not sent: the staged diff contains what looks like a secret ($($secrets[0].label) in $($secrets[0].file)). Remove it first." }
     $stat = (Invoke-GitCapture $Path @('diff', '--cached', '--no-color', '--stat=120')).Output
     $branch = (Invoke-GitCapture $Path @('branch', '--show-current')).Output.Trim()
     $recent = (Invoke-GitCapture $Path @('log', '-8', '--format=%s')).Output
@@ -192,23 +190,11 @@ function New-AiCommitMessage([string]$Path, [string]$Style) {
     if ($body.Length -gt $limit) { $body = $body.Substring(0, $limit); $note = "The diff was larger than $([Math]::Round($limit / 1000)) KB; only the summary and the first part were sent." }
     $settings = Get-AiSettings
     $styleText = if ($Style -eq 'conventional') { 'Use the Conventional Commits format: type(optional scope): subject, with type one of feat, fix, docs, style, refactor, perf, test, build, ci, chore.' } else { 'Match the style of the recent commit subjects shown.' }
-    $instructions = "You write Git commit messages. Reply with only the commit message, no code fences or commentary. First line: an imperative summary of at most 72 characters. If the change needs explanation, add a blank line and a short body wrapped at 72 characters explaining what changed and why. $styleText Write in $($settings.language)."
+    $instructions = "You write Git commit messages. Reply with only the commit message, no code fences or commentary. First line: an imperative summary of at most 72 characters. If the change needs explanation, add a blank line and a short body wrapped at 72 characters explaining what changed and why. $styleText"
     $prompt = "Branch: $branch`n`nRecent commit subjects:`n$recent`n`nStaged files:`n$stat`n`nStaged diff:`n<diff>`n$body`n</diff>"
-    if ($settings.provider -eq 'ollama') {
-        $uri = ([string]$settings.ollamaUrl).TrimEnd('/')
-        if ($uri -notmatch '^http://(127\.0\.0\.1|localhost)(:\d+)?$') { throw 'Ollama URL must point to this computer (127.0.0.1 or localhost).' }
-        $result = Invoke-GitDeckHttpJson ($uri + '/api/generate') @{} @{model=$settings.ollamaModel; system=$instructions; prompt=$prompt; stream=$false} 180
-        $text = [string]$result.response
-    } else {
-        if (-not $env:ANTHROPIC_API_KEY) { throw 'Set the ANTHROPIC_API_KEY environment variable and restart Git Deck to use AI commit messages.' }
-        $headers = @{'x-api-key'=$env:ANTHROPIC_API_KEY; 'anthropic-version'='2023-06-01'; 'anthropic-beta'='server-side-fallback-2026-07-01'}
-        $request = [ordered]@{model=$settings.model; max_tokens=16000; output_config=@{effort='low'}; fallbacks='default'; system=$instructions; messages=@(@{role='user'; content=$prompt})}
-        $result = Invoke-GitDeckHttpJson 'https://api.anthropic.com/v1/messages' $headers $request 120
-        if ($result.stop_reason -eq 'refusal') { throw 'The model declined to describe this diff. Write the message manually.' }
-        $text = (@($result.content | Where-Object { $_.type -eq 'text' } | ForEach-Object { [string]$_.text }) -join "`n")
-    }
-    $text = ($text -replace '^\s*```[a-z]*\s*','' -replace '\s*```\s*$','').Trim()
-    if (-not $text) { throw 'The AI provider returned an empty message.' }
+    # Shared helper (lib/GitDeck.Ai.ps1): repository AI policy, secret check, provider call.
+    try { $text = Invoke-GitDeckAi $Path $instructions $prompt }
+    catch { if ($_.Exception.Message -eq 'The model declined this request.') { throw 'The model declined to describe this diff. Write the message manually.' }; throw }
     if ($text.Length -gt 500) { $text = $text.Substring(0, 500).TrimEnd() }
     return [ordered]@{message=$text; provider=$settings.provider; note=$note}
 }
