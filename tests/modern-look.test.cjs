@@ -122,6 +122,10 @@ const headerZ = zOf(/\.workspace-modal-head \{ position: relative; z-index: (\d+
 assert(headerZ > 4, 'header menus sit above sticky page toolbars (z-index up to 4)');
 assert(zOf(/\.repo-switcher \{ z-index: (\d+) !important; \}/) > headerZ, 'Ctrl+P switcher above the header');
 assert(zOf(/modern-library-drawer:not\(\.library-collapsed\) \.repos \{[^}]*z-index: (\d+)/) > headerZ, 'repository drawer above the header');
+// Legacy hard-coded colours that were unreadable on the dark theme are re-mapped to theme tokens.
+assert.match(modernCss, /:is\(\.settings-check, \.worktree-choice, \.push-options, \.modal label, \.gitlab-result-count\) \{ color: var\(--text-secondary\) !important; \}/);
+assert.match(modernCss, /\.patch-selected \{[^}]*background: var\(--surface-subtle\) !important; color: var\(--text-secondary\) !important;/);
+assert.match(modernCss, /\.recovery-note \{[^}]*color: var\(--text-secondary\) !important;/);
 // The rail's first item shows or hides the repository list.
 assert.match(modernJs, /railButton\(\['repos','folder',\(\)=>t\('Repos'\)\]\)/);
 // Rail items carry a visible label, not only an icon.

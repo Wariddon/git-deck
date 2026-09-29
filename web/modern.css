@@ -743,3 +743,9 @@ html.ui-modern body .repo-switcher { z-index: 60 !important; }
 html.ui-modern body.workbench-mode:not(.library-collapsed) .repos { z-index: 60; }
 html.ui-modern body #quick-filters { display: flex !important; flex-wrap: wrap; gap: 4px; }
 html.ui-modern body #quick-filters button { flex: none; white-space: nowrap; padding: 0 10px !important; }
+
+/* ---- Legacy hard-coded colours that ignore the theme (found by an automated contrast audit) ---------- */
+html.ui-modern body :is(.settings-check, .worktree-choice, .push-options, .modal label, .gitlab-result-count) { color: var(--text-secondary) !important; }
+html.ui-modern body .patch-selected { border: 1px solid var(--border-default); background: var(--surface-subtle) !important; color: var(--text-secondary) !important; }
+html.ui-modern body .recovery-note { border-color: color-mix(in srgb, var(--warning, #9a6700) 35%, var(--border-default)) !important; background: color-mix(in srgb, var(--warning, #9a6700) 8%, var(--surface)) !important; color: var(--text-secondary) !important; }
+html.ui-modern body .recovery-note > strong { color: var(--text-primary) !important; }
