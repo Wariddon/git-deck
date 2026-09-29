@@ -1,11 +1,13 @@
 [CmdletBinding()]
-param([int]$Port = 8765,[switch]$NoBrowser)
+param([int]$Port = 8765,[switch]$NoBrowser,[int]$IdleShutdownSeconds = 0,[switch]$Serial)
 
 $ErrorActionPreference = 'Continue'
 [Console]::OutputEncoding = New-Object Text.UTF8Encoding($false)
 $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'git-workflow-tools.ps1')
 . (Join-Path $PSScriptRoot 'git-diff-content.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Runtime.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Features.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
 $script:RepoList = Join-Path $PSScriptRoot 'git-repositories.txt'
 $script:ScanList = Join-Path $PSScriptRoot 'git-scan-locations.txt'
@@ -21,6 +23,8 @@ $script:Running = $true
 $script:BaseUrl = "http://127.0.0.1:$Port/"
 [void](New-Item -ItemType Directory -Path $script:JobsRoot -Force)
 [void](New-Item -ItemType Directory -Path $script:ExportsRoot -Force)
+# Script variables copied into each parallel request runspace.
+$script:SharedVariableNames = @('Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','SecretRules')
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }
@@ -506,7 +510,7 @@ function Get-WorkingDiff([string]$Path,[string]$File,[bool]$Staged) {
     }
     if(-not $item){throw 'File is not part of the current working changes.'}
     if($File -match ' -> '){throw 'Rename diff preview is not available yet.'}
-    $root=[IO.Path]::GetFullPath($Path).TrimEnd('\')+'\';$full=[IO.Path]::GetFullPath((Join-Path $Path $File))
+    $root=[IO.Path]::GetFullPath($Path).TrimEnd('\','/')+[IO.Path]::DirectorySeparatorChar;$full=[IO.Path]::GetFullPath((Join-Path $Path $File))
     if(-not $full.StartsWith($root,[StringComparison]::OrdinalIgnoreCase)){throw 'Invalid file path.'}
     if($item.status -eq '??'){
         if(-not (Test-Path -LiteralPath $full -PathType Leaf)){throw 'Untracked file was not found.'}
@@ -936,7 +940,7 @@ function Invoke-Action($Body) {
         'training-create' { return New-TrainingRepository }
         'ui-state-save' {
             $savedPath=([string]$Body.path).Trim();$tab=([string]$Body.tab).Trim();Assert-Registered $savedPath
-            $allowed=@('changes','history','compare','gitlab-inbox','search-history','rebase','conflicts','health','worktrees','patches','branches','stashes','tags','remotes','recovery','tools','settings')
+            $allowed=@('changes','history','compare','gitlab-inbox','github','search-history','rebase','conflicts','health','worktrees','patches','branches','stashes','tags','remotes','recovery','tools','settings')
             if($tab -notin $allowed){throw 'Invalid workspace view.'}
             $openRepos=New-Object System.Collections.Generic.List[string]
             foreach($candidate in @($Body.openRepos)){
@@ -1530,7 +1534,60 @@ function Invoke-Action($Body) {
             if($result.Code -ne 0){$operation=Get-GitOperationState $path;if($operation.active){throw "Revert paused for conflicts. Resolve them in Safety Center.`n$($result.Output)"};throw $result.Output}
             return @{message="Created a new commit reverting $commit.";output=$result.Output}
         }
-        default { throw 'Action is not allowed.' }
+        default {
+            $feature = Invoke-GitDeckFeatureAction $Body
+            if ($null -ne $feature) { return $feature }
+            throw 'Action is not allowed.'
+        }
+    }
+}
+
+function Invoke-GitDeckRequest($context) {
+    # Handles read-only GET routes, plus the slow read-only AI action when it is
+    # handed over with a parsed Body. Runs on the main thread or in the pool.
+    $request = $context.Request
+    $route = $request.Url.AbsolutePath
+    if ($context.Body) { Write-Json $context (Invoke-Action $context.Body); return }
+    switch ($route) {
+        '/api/health' { Write-Json $context @{status='ok'} }
+        '/api/repo/status-snapshot' { Write-Json $context (Get-WorkflowStatus $request.QueryString['path']) }
+        '/api/repo/checkout-review' { Write-Json $context (Get-CheckoutReview $request.QueryString['path'] $request.QueryString['target']) }
+        '/api/readiness' { Write-Json $context (Get-SetupReadiness) }
+        '/api/repo/push-preview' { Write-Json $context (Get-PushPreview $request.QueryString['path'] $request.QueryString['remote'] $request.QueryString['local'] $request.QueryString['target']) }
+        '/api/ui-state' { $ui=[ordered]@{schemaVersion=2;path='';tab='history';openRepos=@()};if(Test-Path -LiteralPath $script:UiState -PathType Leaf){try{$saved=Get-Content -LiteralPath $script:UiState -Raw|ConvertFrom-Json;$savedPath=if($saved.path){[string]$saved.path}else{''};$savedTab=if($saved.tab){[string]$saved.tab}else{'history'};[string[]]$savedOpenRepos=if($null-ne $saved.openRepos){@($saved.openRepos|ForEach-Object{[string]$_})}elseif($savedPath){@($savedPath)}else{@()};$savedSchemaVersion=if($saved.schemaVersion){[int]$saved.schemaVersion}else{1};$ui=[ordered]@{schemaVersion=$savedSchemaVersion;path=$savedPath;tab=$savedTab;openRepos=$savedOpenRepos}}catch{}};Write-Json $context @{view=$ui} }
+        '/api/jobs' { Write-Json $context @{jobs=@(Get-GitJobs)} }
+        '/api/integration' { Write-Json $context @{integration=(Get-WindowsIntegrationState)} }
+        '/api/job' { Write-Json $context (Get-GitJob $request.QueryString['id']) }
+        '/api/repos' { Write-Json $context (Get-RepositoryCache) }
+        '/api/repo/details' { $repoPath=$request.QueryString['path']; Write-Json $context @{details=(Get-RepositoryDetails $repoPath)} }
+        '/api/repo/workspace' { $repoPath=$request.QueryString['path']; Write-Json $context @{workspace=(Get-WorkspaceDetails $repoPath ($request.QueryString['extras'] -eq 'true'))} }
+        '/api/repo/history' { $repoPath=$request.QueryString['path'];$scope=$request.QueryString['scope'];$ref=$request.QueryString['ref'];$includeRemote=($request.QueryString['includeRemote'] -ne 'false');$order=$request.QueryString['order'];$skip=0;if($request.QueryString['skip'] -and -not [int]::TryParse($request.QueryString['skip'],[ref]$skip)){throw 'Invalid history offset.'};$items=@(Get-CommitHistory $repoPath $scope $ref $includeRemote $order $skip $request.QueryString['q']);Write-Json $context @{history=@($items | Select-Object -First 250);hasMore=($items.Count -gt 250);nextSkip=($skip+[Math]::Min(250,$items.Count))} }
+        '/api/repo/history-search' { $repoPath=$request.QueryString['path'];$query=$request.QueryString['q'];$mode=$request.QueryString['mode'];Write-Json $context @{history=@(Search-HistoryContent $repoPath $query $mode)} }
+        '/api/repo/compare' { $repoPath=$request.QueryString['path'];$source=$request.QueryString['source'];$target=$request.QueryString['target'];$remote=$request.QueryString['remote'];Write-Json $context @{compare=(Get-BranchCompare $repoPath $source $target $remote)} }
+        '/api/repo/compare-diff' { $repoPath=$request.QueryString['path'];$source=$request.QueryString['source'];$target=$request.QueryString['target'];$file=$request.QueryString['file'];Write-Json $context @{result=(Get-CompareDiff $repoPath $source $target $file)} }
+        '/api/repo/conflict' { $repoPath=$request.QueryString['path'];$file=$request.QueryString['file'];Write-Json $context @{conflict=(Get-ConflictDetails $repoPath $file)} }
+        '/api/repo/worktrees' { $repoPath=$request.QueryString['path'];Write-Json $context @{worktrees=@(Get-Worktrees $repoPath)} }
+        '/api/repo/rebase-plan' { $repoPath=$request.QueryString['path'];$base=$request.QueryString['base'];Write-Json $context @{plan=(Get-InteractiveRebasePlan $repoPath $base)} }
+        '/api/repo/journal' { $repoPath=$request.QueryString['path'];Assert-Registered $repoPath;Write-Json $context @{journal=@(Get-ActionJournal|Where-Object{[string]::Equals([string]$_.path,$repoPath,[StringComparison]::OrdinalIgnoreCase)}|Select-Object -First 50)} }
+        '/api/repo/reflog' { $repoPath=$request.QueryString['path'];Write-Json $context @{reflog=@(Get-ReflogEntries $repoPath)} }
+        '/api/repo/commit' { $repoPath=$request.QueryString['path'];$commit=$request.QueryString['commit'];if(Test-GitDeckFullHash $commit){Assert-Registered $repoPath;$details=Get-GitDeckImmutable ("commit|$repoPath|$commit") {Get-CommitDetails $repoPath $commit}}else{$details=Get-CommitDetails $repoPath $commit};Write-Json $context @{commit=$details} }
+        '/api/repo/commit-content' { Write-Json $context (Get-CommitFileContent $request.QueryString['path'] $request.QueryString['commit'] $request.QueryString['file']) }
+        '/api/repo/commit-diff' { $repoPath=$request.QueryString['path'];$commit=$request.QueryString['commit'];$file=$request.QueryString['file'];if(Test-GitDeckFullHash $commit){Assert-Registered $repoPath;$diffResult=Get-GitDeckImmutable ("diff|$repoPath|$commit|$file") {Get-CommitDiff $repoPath $commit $file}}else{$diffResult=Get-CommitDiff $repoPath $commit $file};Write-Json $context @{result=$diffResult} }
+        '/api/repo/working-diff' { $repoPath=$request.QueryString['path'];$file=$request.QueryString['file'];$staged=($request.QueryString['staged'] -eq 'true');Write-Json $context @{result=(Get-WorkingDiff $repoPath $file $staged)} }
+        '/api/repo/stash-diff' { $repoPath=$request.QueryString['path'];$stash=$request.QueryString['stash'];Write-Json $context @{result=(Get-StashDiff $repoPath $stash)} }
+        '/api/repo/file-history' { $repoPath=$request.QueryString['path'];$file=$request.QueryString['file'];Write-Json $context @{history=@(Get-FileHistory $repoPath $file)} }
+        '/api/repo/blame' { $repoPath=$request.QueryString['path'];$file=$request.QueryString['file'];Write-Json $context @{result=(Get-FileBlame $repoPath $file)} }
+        '/api/repo/tools' { $repoPath=$request.QueryString['path'];Write-Json $context @{tools=(Get-GitToolsState $repoPath)} }
+        '/api/gitlab/hosts' { Write-Json $context @{installed=(Test-Path -LiteralPath $script:Glab);hosts=@(Get-GitLabHosts | ForEach-Object { @{host=$_;authenticated=(Test-GlabAuth $_)} })} }
+        '/api/gitlab/projects' { $hostName=$request.QueryString['host']; Write-Json $context @{projects=@(Get-GitLabProjects $hostName)} }
+        '/api/gitlab/mrs' { $project=$request.QueryString['project']; Write-Json $context @{mergeRequests=@(Get-GitLabMergeRequests $project)} }
+        '/api/gitlab/pipelines' { $project=$request.QueryString['project']; Write-Json $context @{pipelines=@(Get-GitLabPipelines $project)} }
+        '/api/gitlab/inbox' { $repoPath=$request.QueryString['path'];Write-Json $context @{inbox=(Get-GitLabInbox $repoPath)} }
+        '/api/repo/push-checks' { Write-Json $context @{pushChecks=(Get-PushChecks $request.QueryString['path'] $request.QueryString['remote'] $request.QueryString['local'] $request.QueryString['target'] ($request.QueryString['force'] -eq 'true'))} }
+        '/api/repo/undo-preview' { Write-Json $context @{undo=(Get-UndoPreview $request.QueryString['path'])} }
+        '/api/ai/status' { Write-Json $context @{ai=(Get-AiStatus)} }
+        '/api/github/inbox' { Write-Json $context @{inbox=(Get-GitHubInbox $request.QueryString['path'])} }
+        default { if (-not (Write-GitDeckStatic $context $route)) { Write-Json $context @{error='Not found'} 404 } }
     }
 }
 
@@ -1545,75 +1602,55 @@ catch {
     catch { Write-Host "[ERROR] Cannot start Git Deck on $($script:BaseUrl)" -ForegroundColor Red; Write-Host $_.Exception.Message; exit 1 }
 }
 
+# GET requests only read Git state and run in parallel; POST actions stay serial.
+$pool = $null
+if (-not $Serial) {
+    try { $pool = New-GitDeckRequestPool 4 }
+    catch { Write-Host "[WARN] Parallel requests disabled: $($_.Exception.Message)" -ForegroundColor Yellow; $pool = $null }
+}
+
 Write-Host "Git Deck is running at $($script:BaseUrl)" -ForegroundColor Green
 Write-Host 'Close this window or press Ctrl+C to stop it.' -ForegroundColor DarkGray
+if ($IdleShutdownSeconds -gt 0) { Write-Host "The server stops $IdleShutdownSeconds seconds after the last Git Deck window closes." -ForegroundColor DarkGray }
 if(-not $NoBrowser){Start-Process $script:BaseUrl}
 
 try {
+    $pendingContext = $null
     while ($script:Running -and $listener.IsListening) {
-        $context = $listener.GetContext()
+        if (-not $pendingContext) { $pendingContext = $listener.BeginGetContext($null, $null) }
+        if (-not $pendingContext.AsyncWaitHandle.WaitOne(250)) {
+            # Idle tick: live events, finished pool requests and idle shutdown.
+            Invoke-GitDeckEventPump
+            Complete-GitDeckPooledRequests
+            if (Test-GitDeckIdleShutdown $IdleShutdownSeconds) { Write-Host 'All Git Deck windows closed; stopping.' -ForegroundColor DarkGray; $script:Running = $false }
+            continue
+        }
+        $context = $listener.EndGetContext($pendingContext)
+        $pendingContext = $null
+        $script:LastActivityAt = [DateTime]::UtcNow
         try {
             $request = $context.Request
             if (-not [Net.IPAddress]::IsLoopback($request.RemoteEndPoint.Address)) { Write-Json $context @{error='Local access only'} 403; continue }
             $route = $request.Url.AbsolutePath
-            if ($request.HttpMethod -eq 'GET') {
-                switch ($route) {
-                    '/' { Write-StaticFile $context 'index.html' 'text/html; charset=utf-8' }
-                    '/app.js' { Write-StaticFile $context 'app.js' 'text/javascript; charset=utf-8' }
-                    '/release-tools.js' { Write-StaticFile $context 'release-tools.js' 'text/javascript; charset=utf-8' }
-                    '/release-ui.js' { Write-StaticFile $context 'release-ui.js' 'text/javascript; charset=utf-8' }
-                    '/workflow-ui.js' { Write-StaticFile $context 'workflow-ui.js' 'text/javascript; charset=utf-8' }
-                    '/diff-ui.js' { Write-StaticFile $context 'diff-ui.js' 'text/javascript; charset=utf-8' }
-                    '/styles.css' { Write-StaticFile $context 'styles.css' 'text/css; charset=utf-8' }
-                    '/scan.css' { Write-StaticFile $context 'scan.css' 'text/css; charset=utf-8' }
-                    '/gitlab.css' { Write-StaticFile $context 'gitlab.css' 'text/css; charset=utf-8' }
-                    '/search.css' { Write-StaticFile $context 'search.css' 'text/css; charset=utf-8' }
-                    '/workspace.css' { Write-StaticFile $context 'workspace.css' 'text/css; charset=utf-8' }
-                    '/favicon.svg' { Write-StaticFile $context 'favicon.svg' 'image/svg+xml' }
-                    '/api/health' { Write-Json $context @{status='ok'} }
-                    '/api/repo/status-snapshot' { Write-Json $context (Get-WorkflowStatus $request.QueryString['path']) }
-                    '/api/repo/checkout-review' { Write-Json $context (Get-CheckoutReview $request.QueryString['path'] $request.QueryString['target']) }
-                    '/api/readiness' { Write-Json $context (Get-SetupReadiness) }
-                    '/api/repo/push-preview' { Write-Json $context (Get-PushPreview $request.QueryString['path'] $request.QueryString['remote'] $request.QueryString['local'] $request.QueryString['target']) }
-                    '/api/ui-state' { $ui=[ordered]@{schemaVersion=2;path='';tab='history';openRepos=@()};if(Test-Path -LiteralPath $script:UiState -PathType Leaf){try{$saved=Get-Content -LiteralPath $script:UiState -Raw|ConvertFrom-Json;$savedPath=if($saved.path){[string]$saved.path}else{''};$savedTab=if($saved.tab){[string]$saved.tab}else{'history'};[string[]]$savedOpenRepos=if($null-ne $saved.openRepos){@($saved.openRepos|ForEach-Object{[string]$_})}elseif($savedPath){@($savedPath)}else{@()};$savedSchemaVersion=if($saved.schemaVersion){[int]$saved.schemaVersion}else{1};$ui=[ordered]@{schemaVersion=$savedSchemaVersion;path=$savedPath;tab=$savedTab;openRepos=$savedOpenRepos}}catch{}};Write-Json $context @{view=$ui} }
-                    '/api/jobs' { Write-Json $context @{jobs=@(Get-GitJobs)} }
-                    '/api/integration' { Write-Json $context @{integration=(Get-WindowsIntegrationState)} }
-                    '/api/job' { Write-Json $context (Get-GitJob $request.QueryString['id']) }
-                    '/api/repos' { Write-Json $context (Get-RepositoryCache) }
-                    '/api/repo/details' { $repoPath=$request.QueryString['path']; Write-Json $context @{details=(Get-RepositoryDetails $repoPath)} }
-                    '/api/repo/workspace' { $repoPath=$request.QueryString['path']; Write-Json $context @{workspace=(Get-WorkspaceDetails $repoPath ($request.QueryString['extras'] -eq 'true'))} }
-                    '/api/repo/history' { $repoPath=$request.QueryString['path'];$scope=$request.QueryString['scope'];$ref=$request.QueryString['ref'];$includeRemote=($request.QueryString['includeRemote'] -ne 'false');$order=$request.QueryString['order'];$skip=0;if($request.QueryString['skip'] -and -not [int]::TryParse($request.QueryString['skip'],[ref]$skip)){throw 'Invalid history offset.'};$items=@(Get-CommitHistory $repoPath $scope $ref $includeRemote $order $skip $request.QueryString['q']);Write-Json $context @{history=@($items | Select-Object -First 250);hasMore=($items.Count -gt 250);nextSkip=($skip+[Math]::Min(250,$items.Count))} }
-                    '/api/repo/history-search' { $repoPath=$request.QueryString['path'];$query=$request.QueryString['q'];$mode=$request.QueryString['mode'];Write-Json $context @{history=@(Search-HistoryContent $repoPath $query $mode)} }
-                    '/api/repo/compare' { $repoPath=$request.QueryString['path'];$source=$request.QueryString['source'];$target=$request.QueryString['target'];$remote=$request.QueryString['remote'];Write-Json $context @{compare=(Get-BranchCompare $repoPath $source $target $remote)} }
-                    '/api/repo/compare-diff' { $repoPath=$request.QueryString['path'];$source=$request.QueryString['source'];$target=$request.QueryString['target'];$file=$request.QueryString['file'];Write-Json $context @{result=(Get-CompareDiff $repoPath $source $target $file)} }
-                    '/api/repo/conflict' { $repoPath=$request.QueryString['path'];$file=$request.QueryString['file'];Write-Json $context @{conflict=(Get-ConflictDetails $repoPath $file)} }
-                    '/api/repo/worktrees' { $repoPath=$request.QueryString['path'];Write-Json $context @{worktrees=@(Get-Worktrees $repoPath)} }
-                    '/api/repo/rebase-plan' { $repoPath=$request.QueryString['path'];$base=$request.QueryString['base'];Write-Json $context @{plan=(Get-InteractiveRebasePlan $repoPath $base)} }
-                    '/api/repo/journal' { $repoPath=$request.QueryString['path'];Assert-Registered $repoPath;Write-Json $context @{journal=@(Get-ActionJournal|Where-Object{[string]::Equals([string]$_.path,$repoPath,[StringComparison]::OrdinalIgnoreCase)}|Select-Object -First 50)} }
-                    '/api/repo/reflog' { $repoPath=$request.QueryString['path'];Write-Json $context @{reflog=@(Get-ReflogEntries $repoPath)} }
-                    '/api/repo/commit' { $repoPath=$request.QueryString['path'];$commit=$request.QueryString['commit'];Write-Json $context @{commit=(Get-CommitDetails $repoPath $commit)} }
-                    '/api/repo/commit-content' { Write-Json $context (Get-CommitFileContent $request.QueryString['path'] $request.QueryString['commit'] $request.QueryString['file']) }
-                    '/api/repo/commit-diff' { $repoPath=$request.QueryString['path'];$commit=$request.QueryString['commit'];$file=$request.QueryString['file'];Write-Json $context @{result=(Get-CommitDiff $repoPath $commit $file)} }
-                    '/api/repo/working-diff' { $repoPath=$request.QueryString['path'];$file=$request.QueryString['file'];$staged=($request.QueryString['staged'] -eq 'true');Write-Json $context @{result=(Get-WorkingDiff $repoPath $file $staged)} }
-                    '/api/repo/stash-diff' { $repoPath=$request.QueryString['path'];$stash=$request.QueryString['stash'];Write-Json $context @{result=(Get-StashDiff $repoPath $stash)} }
-                    '/api/repo/file-history' { $repoPath=$request.QueryString['path'];$file=$request.QueryString['file'];Write-Json $context @{history=@(Get-FileHistory $repoPath $file)} }
-                    '/api/repo/blame' { $repoPath=$request.QueryString['path'];$file=$request.QueryString['file'];Write-Json $context @{result=(Get-FileBlame $repoPath $file)} }
-                    '/api/repo/tools' { $repoPath=$request.QueryString['path'];Write-Json $context @{tools=(Get-GitToolsState $repoPath)} }
-                    '/api/gitlab/hosts' { Write-Json $context @{installed=(Test-Path -LiteralPath $script:Glab);hosts=@(Get-GitLabHosts | ForEach-Object { @{host=$_;authenticated=(Test-GlabAuth $_)} })} }
-                    '/api/gitlab/projects' { $hostName=$request.QueryString['host']; Write-Json $context @{projects=@(Get-GitLabProjects $hostName)} }
-                    '/api/gitlab/mrs' { $project=$request.QueryString['project']; Write-Json $context @{mergeRequests=@(Get-GitLabMergeRequests $project)} }
-                    '/api/gitlab/pipelines' { $project=$request.QueryString['project']; Write-Json $context @{pipelines=@(Get-GitLabPipelines $project)} }
-                    '/api/gitlab/inbox' { $repoPath=$request.QueryString['path'];Write-Json $context @{inbox=(Get-GitLabInbox $repoPath)} }
-                    default { Write-Json $context @{error='Not found'} 404 }
-                }
+            if ($request.HttpMethod -eq 'GET' -and $route -eq '/api/events') { Add-GitDeckEventClient $context }
+            elseif ($request.HttpMethod -eq 'GET') {
+                if ($pool -and $route.StartsWith('/api/')) { Start-GitDeckPooledRequest $pool $context }
+                else { Invoke-GitDeckRequest $context }
             } elseif ($request.HttpMethod -eq 'POST' -and $route -eq '/api/action') {
                 if ($request.Headers['X-Git-Deck'] -ne '1') { Write-Json $context @{error='Invalid local request'} 403; continue }
-                Write-Json $context (Invoke-ActionWithJournal (Read-JsonBody $request))
+                $body = Read-JsonBody $request
+                # The AI request can take a while and only reads Git; keep other actions responsive.
+                if ($pool -and [string]$body.action -eq 'ai-commit-message') { Start-GitDeckPooledRequest $pool ([pscustomobject]@{Request=$request;Response=$context.Response;Body=$body}) }
+                else { Write-Json $context (Invoke-ActionWithJournal $body) }
             } else { Write-Json $context @{error='Method not allowed'} 405 }
         } catch {
             try { if ($context.Response.OutputStream.CanWrite) { Write-Json $context @{error=$_.Exception.Message} 400 } } catch {}
         }
+        Complete-GitDeckPooledRequests
     }
 } finally {
+    Stop-GitDeckRuntime
+    foreach ($item in $script:PendingRequests.ToArray()) { try { $item.Shell.Stop(); $item.Shell.Dispose() } catch {} }
+    if ($pool) { $pool.Close(); $pool.Dispose() }
     $listener.Stop(); $listener.Close()
 }

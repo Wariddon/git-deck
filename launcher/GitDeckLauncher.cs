@@ -74,7 +74,8 @@ internal static class GitDeckLauncher
         var start = new ProcessStartInfo
         {
             FileName = "powershell.exe",
-            Arguments = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File \"" + server + "\"",
+            // The hidden server stops by itself once every Git Deck window has closed.
+            Arguments = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File \"" + server + "\" -IdleShutdownSeconds 90",
             WorkingDirectory = root,
             UseShellExecute = false,
             CreateNoWindow = true,

@@ -1,0 +1,60 @@
+/* Line staging, commit helpers, pre-push checks, undo and GitHub tab. */
+
+/* Line-level staging inside working diffs */
+.patch-view .diff-code > .line-selectable { cursor: pointer; position: relative; }
+.patch-view .diff-code > .line-selectable:hover { outline: 1px dashed var(--border-default); outline-offset: -1px; }
+.patch-view .diff-code > .line-selectable:focus-visible { outline: 2px solid var(--green); outline-offset: -2px; }
+.patch-view .diff-code > .line-selected { box-shadow: inset 4px 0 0 var(--green); filter: saturate(1.6); }
+.patch-hunk-actions .line-stage-hint { color: var(--text-secondary); font-size: 11px; margin-left: auto; }
+.patch-hunk-actions .line-stage-button,
+.patch-hunk-actions .line-stage-clear { font-size: 12px; }
+.patch-hunk-actions .line-stage-button:first-of-type { margin-left: auto; }
+.patch-hunk-actions [hidden] { display: none !important; }
+
+/* Commit composer helpers */
+.commit-assist { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.commit-assist select,
+.commit-assist button { font-size: 12px; min-height: 26px; padding: 2px 8px; }
+.commit-assist .commit-ai { border-color: var(--green); }
+.commit-assist .commit-meter { color: var(--text-secondary); font-variant-numeric: tabular-nums; margin-left: auto; }
+.commit-assist .commit-meter.over { color: var(--danger); font-weight: 700; }
+.commit-warnings { color: var(--warning); display: block; font-size: 11px; margin-top: 4px; }
+.commit-warnings[hidden] { display: none; }
+
+/* Undo button in the sync bar */
+.sync-actions .undo-last.hidden { display: none; }
+.sync-actions .undo-last strong { color: var(--warning); }
+
+/* Pre-push checks */
+.push-checks { border: 1px solid var(--border-default); border-radius: 8px; display: grid; gap: 6px; margin: 0 16px; padding: 10px 12px; }
+.push-checks[hidden] { display: none; }
+.push-checks-title { color: var(--text-secondary); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.push-checks-loading { color: var(--text-secondary); margin: 0; }
+.push-checks-list { display: grid; gap: 8px; }
+.push-checks-group { display: grid; gap: 4px; }
+.push-checks-group > strong:empty { display: none; }
+.push-findings summary { cursor: pointer; font-size: 12px; }
+.push-findings code { display: block; font-size: 11px; overflow-wrap: anywhere; padding: 2px 0; }
+
+/* GitHub tab */
+.github-inbox { display: grid; gap: 16px; }
+.github-section h4 { margin: 0 0 8px; }
+.github-create { border: 1px solid var(--border-default); border-radius: 8px; padding: 10px 12px; }
+.github-create summary { cursor: pointer; font-weight: 700; }
+.github-pr-form { display: grid; gap: 8px; margin-top: 10px; }
+.github-pr-form textarea { font: inherit; resize: vertical; }
+.github-field { align-items: center; display: flex; gap: 8px; }
+.github-row { align-items: center; display: flex; gap: 12px; justify-content: space-between; }
+.github-row-info { display: grid; gap: 2px; min-width: 0; }
+.github-row-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.github-row-info small { color: var(--text-secondary); }
+.github-badges { display: flex; gap: 4px; }
+.github-badge { border: 1px solid var(--border-default); border-radius: 999px; font-size: 11px; justify-self: start; padding: 0 8px; text-transform: capitalize; }
+.github-badge.ok { border-color: var(--success); color: var(--success); }
+.github-badge.bad { border-color: var(--danger); color: var(--danger); }
+.github-loading { color: var(--text-secondary); }
+.github-refresh { font: inherit; font-size: 12px; font-weight: 700; padding: 4px 10px; }
+.github-pr-form input,
+.github-pr-form select,
+.github-pr-form textarea { font: inherit; font-size: 13px; }
+.github-field span { font-size: 12px; font-weight: 700; }
