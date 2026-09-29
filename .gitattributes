@@ -1,0 +1,12 @@
+# Store text as LF and check it out as LF everywhere, so diffs never show
+# line-ending noise and core.autocrlf on Windows machines does not matter.
+* text=auto eol=lf
+
+# cmd.exe needs CRLF for reliable label/goto handling in batch files.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.png binary
+*.ico binary
+*.exe binary
+*.zip binary
