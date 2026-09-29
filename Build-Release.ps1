@@ -12,8 +12,13 @@ $stage=Join-Path $dist ('stage-'+[guid]::NewGuid().ToString('N'))
 $files=@('GitDeck.exe','GitDeck.ico','git-dashboard.bat','git-dashboard-server.ps1','git-workflow-tools.ps1','git-diff-content.ps1','git-job-worker.ps1','git-repo-manager.bat','git-repo-manager.ps1','README.md','LICENSE')
 foreach($file in $files){Copy-Item -LiteralPath (Join-Path $root $file) -Destination $stage}
 [void](New-Item -ItemType Directory -Path (Join-Path $stage 'web'))
-foreach($file in @('index.html','app.js','release-tools.js','release-ui.js','workflow-ui.js','diff-ui.js','favicon.svg','styles.css','workspace.css','search.css','scan.css','gitlab.css')){
-    Copy-Item -LiteralPath (Join-Path $root ('web/'+$file)) -Destination (Join-Path $stage 'web')
+# Every web asset the server can serve (flat .html/.js/.css/.svg files).
+foreach($file in @(Get-ChildItem -LiteralPath (Join-Path $root 'web') -File | Where-Object { $_.Extension -in @('.html','.js','.css','.svg') })){
+    Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $stage 'web')
+}
+[void](New-Item -ItemType Directory -Path (Join-Path $stage 'lib'))
+foreach($file in @(Get-ChildItem -LiteralPath (Join-Path $root 'lib') -Filter '*.ps1' -File)){
+    Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $stage 'lib')
 }
 $zip=Join-Path $dist "GitDeck-$Version-windows.zip"
 [void](New-Item -ItemType Directory -Path (Join-Path $stage 'assets/brand') -Force)

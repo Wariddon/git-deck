@@ -14,32 +14,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: JavaScript checks
-        run: |
-          node --check web/app.js
-          node --check web/release-tools.js
-          node --check web/release-ui.js
-          node --check web/workflow-ui.js
-          node --check web/diff-ui.js
-          node tests/diff-reader.test.cjs
-          node tests/commit-view-memory.test.cjs
-          node tests/workflow-ui.test.cjs
-          node tests/workspace-loading.test.cjs
-          node tests/release-tools.test.cjs
-          node tests/working-diff-ui.test.cjs
-          node tests/commit-graph.test.cjs
-          node tests/history-races.test.cjs
-          node tests/ref-tree.test.cjs
-          node tests/navigation-ux.test.cjs
-      - name: PowerShell tests
+      - name: Tests
         shell: powershell
-        run: |
-          ./tests/working-diff.test.ps1
-          ./tests/release-server.test.ps1
-          ./tests/commit-safety.test.ps1
-          ./tests/history-page.test.ps1
-          ./tests/workflow-server.test.ps1
-          ./tests/diff-content.test.ps1
+        run: ./run-tests.ps1
       - name: Build portable package
         shell: powershell
         run: ./Build-Release.ps1
