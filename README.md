@@ -50,7 +50,7 @@ The build uses the Windows .NET Framework C# compiler. Keep the generated execut
 - Commit message helpers: Conventional Commit type, issue key from the branch name, 72-character subject guide and optional AI drafts.
 - Pre-push checks for secrets, large files and direct/force pushes to protected branches.
 - Commit history and branch graph; branches, tags, stashes and remotes.
-- Fetch, pull and push with a push selection dialog.
+- Fetch, pull and push with a push selection dialog; pull keeps uncommitted work by stashing and restoring it.
 - GitLab project and merge-request workflows with optional GitLab CLI.
 - GitHub pull requests, Actions runs, PR checkout and PR creation with optional GitHub CLI.
 - Themes, resizable panels and saved UI preferences.
@@ -95,6 +95,10 @@ In **File Status**, click `+`/`−` lines in a hunk (Shift+click selects a range
 **Undo** appears next to Push right after a journaled action (commit, merge, reset, cherry-pick, branch switch…). Undoing a commit uses `git reset --soft`, so its changes return to the staging area. Other actions restore the previous HEAD, which needs a clean working tree. Undo is offered only while HEAD still matches the state right after that action, so newer work is never overwritten.
 
 Keyboard shortcuts (outside text fields): `J`/`K` next/previous file or commit, `S`/`U` stage/unstage the selected file, `C` commit message, `/` search, `R` refresh, `F` fetch, `Shift+P` push, `Ctrl+Z` undo, `?` shortcut list.
+
+## Pulling with uncommitted changes
+
+**Pull** no longer requires a clean working tree. Before pulling, Git Deck lists your changed files that the incoming commits also touch, then runs `git pull --autostash` after you confirm: your changes are stashed, the pull runs, and they are restored. If restoring conflicts, File Status opens with the conflicted files and a copy of your changes stays in the stash (`autostash`) until you drop it. Untracked files are not stashed, so a pull that would overwrite one is blocked up front. Predictions use the last Fetch.
 
 ## Pre-push checks
 

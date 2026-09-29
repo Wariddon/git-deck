@@ -8,6 +8,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'git-diff-content.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Runtime.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Features.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Pull.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
 $script:RepoList = Join-Path $PSScriptRoot 'git-repositories.txt'
 $script:ScanList = Join-Path $PSScriptRoot 'git-scan-locations.txt'
@@ -1245,21 +1246,12 @@ function Invoke-Action($Body) {
             return @{message='All files unstaged. Working files were kept.';output=$(if($output){$output}else{'All files unstaged.'})}
         }
         'pull' {
-            Assert-CleanWorkingTree $path 'Commit or stash changes before pulling.'
-            $strategy=([string]$Body.strategy).Trim();if(-not $strategy){$strategy='ff-only'}
-            if($strategy -notin @('ff-only','rebase','merge')){throw 'Invalid pull strategy.'}
-            $args=if($strategy -eq 'rebase'){@('pull','--rebase')}elseif($strategy -eq 'merge'){@('pull','--no-rebase')}else{@('pull','--ff-only')}
-            $output = Invoke-GitOrThrow $path $args
-            return @{message="Pull completed using $strategy.";output=$(if($output){$output}else{'Already up to date.'})}
+            return Invoke-GitDeckPull $path ([string]$Body.strategy).Trim() ([bool]$Body.autostash)
         }
         'pull-ref' {
-            Assert-CleanWorkingTree $path 'Commit or stash changes before pulling a remote branch.'
-            $remoteName=([string]$Body.remote).Trim();$branchName=([string]$Body.branch).Trim();$strategy=([string]$Body.strategy).Trim();if(-not $strategy){$strategy='ff-only'}
-            Assert-RemoteName $path $remoteName;Assert-BranchName $path $branchName
-            if($strategy -notin @('ff-only','rebase','merge')){throw 'Invalid pull strategy.'}
-            $args=if($strategy -eq 'rebase'){@('pull','--rebase',$remoteName,$branchName)}elseif($strategy -eq 'merge'){@('pull','--no-rebase',$remoteName,$branchName)}else{@('pull','--ff-only',$remoteName,$branchName)}
-            $output=Invoke-GitOrThrow $path $args
-            return @{message="Pulled $remoteName/$branchName into the current branch using $strategy.";output=$(if($output){$output}else{'Already up to date.'})}
+            $remoteName=([string]$Body.remote).Trim();$branchName=([string]$Body.branch).Trim()
+            if(-not $remoteName -or -not $branchName){throw 'Remote and branch are required.'}
+            return Invoke-GitDeckPull $path ([string]$Body.strategy).Trim() ([bool]$Body.autostash) $remoteName $branchName
         }
         'push' {
             $branch = (Invoke-GitOrThrow $path @('branch','--show-current')).Trim()
@@ -1584,6 +1576,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/gitlab/pipelines' { $project=$request.QueryString['project']; Write-Json $context @{pipelines=@(Get-GitLabPipelines $project)} }
         '/api/gitlab/inbox' { $repoPath=$request.QueryString['path'];Write-Json $context @{inbox=(Get-GitLabInbox $repoPath)} }
         '/api/repo/push-checks' { Write-Json $context @{pushChecks=(Get-PushChecks $request.QueryString['path'] $request.QueryString['remote'] $request.QueryString['local'] $request.QueryString['target'] ($request.QueryString['force'] -eq 'true'))} }
+        '/api/repo/pull-preview' { Write-Json $context @{pull=(Get-GitDeckPullPreview $request.QueryString['path'] ([string]$request.QueryString['remote']) ([string]$request.QueryString['branch']))} }
         '/api/repo/undo-preview' { Write-Json $context @{undo=(Get-UndoPreview $request.QueryString['path'])} }
         '/api/ai/status' { Write-Json $context @{ai=(Get-AiStatus)} }
         '/api/github/inbox' { Write-Json $context @{inbox=(Get-GitHubInbox $request.QueryString['path'])} }
