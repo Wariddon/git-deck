@@ -46,7 +46,7 @@ if(typeof window!=='undefined'&&typeof renderChangesView==='function'){
   async function suggestCommitMessage(message,type,button,changed){
     let status;try{status=(await api('/api/ai/status')).ai;}catch(error){setNotice(error.message);return;}
     if(!status.ready){setNotice(status.hint||'AI provider is not configured.');setOutput(status.hint||'AI provider is not configured.',{expand:true});return;}
-    if(!aiConsent){const where=status.provider==='ollama'?`Ollama (${status.model}) on this computer`:`Anthropic (${status.model})`;if(!confirm(`ส่ง staged diff ไปให้ ${where} ช่วยร่าง commit message?\n\nGit Deck จะไม่ส่งถ้าพบสิ่งที่ดูเหมือน secret/token`))return;aiConsent=true;}
+    if(!aiConsent){const where=status.provider==='ollama'?`Ollama (${status.model}) on this computer`:`Anthropic (${status.model})`;if(!confirm(`Send the staged diff to ${where} to draft a commit message?\n\nGit Deck will not send it if it finds anything that looks like a secret or token.`))return;aiConsent=true;}
     const label=button.textContent;button.disabled=true;button.textContent='Drafting…';
     try{
       const result=await api('/api/action',{method:'POST',body:JSON.stringify({action:'ai-commit-message',path:state.workspaceRepo.path,style:(type.value||conventionalPrefix.test(message.value))?'conventional':'plain'})});

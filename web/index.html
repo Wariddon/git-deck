@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="th">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -102,9 +102,9 @@
       <label class="destination-root-only">Save under<select id="clone-root"><option value="">Choose a scan location…</option></select></label>
       <label class="create-only hidden">Repository name<input id="create-name" placeholder="my-project" autocomplete="off"></label>
       <label class="create-only hidden">Default branch<input id="create-branch" value="main" placeholder="main" autocomplete="off"></label>
-      <label><span id="path-label"></span><span class="path-input"><input id="repo-path" placeholder="C:\work\project" required><button type="button" class="btn browse-only hidden" id="browse">Browse…</button></span><small class="destination-root-only clone-destination-note">สร้างอัตโนมัติจาก Save under และชื่อ repository</small></label>
+      <label><span id="path-label"></span><span class="path-input"><input id="repo-path" placeholder="C:\work\project" required><button type="button" class="btn browse-only hidden" id="browse">Browse…</button></span><small class="destination-root-only clone-destination-note">Generated automatically from Save under and the repository name</small></label>
       <div class="create-only create-options hidden"><label><input id="create-readme" type="checkbox" checked> Create README.md</label><label>Gitignore template<select id="create-gitignore"><option value="none">None</option><option value="node">Node</option><option value="java">Java / Maven</option><option value="dotnet">.NET</option><option value="python">Python</option></select></label></div>
-      <p class="scan-only scan-note hidden">ค้นหา repository ซ้อนกันได้สูงสุด 8 ระดับ และข้าม dependency/build folders อัตโนมัติ</p>
+      <p class="scan-only scan-note hidden">Find nested repositories up to 8 levels deep, automatically skipping dependency and build folders</p>
       <p class="form-message" id="form-message"></p>
       <div class="modal-actions"><button type="button" class="btn" id="cancel">Cancel</button><button class="btn primary" id="submit-label"></button></div>
     </form>
@@ -124,11 +124,11 @@
 
   <div class="backdrop hidden" id="operations-backdrop" role="dialog" aria-modal="true" aria-labelledby="operations-title">
     <section class="operations-modal">
-      <header class="operations-head"><div><p class="eyebrow">CONTROL CENTER</p><h2 id="operations-title">Operations Center</h2><p>ทุก repository, background jobs, Smart Fetch และ Windows integration ในที่เดียว</p></div><button type="button" id="operations-close" aria-label="Close Operations Center">×</button></header>
+      <header class="operations-head"><div><p class="eyebrow">CONTROL CENTER</p><h2 id="operations-title">Operations Center</h2><p>Repositories, background jobs, Smart Fetch and Windows integration in one place</p></div><button type="button" id="operations-close" aria-label="Close Operations Center">×</button></header>
       <nav class="operations-tabs" aria-label="Operations Center views"><button class="active" type="button" data-operations-view="fleet">Repository dashboard</button><button type="button" data-operations-view="jobs">Job queue <b id="operations-job-count">0</b></button><button type="button" data-operations-view="automation">Automation &amp; Windows</button></nav>
       <section class="operations-view" data-operations-panel="fleet"><div class="operations-toolbar"><div class="operations-search"><span>⌕</span><input id="fleet-search" type="search" placeholder="Search repository, branch or path…" aria-label="Search repository dashboard"></div><select id="fleet-filter" aria-label="Filter repository health"><option value="all">All repositories</option><option value="attention">Need attention</option><option value="changed">Working changes</option><option value="sync">Ahead / behind</option><option value="missing">Missing</option></select><button type="button" id="fleet-refresh">Refresh status</button></div><div class="fleet-summary" id="fleet-summary"></div><div class="fleet-table" id="fleet-table"></div></section>
       <section class="operations-view hidden" data-operations-panel="jobs"><div class="operations-toolbar"><strong>Recent background operations</strong><button type="button" id="jobs-refresh">Refresh queue</button></div><div class="jobs-list" id="jobs-list"></div></section>
-      <section class="operations-view hidden" data-operations-panel="automation"><div class="automation-grid"><section><h3>Smart Fetch</h3><p>Fetch เฉพาะชุด repository ที่เลือก โดยไม่แตะ working files</p><label>Schedule<select id="operations-fetch-interval"><option value="0">Off</option><option value="15">Every 15 minutes</option><option value="30">Every 30 minutes</option><option value="60">Every 60 minutes</option></select></label><label>Repositories<select id="operations-fetch-scope"><option value="open">Open tabs</option><option value="favorites">Favorites</option><option value="all">All repositories with remotes</option></select></label><div class="operations-card-actions"><button type="button" id="smart-fetch-now">Fetch scope now</button><button class="primary" type="button" id="automation-save">Save automation</button></div><small id="smart-fetch-summary"></small></section><section><h3>Windows integration</h3><p>เปิด Git Deck จากเมนูคลิกขวาของโฟลเดอร์ และส่ง path เข้าโปรแกรมโดยตรง</p><div class="integration-state" id="integration-state">Checking…</div><div class="operations-card-actions"><button class="primary" type="button" id="integration-install">Install Explorer menu</button><button type="button" id="integration-remove">Remove</button></div></section></div></section>
+      <section class="operations-view hidden" data-operations-panel="automation"><div class="automation-grid"><section><h3>Smart Fetch</h3><p>Fetch selected repositories without changing working files</p><label>Schedule<select id="operations-fetch-interval"><option value="0">Off</option><option value="15">Every 15 minutes</option><option value="30">Every 30 minutes</option><option value="60">Every 60 minutes</option></select></label><label>Repositories<select id="operations-fetch-scope"><option value="open">Open tabs</option><option value="favorites">Favorites</option><option value="all">All repositories with remotes</option></select></label><div class="operations-card-actions"><button type="button" id="smart-fetch-now">Fetch scope now</button><button class="primary" type="button" id="automation-save">Save automation</button></div><small id="smart-fetch-summary"></small></section><section><h3>Windows integration</h3><p>Open Git Deck from a folder context menu and pass its path directly to the application</p><div class="integration-state" id="integration-state">Checking…</div><div class="operations-card-actions"><button class="primary" type="button" id="integration-install">Install Explorer menu</button><button type="button" id="integration-remove">Remove</button></div></section></div></section>
     </section>
   </div>
 
@@ -140,7 +140,7 @@
       <label class="mr-target-field">Target branch<input id="mr-target" list="mr-target-options" placeholder="develop or main" required><datalist id="mr-target-options"></datalist></label>
       <label class="mr-title-field">Merge request title<input id="mr-title" placeholder="Describe this change" required></label>
       <label class="mr-description-field">Description<textarea id="mr-description" rows="4" placeholder="Summary and testing notes"></textarea></label>
-      <section class="mr-readiness" id="mr-readiness" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><p>กำลังตรวจความพร้อมของ branch…</p></section>
+      <section class="mr-readiness" id="mr-readiness" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><p>Checking branch readiness…</p></section>
       <details class="mr-advanced"><summary>GitLab options</summary><div>
         <label>Assignee usernames<input id="mr-assignee" placeholder="username or user1,user2"></label>
         <label>Reviewer usernames<input id="mr-reviewer" placeholder="reviewer1,reviewer2"></label>
@@ -162,7 +162,7 @@
         <header><label><input type="checkbox" id="push-select-all"> Push?</label><span>Local branch</span><span>Remote branch</span><span>Track?</span></header>
         <div id="push-branch-list"></div>
       </section>
-      <section class="push-options"><label><input type="checkbox" id="push-tags"> Push all tags</label><details><summary>Advanced</summary><label class="push-force"><input type="checkbox" id="push-force"> Force with lease <small>ป้องกันการทับ commit ใหม่บน remote</small></label></details></section>
+      <section class="push-options"><label><input type="checkbox" id="push-tags"> Push all tags</label><details><summary>Advanced</summary><label class="push-force"><input type="checkbox" id="push-force"> Force with lease <small>Guards against overwriting new remote commits</small></label></details></section>
       <section class="push-preview"><span>Command preview</span><pre id="push-command"></pre></section>
       <section class="push-error-card hidden" id="push-error-card" role="alert" aria-live="assertive">
         <div class="push-error-icon" aria-hidden="true">!</div>
@@ -170,7 +170,7 @@
         <div class="push-error-actions"><button type="button" class="btn primary" id="push-fetch-compare">Fetch &amp; compare</button><button type="button" class="btn" id="push-error-dismiss">Dismiss</button></div>
       </section>
       <p class="form-message" id="push-message"></p>
-      <footer class="modal-actions"><button type="button" class="btn" id="push-cancel">Cancel</button><button type="submit" class="btn primary" id="push-submit">Push selected</button></footer>
+      <footer class="modal-actions"><div class="action-target" id="push-action-target" aria-live="polite"></div><button type="button" class="btn" id="push-cancel">Cancel</button><button type="submit" class="btn primary" id="push-submit" aria-describedby="push-action-target">Push selected</button></footer>
     </form>
   </div>
 
@@ -180,7 +180,7 @@
       <div class="tag-modal-body">
         <label class="tag-field">Tag name<input id="tag-name" autocomplete="off" placeholder="v1.2.0" required></label>
         <fieldset class="tag-target"><legend>Commit</legend><label class="tag-choice"><input id="tag-target-head" type="radio" name="tag-target" value="head" checked> Working copy parent (HEAD)</label><label class="tag-choice"><input id="tag-target-specific" type="radio" name="tag-target" value="commit"> Specific commit</label><input id="tag-commit" list="tag-commit-options" placeholder="Choose or paste commit hash" disabled><datalist id="tag-commit-options"></datalist></fieldset>
-        <label class="tag-field">Description <small>ใช้กับ Annotated tag</small><input id="tag-message" placeholder="Release notes or a short description"></label>
+        <label class="tag-field">Description <small>For annotated tags</small><input id="tag-message" placeholder="Release notes or a short description"></label>
         <section class="tag-publish"><label class="tag-choice"><input id="tag-push" type="checkbox"> Push tag after creating</label><select id="tag-remote" aria-label="Remote for new tag" disabled></select></section>
         <details class="tag-advanced" id="tag-advanced"><summary>Advanced options</summary><label class="tag-choice"><input id="tag-lightweight" type="checkbox"> Lightweight tag</label><label class="tag-choice danger-choice"><input id="tag-move" type="checkbox"> Move an existing tag to this commit</label></details>
         <section class="tag-command-preview"><span>Command preview</span><pre id="tag-command">git tag -a &lt;tag&gt; -m &lt;description&gt;</pre></section>
@@ -194,11 +194,11 @@
     <section class="about-modal">
       <header class="about-head"><div><p class="eyebrow">HELP</p><h2 id="about-title">About Git Deck</h2></div><button type="button" id="about-close" aria-label="Close About Git Deck">×</button></header>
       <div class="about-view" data-about-view="about">
-        <div class="about-hero"><img src="/favicon.svg" alt="Git Deck icon"><div><h3>Git Deck</h3><p>Local Repository Manager</p><span>เครื่องมือ Git สำหรับ Windows ที่ออกแบบให้กระชับและใช้ง่าย</span></div></div>
-        <dl class="about-credits"><div><dt>ผู้จัดทำ</dt><dd>Wariddon Rattanamalee</dd></div><div><dt>ผู้ช่วยพัฒนา</dt><dd>OpenAI Codex</dd></div><div><dt>รุ่น</dt><dd>Git Deck Desktop · Local build</dd></div></dl>
-        <p class="about-note">ทำงานในเครื่องของคุณผ่าน Git CLI และเปิดใช้งานที่ localhost</p>
+        <div class="about-hero"><img src="/favicon.svg" alt="Git Deck icon"><div><h3>Git Deck</h3><p>Local Repository Manager</p><span>A compact, easy-to-use Git client for Windows</span></div></div>
+        <dl class="about-credits"><div><dt>Created by</dt><dd>Wariddon Rattanamalee</dd></div><div><dt>Development assistant</dt><dd>OpenAI Codex</dd></div><div><dt>Version</dt><dd>Git Deck Desktop · Local build</dd></div></dl>
+        <p class="about-note">Runs locally using Git CLI and is served on localhost</p>
       </div>
-      <div class="about-view hidden" data-about-view="getting-started"><h3>Getting Started</h3><ol><li>กด <b>Scan</b> เพื่อค้นหา repository ในโฟลเดอร์ที่เลือก</li><li>เลือก repository แล้วตรวจงานที่ <b>File Status</b></li><li>ใช้ <b>Fetch</b> ตรวจ remote ก่อน Pull หรือ Push</li><li>คลิกขวา Branch หรือ Commit เพื่อดูคำสั่งเพิ่มเติม</li></ol></div>
+      <div class="about-view hidden" data-about-view="getting-started"><h3>Getting Started</h3><ol><li>Click <b>Scan</b> to find repositories in a selected folder</li><li>Select a repository and review changes in <b>File Status</b></li><li>Use <b>Fetch</b> to check remotes before pulling or pushing</li><li>Right-click a branch or commit for more actions</li></ol></div>
       <div class="about-view hidden" data-about-view="shortcuts"><h3>Keyboard Shortcuts</h3><div class="shortcut-list"><span>Command palette <kbd>Ctrl K</kbd></span><span>Find repository <kbd>Ctrl P</kbd></span><span>File Status <kbd>Ctrl 1</kbd></span><span>Commit History <kbd>Ctrl 2</kbd></span><span>Close panel <kbd>Esc</kbd></span></div></div>
       <footer class="modal-actions"><button type="button" class="btn primary" id="about-ok">OK</button></footer>
     </section>
@@ -207,7 +207,7 @@
   <div class="backdrop hidden" id="repo-detail-backdrop" role="dialog" aria-modal="true" aria-labelledby="repo-detail-title">
     <section class="repository-detail-modal">
       <header class="repository-detail-head"><div><p class="eyebrow">REPOSITORY DETAILS</p><h2 id="repo-detail-title">Repository</h2><p id="repo-detail-subtitle">Local Git information</p></div><button type="button" id="repo-detail-close" aria-label="Close repository details">×</button></header>
-      <div class="repository-detail-body" id="repo-detail-body"><div class="diff-loading">กำลังอ่านข้อมูล Git ในเครื่อง…</div></div>
+      <div class="repository-detail-body" id="repo-detail-body"><div class="diff-loading">Reading local Git data…</div></div>
       <footer class="repository-detail-actions"><button type="button" id="repo-detail-copy-path">Copy folder</button><button type="button" id="repo-detail-open-folder">Open folder</button><button type="button" id="repo-detail-open-remote">Open remote</button><button class="primary" type="button" id="repo-detail-open-workspace">Open workspace</button></footer>
     </section>
   </div>
@@ -242,32 +242,34 @@
         <button type="button" data-git-action="fetch" title="Fetch remote"><strong>↓ Fetch</strong><small>Check remote safely</small></button>
         <button type="button" data-git-action="pull" title="Pull current branch"><strong>⇣ Pull</strong><small>Update current branch</small></button>
         <button type="button" data-git-action="push" title="Push current branch"><strong>⇡ Push</strong><small>Publish commits</small></button>
+        <button type="button" id="toolbar-create-branch" title="Create a new branch from the current working branch"><strong>＋ Branch</strong></button>
+        <button type="button" id="toolbar-create-tag" title="Add a tag at HEAD, or choose a specific commit"><strong>◇ Tag</strong></button>
         <details class="sync-more">
           <summary title="Branch, Stash, Tag, Remotes, Recovery and Settings"><strong>••• More</strong><small>Git tools</small></summary>
           <div>
             <p class="sync-more-group">REVIEW &amp; GITLAB</p>
-            <button type="button" data-workbench-nav="compare"><strong>⇄ Compare</strong><small>ตรวจ commit, file และ MR readiness</small></button>
-            <button type="button" data-workbench-nav="gitlab-inbox"><strong>◈ GitLab Inbox</strong><small>MR, approvals และ pipelines</small></button>
-            <button type="button" data-workbench-nav="search-history"><strong>⌕ Code history</strong><small>ค้นหาว่าโค้ดเปลี่ยนเมื่อไร</small></button>
+            <button type="button" data-workbench-nav="compare"><strong>⇄ Compare</strong><small>Review commits, files and MR readiness</small></button>
+            <button type="button" data-workbench-nav="gitlab-inbox"><strong>◈ GitLab Inbox</strong><small>MRs, approvals and pipelines</small></button>
+            <button type="button" data-workbench-nav="search-history"><strong>⌕ Code history</strong><small>Find when code changed</small></button>
             <p class="sync-more-group">BRANCH TOOLS</p>
-            <button type="button" data-workbench-nav="branches"><strong>⑂ Branches</strong><small>สร้าง เปลี่ยน Merge และ Rebase</small></button>
-            <button type="button" data-workbench-nav="rebase"><strong>≋ Interactive Rebase</strong><small>เรียง Squash Fixup หรือ Drop commit</small></button>
-            <button type="button" data-workbench-nav="conflicts"><strong>⚠ Conflict Center</strong><small>แก้ Ours / Theirs แบบเห็นบริบท</small></button>
-            <button type="button" data-workbench-nav="health"><strong>♥ Repository Health</strong><small>ตรวจ detached HEAD, upstream และ operation ค้าง</small></button>
-            <button type="button" data-workbench-nav="worktrees"><strong>▦ Worktrees</strong><small>ทำหลาย branch พร้อมกัน</small></button>
-            <button type="button" data-workbench-nav="stashes"><strong>▣ Stashes</strong><small>พักและนำงานกลับมา</small></button>
-            <button type="button" data-workbench-nav="tag-create"><strong>◇ Tags</strong><small>สร้าง Push และลบ Tag</small></button>
-            <button type="button" data-workbench-nav="patches"><strong>▧ Patches</strong><small>Export และ Apply patch</small></button>
+            <button type="button" data-workbench-nav="branches"><strong>⑂ Branches</strong><small>Create, switch, merge and rebase</small></button>
+            <button type="button" data-workbench-nav="rebase"><strong>≋ Interactive Rebase</strong><small>Reorder, squash, fixup or drop commits</small></button>
+            <button type="button" data-workbench-nav="conflicts"><strong>⚠ Conflict Center</strong><small>Resolve Ours / Theirs with context</small></button>
+            <button type="button" data-workbench-nav="health"><strong>♥ Repository Health</strong><small>Check detached HEAD, upstream and pending operations</small></button>
+            <button type="button" data-workbench-nav="worktrees"><strong>▦ Worktrees</strong><small>Work on multiple branches</small></button>
+            <button type="button" data-workbench-nav="stashes"><strong>▣ Stashes</strong><small>Stash and restore changes</small></button>
+            <button type="button" data-workbench-nav="tag-create"><strong>◇ Tags</strong><small>Create, push and delete tags</small></button>
+            <button type="button" data-workbench-nav="patches"><strong>▧ Patches</strong><small>Export and apply patches</small></button>
             <p class="sync-more-group">REPOSITORY</p>
-            <button type="button" data-workbench-nav="remotes"><strong>☁ Remotes</strong><small>จัดการ URL ปลายทาง</small></button>
-            <button type="button" data-workbench-nav="recovery"><strong>↶ Recovery</strong><small>Reflog และจุดกู้คืน</small></button>
-            <button type="button" data-workbench-nav="tools"><strong>⌘ Advanced Tools</strong><small>Bisect, LFS, Submodule, Optimize และ Export</small></button>
+            <button type="button" data-workbench-nav="remotes"><strong>☁ Remotes</strong><small>Manage remote URLs</small></button>
+            <button type="button" data-workbench-nav="recovery"><strong>↶ Recovery</strong><small>Reflog and recovery points</small></button>
+            <button type="button" data-workbench-nav="tools"><strong>⌘ Advanced Tools</strong><small>Bisect, LFS, submodules, optimize and export</small></button>
             <button type="button" data-workbench-nav="settings"><strong>⚙ Settings</strong><small>Identity, ignore, LFS</small></button>
           </div>
         </details>
       </div>
       <section class="console workbench-output collapsed" id="console">
-        <div><span>OUTPUT</span><strong id="output-summary">Ready</strong><small>คลิกเพื่อดูรายละเอียด · ลากมุมเพื่อปรับความสูง</small><button class="job-cancel hidden" type="button" id="output-cancel">Cancel job</button><button type="button" id="output-copy">Copy</button><button type="button" id="output-clear">Clear</button><button type="button" id="output-toggle" aria-label="Expand output">⌃</button></div>
+        <div><span>OUTPUT</span><strong id="output-summary">Ready</strong><small>Click for details. Drag the corner to resize.</small><button class="job-cancel hidden" type="button" id="output-cancel">Cancel job</button><button type="button" id="output-copy">Copy</button><button type="button" id="output-clear">Clear</button><button type="button" id="output-toggle" aria-label="Expand output">⌃</button></div>
         <pre id="output">Select a repository to inspect it.</pre>
       </section>
       <div class="workbench-body">

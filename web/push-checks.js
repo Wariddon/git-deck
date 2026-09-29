@@ -10,7 +10,7 @@
     const current=++version;const node=box();const repo=state.workspaceRepo;const remote=document.getElementById('push-remote')?.value;const force=Boolean(document.getElementById('push-force')?.checked);const items=selected();
     blockers=[];
     if(!repo||!remote||!items.length){node.replaceChildren();node.hidden=true;return;}
-    node.hidden=false;node.replaceChildren(el('span','push-checks-title','Pre-push checks'),el('p','push-checks-loading','กำลังตรวจ secret, ไฟล์ใหญ่ และ protected branch…'));
+    node.hidden=false;node.replaceChildren(el('span','push-checks-title','Pre-push checks'),el('p','push-checks-loading','Checking for secrets, large files and protected branches…'));
     const rows=[];
     for(const item of items){
       try{

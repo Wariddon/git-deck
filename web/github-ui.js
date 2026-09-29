@@ -22,21 +22,21 @@
   function badge(text,kind=''){return el('span',`github-badge ${kind}`.trim(),text);}
   function openUrl(url){if(url)api('/api/action',{method:'POST',body:JSON.stringify({action:'open-url',url})}).catch(error=>setNotice(error.message));}
   function renderGitHubView(content,data){
-    const heading=workspaceHeading('GitHub','Pull requests และ Actions runs ของ repository นี้ผ่าน GitHub CLI (gh)');
+    const heading=workspaceHeading('GitHub','Pull requests and Actions runs for this repository via GitHub CLI (gh)');
     const refresh=el('button','github-refresh','Refresh GitHub');refresh.type='button';heading.box.append(refresh);content.append(heading.box);
     const body=el('div','github-inbox');content.append(body);
-    if(!isGitHub(data)){body.append(workspaceEmpty('origin ไม่ใช่ GitHub','แท็บนี้ใช้กับ repository ที่ origin อยู่บน github.com'));return;}
+    if(!isGitHub(data)){body.append(workspaceEmpty('origin is not on GitHub','This tab works with repositories whose origin is on github.com'));return;}
     const load=async()=>{
-      body.replaceChildren(el('p','github-loading','กำลังโหลดจาก GitHub…'));
+      body.replaceChildren(el('p','github-loading','Loading from GitHub…'));
       const repo=state.workspaceRepo;
       try{
         const inbox=(await api(`/api/github/inbox?path=${encodeURIComponent(repo.path)}`)).inbox;
         if(state.workspaceTab!=='github'||state.workspaceRepo!==repo)return;
         body.replaceChildren();
-        if(!inbox.installed){body.append(workspaceEmpty('ยังไม่ได้ติดตั้ง GitHub CLI','ติดตั้งจาก https://cli.github.com (หรือวาง gh.exe ไว้ใน bin/) แล้วกด Refresh'));const link=el('button','primary','Open cli.github.com');link.type='button';link.addEventListener('click',()=>openUrl('https://cli.github.com'));body.append(link);return;}
-        if(!inbox.authenticated){body.append(workspaceEmpty('ยังไม่ได้เชื่อม GitHub','กด Connect แล้วทำ gh auth login ใน Terminal ให้เสร็จ จากนั้น Refresh'));const login=el('button','primary','Connect GitHub');login.type='button';login.addEventListener('click',()=>api('/api/action',{method:'POST',body:JSON.stringify({action:'github-login'})}).then(result=>setNotice(result.message)).catch(error=>setNotice(error.message)));body.append(login);return;}
+        if(!inbox.installed){body.append(workspaceEmpty('GitHub CLI is not installed','Install it from https://cli.github.com (or place gh.exe in bin/), then click Refresh'));const link=el('button','primary','Open cli.github.com');link.type='button';link.addEventListener('click',()=>openUrl('https://cli.github.com'));body.append(link);return;}
+        if(!inbox.authenticated){body.append(workspaceEmpty('GitHub is not connected','Click Connect, finish gh auth login in the terminal, then click Refresh'));const login=el('button','primary','Connect GitHub');login.type='button';login.addEventListener('click',()=>api('/api/action',{method:'POST',body:JSON.stringify({action:'github-login'})}).then(result=>setNotice(result.message)).catch(error=>setNotice(error.message)));body.append(login);return;}
         body.append(renderCreatePr(data,inbox),renderPullRequests(inbox),renderRuns(inbox));
-      }catch(error){body.replaceChildren(workspaceEmpty('โหลด GitHub ไม่สำเร็จ',error.message));}
+      }catch(error){body.replaceChildren(workspaceEmpty('Could not load GitHub',error.message));}
     };
     refresh.addEventListener('click',load);load();
   }
@@ -51,26 +51,26 @@
     const submit=el('button','primary',`Push & open PR from ${data.branch||'current branch'}`);submit.type='submit';submit.disabled=!data.branch||!branches.length;
     const baseLabel=el('label','github-field');baseLabel.append(el('span','','Base'),base);
     form.append(title,baseLabel,description,draftLabel,submit);section.append(form);
-    form.addEventListener('submit',async(event)=>{event.preventDefault();const result=await runWorkspaceAction('github-pr-create',{title:title.value.trim(),description:description.value,base:base.value,head:data.branch,draft:draft.checked},`Push ${data.branch} แล้วสร้าง pull request → ${base.value} บน ${inbox.repo}?`);if(result?.url)openUrl(result.url);});
+    form.addEventListener('submit',async(event)=>{event.preventDefault();const result=await runWorkspaceAction('github-pr-create',{title:title.value.trim(),description:description.value,base:base.value,head:data.branch,draft:draft.checked},`Push ${data.branch} and create a pull request → ${base.value} on ${inbox.repo}?`);if(result?.url)openUrl(result.url);});
     return section;
   }
   function renderPullRequests(inbox){
     const section=el('section','github-section');section.append(el('h4','',`Open pull requests · ${inbox.pullRequests.length}`));
-    if(!inbox.pullRequests.length){section.append(el('p','scan-location-empty','ไม่มี pull request ที่เปิดอยู่'));return section;}
+    if(!inbox.pullRequests.length){section.append(el('p','scan-location-empty','No open pull requests'));return section;}
     const list=workspaceList();
     inbox.pullRequests.forEach(pr=>{
       const row=el('div','workspace-row github-row');const info=el('div','github-row-info');
       const title=el('strong','',`#${pr.number} ${pr.title}`);const meta=el('small','',`${pr.author?.login||'unknown'} · ${pr.headRefName} → ${pr.baseRefName} · ${new Date(pr.updatedAt).toLocaleString()}`);
       const badges=el('span','github-badges');if(pr.isDraft)badges.append(badge('Draft'));if(pr.reviewDecision)badges.append(badge(pr.reviewDecision.replaceAll('_',' ').toLowerCase(),pr.reviewDecision==='APPROVED'?'ok':pr.reviewDecision==='CHANGES_REQUESTED'?'bad':''));
       info.append(title,meta,badges);
-      const actions=el('div','workspace-row-actions');const open=el('button','','Open');open.type='button';open.addEventListener('click',()=>openUrl(pr.url));const checkout=el('button','','Checkout');checkout.type='button';checkout.addEventListener('click',()=>runWorkspaceAction('github-pr-checkout',{number:pr.number},`Checkout pull request #${pr.number} (${pr.headRefName}) ลงเครื่อง?`));actions.append(open,checkout);
+      const actions=el('div','workspace-row-actions');const open=el('button','','Open');open.type='button';open.addEventListener('click',()=>openUrl(pr.url));const checkout=el('button','','Checkout');checkout.type='button';checkout.addEventListener('click',()=>runWorkspaceAction('github-pr-checkout',{number:pr.number},`Check out pull request #${pr.number} (${pr.headRefName}) locally?`));actions.append(open,checkout);
       row.append(info,actions);list.append(row);
     });
     section.append(list);return section;
   }
   function renderRuns(inbox){
     const section=el('section','github-section');section.append(el('h4','',`Actions runs · ${inbox.runs.length}`));
-    if(!inbox.runs.length){section.append(el('p','scan-location-empty','ยังไม่มี workflow run'));return section;}
+    if(!inbox.runs.length){section.append(el('p','scan-location-empty','No workflow runs yet'));return section;}
     const list=workspaceList();
     inbox.runs.forEach(item=>{
       const row=el('div','workspace-row github-row');const info=el('div','github-row-info');

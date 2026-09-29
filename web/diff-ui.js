@@ -40,6 +40,7 @@ function enhancedDiffViewer(diff,title='Diff',options={}){
   const raw=diff||'No textual diff.',rows=diffRows(raw),pairs=diffPairs(rows);
   const viewer=el('section','diff-viewer improved-diff'),toolbar=el('div','diff-viewer-toolbar'),body=el('div','diff-viewer-body');
   const label=el('strong','',title);label.title=title;
+  if(title!=='Diff'&&state.workspaceRepo)bindDiffPathMenu(label,title,{path:state.workspaceRepo.path});
   const button=(name,run)=>{const b=el('button','',name);b.type='button';b.onclick=run;return b;};
   const mode=el('select');mode.setAttribute('aria-label','Diff layout');mode.append(new Option('Unified','unified'),new Option('Side by side','split'));mode.value=preferences.mode;
   const search=el('input');search.type='search';search.placeholder='Find in diff';search.setAttribute('aria-label','Find in diff');
@@ -59,7 +60,7 @@ function enhancedDiffViewer(diff,title='Diff',options={}){
     status.textContent=(kind==='hunk'?'Change ':'Match ')+(index+1)+'/'+nodes.length;
   };
   const controls=el('div','diff-navigation');controls.append(button('Previous change',()=>jump('hunk',-1)),button('Next change',()=>jump('hunk',1)),status,foldButton);
-  if(options.navigate){controls.append(button('Previous file',()=>options.navigate(-1,viewer.classList.contains('diff-fullscreen'))),button('Next file',()=>options.navigate(1,viewer.classList.contains('diff-fullscreen'))));}
+  if(options.navigate){controls.append(el('span','diff-file-position',options.filePosition||'File navigation'),button('Previous file',()=>options.navigate(-1,viewer.classList.contains('diff-fullscreen'))),button('Next file',()=>options.navigate(1,viewer.classList.contains('diff-fullscreen'))));}
   toolbar.append(label,mode,search,button('Previous match',()=>jump('match',-1)),button('Next match',()=>jump('match',1)),wrap,button('A−',()=>font(-1)),button('A+',()=>font(1)),button('Copy',async()=>{try{await navigator.clipboard.writeText(raw);setNotice('Diff copied');}catch{setNotice('Copy failed');}}),fullButton);
   viewer.append(toolbar,controls,body);
   const lineNode=row=>{
@@ -74,8 +75,9 @@ function enhancedDiffViewer(diff,title='Diff',options={}){
   const draw=()=>{
     if(previewing)return;const top=body.scrollTop,left=body.scrollLeft;body.replaceChildren();hunkIndex=-1;matchIndex=-1;
     body.classList.toggle('wrap-lines',Boolean(preferences.wrap));wrap.setAttribute('aria-pressed',String(Boolean(preferences.wrap)));body.style.setProperty('--diff-font-size',preferences.fontSize+'px');
-    if(options.status==='A'||/^new file mode /m.test(raw))body.append(el('div','diff-file-note','New file · ทุกบรรทัดเป็นข้อมูลเพิ่มใหม่'));
-    if(options.binary||/^(Binary files .* differ|GIT binary patch)/m.test(raw)){body.append(el('div','diff-file-note','Binary file · ไม่มี text diff · ใช้ File info เพื่อดูขนาดและดาวน์โหลด'));return;}
+    if(options.status==='A'||/^new file mode /m.test(raw))body.append(el('div','diff-file-note','New file · All lines are newly added'));
+    if(options.binary||/^(Binary files .* differ|GIT binary patch)/m.test(raw)){body.append(el('div','diff-file-note','Binary file · No text diff. Use File info for size and download options.'));return;}
+    if(!diff?.trim()||diff==='No textual diff.'){body.append(el('div','diff-file-note','No textual changes. This may be an empty file, a rename or a metadata-only change. Use File info to inspect its contents.'));status.textContent='No text changes';return;}
     const code=el('div','diff-lines '+(preferences.mode==='split'?'diff-side-by-side':''));
     if(preferences.mode==='split'){
       code.style.setProperty('--diff-column-width',`max(400px,${Math.max(0,...rows.map(r=>r.line.length))+16}ch)`);
@@ -86,22 +88,22 @@ function enhancedDiffViewer(diff,title='Diff',options={}){
       if(rows[i].kind==='context'&&fold&&!search.value){let end=i;while(end<rows.length&&rows[end].kind==='context')end++;if(end-i>8){code.append(lineNode(rows[i]),lineNode(rows[i+1]));const details=el('details','diff-context-fold');details.append(el('summary','',`${end-i-4} unchanged lines · expand`));for(let n=i+2;n<end-2;n++)details.append(lineNode(rows[n]));code.append(details,lineNode(rows[end-2]),lineNode(rows[end-1]));i=end;continue;}}
       code.append(lineNode(rows[i++]));
     }
-    body.append(code);if(raw.split(/\r?\n/).length>6000||options.truncated)body.append(el('p','diff-file-note','แสดง diff แบบจำกัดขนาด — ผลค้นหา/จุดเปลี่ยนครอบคลุมเฉพาะส่วนที่โหลด'));
+    body.append(code);if(raw.split(/\r?\n/).length>6000||options.truncated)body.append(el('p','diff-file-note','Diff size is limited. Search results and change navigation cover only the loaded portion.'));
     status.textContent=search.value?body.querySelectorAll('.diff-match').length+' matching lines':body.querySelectorAll('[data-hunk]').length+' changes';body.scrollTop=top;body.scrollLeft=left;
   };
   if(options.content){
     const markdown=/\.(md|markdown)$/i.test(title),contentButton=button(markdown?'Preview':'File info',async()=>{
       if(previewing){previewVersion++;previewing=false;contentButton.textContent=markdown?'Preview':'File info';mode.disabled=false;search.disabled=false;foldButton.disabled=false;draw();return;}
-      previewing=true;const version=++previewVersion;contentButton.textContent='Back to diff';mode.disabled=true;search.disabled=true;foldButton.disabled=true;body.replaceChildren(el('p','diff-file-note','กำลังอ่านไฟล์จาก commit…'));
+      previewing=true;const version=++previewVersion;contentButton.textContent='Back to diff';mode.disabled=true;search.disabled=true;foldButton.disabled=true;body.replaceChildren(el('p','diff-file-note','Reading file from commit…'));
       try{const result=blobCache||await options.content();if(!viewer.isConnected||!previewing||version!==previewVersion)return;blobCache=result;
-        body.replaceChildren(el('p','diff-file-note',`${result.size.toLocaleString()} bytes · revision ${result.revision.slice(0,8)}${options.status==='D'?' · ก่อนลบไฟล์':''}`));
-        if(result.tooLarge){body.append(el('p','diff-file-note','ไฟล์เกิน 10 MB — ไม่โหลดเพื่อป้องกันหน้าจอค้าง'));return;}
-        if(markdown&&!result.binary&&!result.textTooLarge){body.append(el('small','diff-file-note','Safe Markdown preview · HTML/ลิงก์/รูปภายนอกไม่ทำงาน'),safeMarkdownPreview(result.text));}
-        else if(result.binary){body.append(el('p','diff-file-note',result.pdf?'PDF document · ดาวน์โหลดเพื่อเปิดด้วยโปรแกรมอ่าน PDF ของคุณ':'Binary file · ไม่มี text preview'));
+        body.replaceChildren(el('p','diff-file-note',`${result.size.toLocaleString()} bytes · revision ${result.revision.slice(0,8)}${options.status==='D'?' · Before deletion':''}`));
+        if(result.tooLarge){body.append(el('p','diff-file-note','File exceeds 10 MB. Loading skipped to keep the interface responsive.'));return;}
+        if(markdown&&!result.binary&&!result.textTooLarge){body.append(el('small','diff-file-note','Safe Markdown preview · HTML, external links and images are disabled'),safeMarkdownPreview(result.text));}
+        else if(result.binary){body.append(el('p','diff-file-note',result.pdf?'PDF document · Download to open in your PDF reader':'Binary file · No text preview'));
           if(result.base64)body.append(button(result.pdf?'Download PDF from commit':'Download binary from commit',()=>{const bytes=Uint8Array.from(atob(result.base64),c=>c.charCodeAt(0));const url=URL.createObjectURL(new Blob([bytes],{type:result.pdf?'application/pdf':'application/octet-stream'}));const link=document.createElement('a');link.href=url;link.download=result.pdf?title.split(/[\\/]/).pop():'commit-file.bin';link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}));
-        }else if(result.textTooLarge)body.append(el('p','diff-file-note','Text preview จำกัดไม่เกิน 1 MB'));
+        }else if(result.textTooLarge)body.append(el('p','diff-file-note','Text preview is limited to 1 MB'));
         else body.append(el('pre','safe-file-text',result.text));
-      }catch(error){if(viewer.isConnected&&previewing&&version===previewVersion)body.replaceChildren(el('p','diff-file-note','อ่านไม่ได้: '+error.message+' · กด Back to diff แล้วลองใหม่'));}
+      }catch(error){if(viewer.isConnected&&previewing&&version===previewVersion)body.replaceChildren(el('p','diff-file-note','Could not read: '+error.message+' · Click Back to diff and retry'));}
     });toolbar.append(contentButton);
   }
   mode.onchange=()=>{preferences.mode=mode.value;saveMeta();draw();};search.oninput=draw;search.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();jump('match',event.shiftKey?-1:1);}};

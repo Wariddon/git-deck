@@ -24,7 +24,7 @@ internal static class GitDeckLauncher
         string server = Path.Combine(root, "git-dashboard-server.ps1");
         if (!File.Exists(server))
         {
-            MessageBox.Show("ไม่พบ git-dashboard-server.ps1\n\nวาง GitDeck.exe ไว้ในโฟลเดอร์เดียวกับ scripts และ web", "Git Deck", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show("git-dashboard-server.ps1 was not found\n\nPlace GitDeck.exe in the same folder as the scripts and web directory", "Git Deck", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
 
@@ -36,7 +36,7 @@ internal static class GitDeckLauncher
                 if (ownsMutex) StartServer(root, server);
                 if (!WaitUntilReady(TimeSpan.FromSeconds(20)))
                 {
-                    MessageBox.Show("Git Deck local service เปิดไม่สำเร็จภายใน 20 วินาที\n\nลองรัน git-dashboard.bat เพื่อตรวจข้อความผิดพลาด", "Git Deck", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Git Deck local service did not start within 20 seconds\n\nRun git-dashboard.bat to inspect the error", "Git Deck", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
             }

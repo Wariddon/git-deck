@@ -50,9 +50,9 @@ function enhanceLineStaging(pane,diff,staged,file){
     const stageLines=staged
       ?makeButton('Unstage lines','', 'unstage',true,(count)=>`Unstage ${count} selected line(s) in ${file.path}?`)
       :makeButton('Stage lines','primary','stage',false,(count)=>`Stage ${count} selected line(s) in ${file.path}?`);
-    const discardLines=!staged&&file.status!=='??'?makeButton('Discard lines','danger','discard',true,(count)=>`ทิ้งการแก้ ${count} บรรทัดที่เลือกใน ${file.path}?\nย้อนกลับไม่ได้`):null;
+    const discardLines=!staged&&file.status!=='??'?makeButton('Discard lines','danger','discard',true,(count)=>`Discard changes to ${count} selected line(s) in ${file.path}?\nThis cannot be undone.`):null;
     const clear=el('button','line-stage-clear','Clear');clear.type='button';clear.hidden=true;
-    const hint=el('small','line-stage-hint','คลิกบรรทัด +/− เพื่อเลือกเฉพาะบางบรรทัด');
+    const hint=el('small','line-stage-hint','Click +/− lines to select only some lines');
     controls?.append(hint,stageLines,...(discardLines?[discardLines]:[]),clear);
     const update=()=>{const any=selected.size>0;[stageLines,discardLines,clear].forEach(button=>{if(button)button.hidden=!any;});hint.hidden=any;if(any)stageLines.textContent=`${staged?'Unstage':'Stage'} ${selected.size} line${selected.size===1?'':'s'}`;};
     clear.addEventListener('click',()=>{selected.clear();section.querySelectorAll('.line-selected').forEach(row=>row.classList.remove('line-selected'));update();});

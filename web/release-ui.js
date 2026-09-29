@@ -37,32 +37,32 @@ function releaseDialog(title){
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();return {dialog,body,actions};
 }
 async function showReadiness(){
-  const ui=releaseDialog('ตรวจความพร้อม · Git Deck');ui.body.textContent='กำลังตรวจเครื่องนี้…';
+  const ui=releaseDialog('Readiness check · Git Deck');ui.body.textContent='Checking this computer…';
   try{const info=await api('/api/readiness');ui.body.replaceChildren();
-    const checks=[['Local service / port',info.serviceReady,'เชื่อมต่อพอร์ต '+info.port+' สำเร็จ'],['Git',info.gitAvailable,'ติดตั้ง Git for Windows และเปิดโปรแกรมใหม่'],['Global commit identity',info.globalIdentityReady,'ตั้ง git config --global user.name และ user.email หรือกำหนดแยกแต่ละ repo'],['GitLab CLI (optional)',info.gitlabCliAvailable,'วาง glab.exe ใน bin แล้วล็อกอินด้วยบัญชีของคุณ']];
-    for(const [label,ok,hint] of checks){ui.body.append(el('p','',`${ok?'✓':'!'} ${label} — ${ok?'พร้อม':hint}`));}
-    ui.body.append(el('p','','ข้อมูล repo และ cache เก็บบนเครื่องนี้เท่านั้น ไม่ส่ง telemetry ออกไป'));
-    const done=el('button','primary','รับทราบ');done.onclick=()=>{try{localStorage.setItem('git-deck-onboarding-v1','done');}catch{}ui.dialog.close();};ui.actions.append(done);
-  }catch(error){ui.body.textContent='ตรวจไม่ได้: '+error.message;}
+    const checks=[['Local service / port',info.serviceReady,'Connected to port '+info.port+' Successfully'],['Git',info.gitAvailable,'Install Git for Windows and restart the application'],['Global commit identity',info.globalIdentityReady,'Set git config --global user.name and user.email, or configure each repository separately'],['GitLab CLI (optional)',info.gitlabCliAvailable,'Place glab.exe in bin and sign in with your account']];
+    for(const [label,ok,hint] of checks){ui.body.append(el('p','',`${ok?'✓':'!'} ${label} — ${ok?'Ready':hint}`));}
+    ui.body.append(el('p','','Repository metadata and cache stay on this computer. No telemetry is sent.'));
+    const done=el('button','primary','Got it');done.onclick=()=>{try{localStorage.setItem('git-deck-onboarding-v1','done');}catch{}ui.dialog.close();};ui.actions.append(done);
+  }catch(error){ui.body.textContent='Could not check: '+error.message;}
 }
 async function showSafeReport(){
-  const ui=releaseDialog('รายงานปัญหา · ไม่มีข้อมูล repository');
-  try{const info=await api('/api/readiness');const text=GitDeckRelease.report(info);const preview=el('pre','',text);preview.style.whiteSpace='pre-wrap';ui.body.append(el('p','','รายงานนี้มีเฉพาะเวอร์ชันและสถานะความพร้อม ไม่รวม error ดิบ, token, URL, path หรือชื่อบัญชี ตรวจข้อความก่อนส่งเองได้เลย'),preview);
-    const copy=el('button','','Copy report');copy.onclick=async()=>{try{await navigator.clipboard.writeText(text);copy.textContent='Copied';}catch{copy.textContent='เลือกข้อความด้านบนเพื่อคัดลอก';}};ui.actions.append(copy);
-  }catch{ui.body.textContent='Local service unavailable. ไม่มีข้อมูลส่วนตัวถูกแนบ';}
+  const ui=releaseDialog('Issue report · No repository data');
+  try{const info=await api('/api/readiness');const text=GitDeckRelease.report(info);const preview=el('pre','',text);preview.style.whiteSpace='pre-wrap';ui.body.append(el('p','','This report contains only version and readiness information. It excludes raw errors, tokens, URLs, paths and account names. Review it before sharing.'),preview);
+    const copy=el('button','','Copy report');copy.onclick=async()=>{try{await navigator.clipboard.writeText(text);copy.textContent='Copied';}catch{copy.textContent='Select the text above to copy it';}};ui.actions.append(copy);
+  }catch{ui.body.textContent='Local service unavailable. No personal data is attached';}
 }
 for(const panel of document.querySelectorAll('.help-menu-panel')){
-  for(const [label,action] of [['ตรวจความพร้อม',showReadiness],['รายงานปัญหา (ปกปิดข้อมูล)',showSafeReport],['ล้าง workspace cache',()=>{workspaceSnapshots.clear();persistWorkspaceSnapshots();setNotice('ล้างข้อมูล workspace ที่จำไว้แล้ว');}]]){const button=el('button','',label);button.type='button';button.onclick=()=>{panel.closest('details')?.removeAttribute('open');action();};panel.append(button);}
+  for(const [label,action] of [['Readiness check',showReadiness],['Report issue (redacted)',showSafeReport],['Clear workspace cache',()=>{workspaceSnapshots.clear();persistWorkspaceSnapshots();setNotice('Saved workspace cache cleared');}]]){const button=el('button','',label);button.type='button';button.onclick=()=>{panel.closest('details')?.removeAttribute('open');action();};panel.append(button);}
 }
 let preflightBusy=false,approvedPush=null;
 let pushReviewVersion=0;
 function resetPushReview(){pushReviewVersion++;approvedPush=null;document.getElementById('push-review')?.remove();$('push-form').classList.remove('reviewing');}
 function inlinePushReview(){
   document.getElementById('push-review')?.remove();
-  const panel=el('section','push-review');panel.id='push-review';panel.tabIndex=-1;panel.setAttribute('aria-label','ตรวจสอบก่อน Push');
-  const steps=el('p','push-review-steps','1 เลือก branch  →  2 ตรวจสอบ  →  3 ยืนยัน');
+  const panel=el('section','push-review');panel.id='push-review';panel.tabIndex=-1;panel.setAttribute('aria-label','Review before pushing');
+  const steps=el('p','push-review-steps','1 Select branches  →  2 Review  →  3 Confirm');
   const body=el('div','push-review-body'),actions=el('div','push-review-actions');
-  const back=el('button','','กลับไปเลือก branch');back.type='button';back.onclick=()=>{resetPushReview();$('push-submit').focus();};actions.append(back);
+  const back=el('button','','Back to branch selection');back.type='button';back.onclick=()=>{resetPushReview();$('push-submit').focus();};actions.append(back);
   panel.append(steps,body,actions);$('push-message').before(panel);$('push-form').classList.add('reviewing');panel.focus();
   return {body,actions,close:resetPushReview};
 }
@@ -75,18 +75,20 @@ $('push-form').addEventListener('submit',async event=>{
   event.preventDefault();event.stopImmediatePropagation();if(preflightBusy||state.busy)return;
   preflightBusy=true;
   const repo=state.workspaceRepo;const remote=$('push-remote').value;const branches=selectedPushBranches();
-  const ui=inlinePushReview();const version=++pushReviewVersion;ui.body.textContent='กำลังอ่าน commits จาก local tracking refs…';
+  const ui=inlinePushReview();const version=++pushReviewVersion;ui.body.textContent='Reading commits from local tracking refs…';
   try{
     const results=[];for(const branch of branches){results.push(await api('/api/repo/push-preview?'+new URLSearchParams({path:repo.path,remote,local:branch.local,target:branch.remote})));}
     if(version!==pushReviewVersion||signature!==pushSignature())return;
-    ui.body.replaceChildren(el('p','push-review-warning','ข้อมูลจาก local tracking refs — ควร Fetch remote ที่เลือกก่อน Push หากข้อมูลอาจเก่า'));
-    for(const result of results){ui.body.append(el('h3','',`${result.local} → ${result.remote}/${result.target}`),el('p','',result.knownTarget?`ส่ง ${result.ahead} commits · ตามหลัง ${result.behind} commits`:'ไม่พบ target ใน local tracking refs — ยังยืนยันไม่ได้ว่าเป็น branch ใหม่'),el('small','',`FETCH_HEAD ล่าสุด: ${result.lastFetchAt||'ไม่ทราบ'} (อาจเป็นของ remote อื่น)`));const pre=el('pre','',(result.commits||[]).join('\n'));pre.style.cssText='white-space:pre-wrap;max-height:180px;overflow:auto';ui.body.append(pre);}
-    if($('push-tags').checked)ui.body.append(el('p','','รวมการ Push tags ทั้งหมด — รายการ commits ด้านบนไม่ใช่ preview ของ tags'));
-    if($('push-force').checked)ui.body.append(el('p','','คำเตือน: Force with lease อาจเขียนประวัติใหม่'));
-    const confirm=el('button','primary','ยืนยัน Push');confirm.type='button';confirm.disabled=(!branches.length&&!$('push-tags').checked)||(!$('push-force').checked&&results.some(r=>r.behind>0));
-    if(confirm.disabled)ui.body.append(el('p','push-review-warning','ยัง Push ไม่ได้: ตรวจ branch ที่เลือกและ commits ที่ตามหลัง remote'));
-    confirm.onclick=()=>{if(signature!==pushSignature()){ui.body.append(el('p','','ตัวเลือกเปลี่ยนแล้ว กรุณาย้อนกลับและตรวจใหม่'));return;}ui.close();approvedPush=signature;$('push-form').requestSubmit();};ui.actions.append(confirm);
-  }catch(error){ui.body.textContent='ตรวจไม่สำเร็จ — ไม่ส่ง Push: '+error.message;}
+    ui.body.replaceChildren(el('p','push-review-warning','Based on local tracking refs. Fetch the selected remote before pushing if this data may be outdated.'));
+    for(const result of results){ui.body.append(el('h3','',`${result.local} → ${result.remote}/${result.target}`),el('p','',result.knownTarget?`Send ${result.ahead} commits · Behind ${result.behind} commits`:'Target not found in local tracking refs. Cannot confirm whether this is a new branch.'),el('small','',`Latest FETCH_HEAD: ${result.lastFetchAt||'Unknown'} (May refer to a different remote)`));const pre=el('pre','',(result.commits||[]).join('\n'));pre.style.cssText='white-space:pre-wrap;max-height:180px;overflow:auto';ui.body.append(pre);}
+    if($('push-tags').checked)ui.body.append(el('p','','Includes all tags. The commit list above is not a preview of tags.'));
+    if($('push-force').checked)ui.body.append(el('p','','Warning: force with lease may rewrite history'));
+    const confirm=el('button','primary','Confirm push');confirm.type='button';confirm.disabled=(!branches.length&&!$('push-tags').checked)||(!$('push-force').checked&&results.some(r=>r.behind>0));
+    if(confirm.disabled)ui.body.append(el('p','push-review-warning','Cannot push yet. Check selected branches and commits behind the remote.'));
+    confirm.title=confirm.disabled?'Review selected branches and incoming commits before pushing.':'';
+    const context=el('small','action-target',actionContext(repo,state.workspace,{remote,branches}));ui.actions.append(context);
+    confirm.onclick=()=>{if(signature!==pushSignature()){ui.body.append(el('p','','Options changed. Go back and review again.'));return;}ui.close();approvedPush=signature;$('push-form').requestSubmit();};ui.actions.append(confirm);
+  }catch(error){ui.body.textContent='Review failed. Push was not sent: '+error.message;}
   finally{preflightBusy=false;}
 },true);
 const readinessTimer=setInterval(()=>{if(state.initializing)return;clearInterval(readinessTimer);if(localStorage.getItem('git-deck-onboarding-v1')!=='done')showReadiness();},500);
@@ -118,12 +120,12 @@ const currentGithubProject=()=>{const remotes=state.workspace?.remotes||[];const
 const gitlabMrDialog=showMrDialog;
 showMrDialog=function(repo,sourceBranch='',remote='origin'){const remotes=state.workspace?.remotes||[];const selected=remotes.find(r=>r.name===remote);const project=GitDeckRelease.githubProject(selected?.fetchUrl||selected?.pushUrl||'');if(project){const branch=sourceBranch||state.workspace?.branch||repo.branch;if(!branch||branch==='HEAD'){setNotice('Select a branch before creating a pull request');return;}window.open(project+'/compare/'+encodeURIComponent(branch)+'?expand=1','_blank','noopener,noreferrer');return;}return gitlabMrDialog(repo,sourceBranch,remote);};
 const originalStatus=renderWorkspaceStatus;
-renderWorkspaceStatus=function(){originalStatus();branchLabel.textContent=state.workspace?.branch||'Loading branch…';branchLabel.title=branchLabel.textContent;$('status-job').textContent=currentToolbarStatus();$('status-activity').title=`Latest output${operationRepo?' · '+operationRepo:''}: ${$('output-summary').textContent||'None'}`;const mr=document.querySelector('.create-mr-button');const github=currentGithubProject();mr.textContent=github?'Pull Request ↗':'Merge Request';mr.title=github?'Open GitHub comparison to choose target and create a pull request (does not push)':'Create GitLab merge request';};
+renderWorkspaceStatus=function(){originalStatus();branchLabel.textContent=state.workspace?'Working on: '+(state.workspace.branch||'Detached HEAD'):'Loading branch…';branchLabel.title=branchLabel.textContent;$('status-job').textContent=currentToolbarStatus();$('status-activity').title=`Latest output${operationRepo?' · '+operationRepo:''}: ${$('output-summary').textContent||'None'}`;const mr=document.querySelector('.create-mr-button');const github=currentGithubProject();mr.textContent=github?'Pull Request ↗':'Merge Request';mr.title=github?'Open GitHub comparison to choose target and create a pull request (does not push)':'Create GitLab merge request';};
 const originalLoading=showLoading,originalHideLoading=hideLoading;
 showLoading=function(title,detail=''){operationStart=Date.now();operationLabel=title+(detail?' · '+detail:'');originalLoading(title,detail);renderWorkspaceStatus();};
 hideLoading=function(){originalHideLoading();operationLabel=state.busy?'Working…':($('output-summary').textContent||'Ready');renderWorkspaceStatus();};
 new MutationObserver(()=>{if(!document.body.hasAttribute('aria-busy')){operationLabel=$('output-summary').textContent||'Ready';renderWorkspaceStatus();}}).observe($('output-summary'),{childList:true,characterData:true,subtree:true});
-new MutationObserver(()=>{const value=$('workspace-branch').textContent;if(/กำลัง|รอคิว|อ่าน status/.test(value)){operationLabel=value;renderWorkspaceStatus();}}).observe($('workspace-branch'),{childList:true});
+new MutationObserver(()=>{const value=$('workspace-branch').textContent;if(/Loading|Checking|Reading|Queued/.test(value)){operationLabel=value;renderWorkspaceStatus();}}).observe($('workspace-branch'),{childList:true});
 setInterval(()=>{if(document.body.hasAttribute('aria-busy')&&operationStart){$('status-job').textContent=`${operationLabel} · ${((Date.now()-operationStart)/1000).toFixed(1)}s`;}},1000);
 
 function enhanceChangeFiles(){
@@ -157,7 +159,7 @@ renderRepoTabs=function(){
   baseRepoTabs();
   document.querySelectorAll('.repo-tab').forEach((tab,index)=>{
     const repo=state.repos.find(r=>repoKey(r)===tab.dataset.repoKey);if(!repo)return;
-    tab.oncontextmenu=event=>showContextMenu(event,[{label:isFavorite(repo)?'Unpin repository':'Pin repository',run:()=>{const key=repoKey(repo);if(isFavorite(repo))delete state.meta.favorites[key];else state.meta.favorites[key]=true;saveMeta();renderRepoTabs();}}]);
+    tab.oncontextmenu=event=>showContextMenu(event,repositoryTabContextItems(repo,()=>tab.querySelector(".repo-tab-close")?.click()));
     const cached=workspaceSnapshots.get(repoKey(repo))?.data;
     const data=state.workspaceRepo&&repoKey(state.workspaceRepo)===repoKey(repo)?state.workspace:cached;
     const changes=data?.files?.length??repo.changes;
