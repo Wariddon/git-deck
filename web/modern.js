@@ -242,6 +242,26 @@
     if(secondary&&event.target.closest('button')&&!event.target.closest('select'))secondary.open=false;
     document.querySelectorAll('.workbench-secondary[open]').forEach(menu=>{if(isModern()&&!menu.contains(event.target))menu.open=false;});
   });
+  // "More" menu: icons instead of mixed glyphs (⇄ ◈ ⌕ ⑂ ≋ …); the words stay.
+  const moreIcons={'compare':'compare','gitlab-inbox':'inbox','search-history':'search','branches':'branch','rebase':'commit','conflicts':'conflict','health':'check','worktrees':'folder','stashes':'stash','tag-create':'tag','patches':'changes','remotes':'cloud','recovery':'recovery','tools':'tools','settings':'settings','toolbar-create-branch':'branch','toolbar-create-tag':'tag'};
+  // Upper-case group labels ("REVIEW & GITLAB") read as sentence case, keeping product names.
+  function sentenceCase(text){
+    if(!/^[^a-z]*[A-Z][^a-z]*$/.test(text))return text;
+    return (text.charAt(0)+text.slice(1).toLowerCase()).replace(/\bgitlab\b/g,'GitLab').replace(/\bgithub\b/g,'GitHub').replace(/\bmr\b/g,'MR');
+  }
+  function decorateMoreMenu(){
+    for(const heading of document.querySelectorAll('.sync-more > div > .sync-more-group')){
+      if(heading.dataset.modernText!==undefined)continue;
+      const text=heading.textContent;const nicer=sentenceCase(text);if(nicer!==text){heading.dataset.modernText=text;heading.textContent=nicer;}
+    }
+    for(const button of document.querySelectorAll('.sync-more > div > button')){
+      if(button.querySelector(':scope > .modern-made'))continue;
+      const name=moreIcons[button.dataset.workbenchNav||button.id];if(!name)continue;
+      const label=button.querySelector(':scope > strong');
+      if(label&&label.dataset.modernText===undefined){const text=label.textContent;const words=text.replace(/^[^\p{L}\p{N}]+/u,'');if(words!==text){label.dataset.modernText=text;label.textContent=words;}}
+      const node=icon(name,16);node.classList.add('modern-made');button.prepend(node);
+    }
+  }
   function restoreToolbar(){for(const label of document.querySelectorAll('[data-modern-text]')){label.textContent=label.dataset.modernText;delete label.dataset.modernText;}}
 
   // ---- History: avatars, relative time, ref chips ---------------------------------------------
@@ -404,7 +424,7 @@
   }
 
   // ---- Lifecycle -------------------------------------------------------------------------------
-  function refresh(){if(!isModern())return;syncAccent();syncDrawer();buildHeader();buildToolsPanel();buildRail();decorateToolbar();renderHeader();renderRail();}
+  function refresh(){if(!isModern())return;syncAccent();syncDrawer();buildHeader();buildToolsPanel();decorateMoreMenu();buildRail();decorateToolbar();renderHeader();renderRail();}
   function teardown(){closePopover();restoreToolbar();restoreToolsPanel();document.querySelectorAll('.modern-made').forEach(node=>node.remove());document.querySelectorAll('[data-modern]').forEach(node=>delete node.dataset.modern);document.querySelector('.modern-no-changes')?.classList.remove('modern-no-changes');document.body?.classList.remove('modern-library-drawer');document.body?.style.removeProperty('--green');document.body?.style.removeProperty('--accent-contrast');bar=rail=primary=null;}
   if(typeof renderWorkspaceStatus==='function'){
     const baseStatus=renderWorkspaceStatus;
@@ -422,5 +442,5 @@
   const applyLook=()=>{if(isModern())refresh();else teardown();};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyLook);else applyLook();
   document.addEventListener('gitdeck:appearance',applyLook);
-  window.GitDeckModern={primaryAction,syncAction,relativeTime,initials,refKind,readableAccent,contrast};
+  window.GitDeckModern={primaryAction,syncAction,relativeTime,initials,refKind,readableAccent,contrast,sentenceCase};
 })();

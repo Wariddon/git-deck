@@ -86,9 +86,9 @@ html.ui-modern body .workspace-modal-head { gap: 12px; min-height: 48px; padding
 html.ui-modern body .workspace-modal-head > div:has(> #workspace-title) { display: none !important; }
 html.ui-modern body .sync-actions { align-items: center; gap: 4px !important; margin-left: auto; }
 html.ui-modern body .sync-actions > button[data-workbench-nav="changes"] { display: none !important; }
-html.ui-modern body .sync-actions :is(button, summary):not(.hidden):not([hidden]):not([data-workbench-nav="changes"]):not([data-git-action]) { display: inline-flex !important; flex-direction: row !important; align-items: center; gap: 6px; height: 32px; min-height: 32px !important; padding: 0 10px !important; font-weight: 500; }
-html.ui-modern body .sync-actions :is(button, summary) small { display: none !important; }
-html.ui-modern body .sync-actions :is(button, summary) strong { font-weight: 500; }
+html.ui-modern body .sync-actions > :is(button, details > summary, .toolbar-pull-group > button):not(.hidden):not([hidden]):not([data-workbench-nav="changes"]):not([data-git-action]) { display: inline-flex !important; flex-direction: row !important; align-items: center; gap: 6px; height: 32px; min-height: 32px !important; padding: 0 10px !important; font-weight: 500; }
+html.ui-modern body .sync-actions > :is(button, details > summary, .toolbar-pull-group > button) small { display: none !important; }
+html.ui-modern body .sync-actions > :is(button, details > summary, .toolbar-pull-group > button) strong { font-weight: 500; }
 html.ui-modern body .sync-actions .gd-icon { flex: none; color: var(--text-secondary); }
 html.ui-modern body .sync-actions .modern-primary {
   order: -1; margin-right: 8px; border: 0 !important; border-radius: 6px !important;
@@ -217,8 +217,8 @@ html.ui-modern body .ai-button { border-radius: 6px; }
 html.ui-modern body { line-height: 1.45; --text-tertiary: #6b6b75; }
 html.ui-modern body.theme-dark:not(.theme-midnight) { --text-tertiary: #8b8b94; }
 
-html.ui-modern body .sync-actions :is(button, summary):not(.modern-primary) { color: var(--text-secondary) !important; }
-html.ui-modern body .sync-actions :is(button, summary):not(.modern-primary):hover { color: var(--text-primary) !important; }
+html.ui-modern body .sync-actions > :is(button, details > summary):not(.modern-primary) { color: var(--text-secondary) !important; }
+html.ui-modern body .sync-actions > :is(button, details > summary):not(.modern-primary):hover { color: var(--text-primary) !important; }
 html.ui-modern body .sync-actions #pull-strategy { height: 28px; padding: 0 6px; font-size: .92em; }
 
 /* ---- Rail: icon + label ------------------------------------------------------------------ */
@@ -630,3 +630,72 @@ html.ui-modern body .workspace-modal-head { position: relative; z-index: 50; }
 html.ui-modern body .modern-tools-panel .workspace-header-actions { justify-content: flex-start !important; }
 html.ui-modern body .modern-tools-panel :is(#view-back, #view-forward, [data-workspace-quick="favorite"]) { order: -1; }
 html.ui-modern body .modern-tools-panel [data-workspace-quick="favorite"] { margin-left: auto !important; }
+
+/* ---- "More" menu: left-aligned two-column list with icons ------------------------------------------ */
+html.ui-modern body .sync-actions .sync-more > div {
+  display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); overflow: hidden auto !important; gap: 2px 8px; width: 520px !important; max-width: calc(100vw - 32px);
+  padding: 8px !important; border: 1px solid var(--border-default) !important; border-radius: 10px !important;
+  background: var(--surface) !important; box-shadow: var(--modern-shadow-pop) !important; animation: modern-pop .15s var(--modern-ease);
+}
+html.ui-modern body .sync-more > div > .sync-more-group {
+  grid-column: 1 / -1; display: block; margin: 8px 8px 2px !important; padding: 0 !important; border: 0 !important;
+  text-transform: none !important; color: var(--text-tertiary) !important; font-size: .86em; font-weight: 600; letter-spacing: .01em;
+}
+html.ui-modern body .sync-more > div > .sync-more-group:first-child { margin-top: 2px !important; }
+html.ui-modern body .sync-actions .sync-more > div > button {
+  display: grid !important; grid-template-columns: 18px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; align-items: center;
+  width: 100% !important; height: auto !important; min-height: 40px; margin: 0 !important; padding: 6px 10px !important;
+  border: 0 !important; border-radius: 6px !important; background: transparent !important; box-shadow: none !important;
+  color: var(--text-primary) !important; text-align: left !important; justify-content: stretch !important;
+}
+html.ui-modern body .sync-actions .sync-more > div > button:hover, html.ui-modern body .sync-actions .sync-more > div > button:focus-visible { background: var(--surface-hover) !important; }
+html.ui-modern body .sync-actions .sync-more > div > button > .gd-icon { grid-row: 1 / span 2; color: var(--text-tertiary); }
+html.ui-modern body .sync-actions .sync-more > div > button > strong { grid-column: 2; font-weight: 500 !important; text-align: left; }
+html.ui-modern body .sync-actions .sync-more > div > button > small { display: block !important; grid-column: 2; overflow: hidden; color: var(--text-tertiary) !important; font-size: .86em; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- Pages: one visual language for panels, lists, forms and destructive actions ------------------------ */
+html.ui-modern body #workspace-content :is(.ai-card, .tag-manage-card, .settings-card, .recovery-note, .journal-box, .patch-card, .gitlab-inbox-card, .worktree-list, .stash-preview) {
+  border: 1px solid var(--border-default) !important; border-radius: 10px !important; background: var(--surface) !important; box-shadow: none !important;
+}
+html.ui-modern body #workspace-content :is(.ai-card, .tag-manage-card, .settings-card) { padding: 12px 16px !important; }
+html.ui-modern body #workspace-content > :is(.ai-card, .tag-manager, .workspace-list, .stash-layout, .remote-form, .recovery-note, .journal-box, .settings-layout) { margin-left: 12px !important; margin-right: 12px !important; }
+/* Lists: flat rows with a hairline between them, hover highlight. */
+html.ui-modern body #workspace-content :is(.workspace-list, .tag-list, .journal-list, .recovery-list) > :is(.workspace-row, .remote-card, .tag-row, .journal-row, .recovery-row, section:not(.branch-card), div:not(.modern-list-heading)) {
+  margin: 0 !important; border: 0 !important; border-bottom: 1px solid var(--border-muted) !important; border-radius: 0 !important;
+  background: transparent !important; box-shadow: none !important;
+}
+html.ui-modern body #workspace-content :is(.workspace-list, .tag-list, .journal-list, .recovery-list) > :is(.workspace-row, .remote-card, .tag-row, .journal-row, .recovery-row, section:not(.branch-card), div:not(.modern-list-heading)):hover { background: var(--surface-hover) !important; }
+html.ui-modern body #workspace-content :is(.workspace-list, .tag-list, .journal-list, .recovery-list) > :last-child { border-bottom: 0 !important; }
+html.ui-modern body #workspace-content .workspace-row { padding: 8px 12px !important; }
+html.ui-modern body #workspace-content .workspace-row small { color: var(--text-tertiary); }
+/* Form fields: same height and shape everywhere. */
+html.ui-modern body #workspace-content :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), select) {
+  height: 32px; padding: 0 10px; border: 1px solid var(--border-default) !important; border-radius: 6px !important;
+  background: var(--surface) !important; color: var(--text-primary) !important; box-shadow: none !important;
+}
+html.ui-modern body #workspace-content :is(input, select, textarea):focus { border-color: var(--green) !important; outline: 0 !important; box-shadow: 0 0 0 3px var(--modern-accent-soft) !important; }
+html.ui-modern body #workspace-content :is(.workspace-form, .remote-form, .ai-ask, .tag-manage-head, .remote-edit) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+/* Buttons in pages: primary = accent, ordinary = quiet outline, destructive = red text until hovered. */
+html.ui-modern body #workspace-content :is(.workspace-row-actions, .tag-list, .remote-form, .remote-edit, .workspace-form, .tag-manage-head, .ai-ask, .journal-row, .recovery-row, .settings-card, .tag-row) button:not(.primary):not(.danger):not(.ref-more):not(.recovery-info) {
+  height: 28px; padding: 0 10px; border: 1px solid var(--border-default) !important; border-radius: 6px !important;
+  background: var(--surface) !important; color: var(--text-primary) !important; box-shadow: none !important; font-weight: 500;
+}
+html.ui-modern body #workspace-content button.primary:not(.commit-submit) {
+  height: 32px; padding: 0 14px; border: 0 !important; border-radius: 6px !important; background: var(--green) !important;
+  color: var(--accent-contrast, #fff) !important; box-shadow: none !important; font-weight: 600;
+}
+html.ui-modern body #workspace-content .workspace-row-actions button.primary { height: 28px; }
+html.ui-modern body #workspace-content button.danger {
+  height: 28px; padding: 0 10px; border: 1px solid transparent !important; border-radius: 6px !important;
+  background: transparent !important; color: var(--danger, #cf222e) !important; box-shadow: none !important; font-weight: 500;
+}
+html.ui-modern body #workspace-content button.danger:hover { border-color: color-mix(in srgb, var(--danger, #cf222e) 35%, transparent) !important; background: color-mix(in srgb, var(--danger, #cf222e) 10%, transparent) !important; }
+/* Row actions stay out of the way until the row is hovered or focused. */
+html.ui-modern body #workspace-content :is(.tag-list, .journal-list, .recovery-list) > * :is(.workspace-row-actions, .tag-actions) { opacity: .0; transition: opacity .15s; }
+html.ui-modern body #workspace-content :is(.tag-list, .journal-list, .recovery-list) > :is(:hover, :focus-within) :is(.workspace-row-actions, .tag-actions) { opacity: 1; }
+/* Stashes: legacy .42fr/.58fr columns sum to < 1fr and leave empty space. */
+html.ui-modern body .stash-layout { grid-template-columns: minmax(280px, 2fr) minmax(0, 3fr) !important; gap: 12px !important; }
+html.ui-modern body .stash-layout .workspace-row { grid-template-columns: minmax(0, 1fr) auto !important; align-items: center; }
+html.ui-modern body .stash-layout .stash-label { display: grid; min-width: 0; text-align: left; border: 0 !important; background: transparent !important; }
+html.ui-modern body .stash-layout .stash-label > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.ui-modern body .stash-layout .stash-label small { color: var(--text-tertiary); font-weight: 400; }

@@ -105,6 +105,15 @@ assert(modern.contrast(modern.readableAccent([30, 60, 200], dark), dark) >= 3, '
 // "View & tools": both legacy panels live in one menu, and go back for Classic.
 assert.match(modernJs, /for\(const node of \[\.\.\.secondary\.children\]\.filter\(node=>node\.tagName!=='SUMMARY'\)\)\{movedTools\.push/);
 assert.match(modernJs, /function teardown\(\)\{closePopover\(\);restoreToolbar\(\);restoreToolsPanel\(\);/);
+// More menu headings: upper-case labels become sentence case, product names survive, other text is left alone.
+assert.equal(modern.sentenceCase('REVIEW & GITLAB'), 'Review & GitLab');
+assert.equal(modern.sentenceCase('BRANCH TOOLS'), 'Branch tools');
+assert.equal(modern.sentenceCase('Already fine'), 'Already fine');
+assert.equal(modern.sentenceCase('เครื่องมือ'), 'เครื่องมือ');
+// Toolbar button rules apply to direct toolbar buttons only, not to items inside its menus.
+assert.doesNotMatch(modernCss, /html\.ui-modern body \.sync-actions :is\(button, summary\)/);
+// Stash page columns fill the width (legacy .42fr/.58fr left a gap).
+assert.match(modernCss, /\.stash-layout \{ grid-template-columns: minmax\(280px, 2fr\) minmax\(0, 3fr\) !important;/);
 // The rail's first item shows or hides the repository list.
 assert.match(modernJs, /railButton\(\['repos','folder',\(\)=>t\('Repos'\)\]\)/);
 // Rail items carry a visible label, not only an icon.
