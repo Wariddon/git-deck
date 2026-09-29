@@ -113,6 +113,16 @@ The theme menu has a **Language** switch (English / ไทย), stored per brows
 
 **Pull** no longer requires a clean working tree. Before pulling, Git Deck lists your changed files that the incoming commits also touch, then runs `git pull --autostash` after you confirm: your changes are stashed, the pull runs, and they are restored. If restoring conflicts, File Status opens with the conflicted files and a copy of your changes stays in the stash (`autostash`) until you drop it. Untracked files are not stashed, so a pull that would overwrite one is blocked up front. Predictions use the last Fetch.
 
+## Switching branches with uncommitted changes
+
+Like plain Git (and Sourcetree), switching no longer requires a clean working tree. The review before checkout compares your uncommitted files with the files that differ between the two commits:
+
+- **No overlap:** *Switch and keep my changes* — Git carries the changes to the other branch.
+- **Overlap** (or an untracked file the other branch also has): *Stash, switch and restore* — Git Deck stashes your changes (including untracked files), switches, and restores them. If restoring conflicts, File Status opens with the conflicted files, the files that restored cleanly are staged (as `git stash pop` does), and a copy stays in the stash, so nothing is lost.
+- **Merge, rebase or cherry-pick in progress:** switching stays blocked until you finish or abort it.
+
+Creating a new branch from the current commit always keeps your changes.
+
 ## Pre-push checks
 
 The Push dialog scans the commits that the remote does not have yet: added lines that look like private keys or API tokens (AWS, GitHub, GitLab, Slack, Anthropic, Google and generic `password = "…"` assignments), files of 5 MB or more, sensitive file names such as `.env` or `*.pem`, and direct or force pushes to `main`, `master`, `develop`, `release/*` and similar branches. Blocking findings ask for confirmation before pushing. Previews are masked, and the scan runs locally only. It is a safety net, not a replacement for server-side secret scanning.

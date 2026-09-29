@@ -63,31 +63,48 @@ window.addEventListener('focus',()=>checkActiveWorkingFiles());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkActiveWorkingFiles();});
 
 let checkoutReviewBusy=false;
+// Resolves to the approved local-changes mode ('clean' | 'carry' | 'stash') or null when cancelled.
+// Like git/Sourcetree, uncommitted changes that do not touch files differing between the
+// two commits come along; overlapping ones are stashed, switched and restored (the stash is
+// kept if restoring conflicts). Only an unfinished merge/rebase blocks.
 async function confirmCheckoutReview(repo,target){
-  const ui=releaseDialog('Review before checkout');ui.body.textContent='Checking branch and pending changes in Git…';
+  const ui=releaseDialog(t('Review before checkout'));ui.body.textContent=t('Checking branch and pending changes in Git…');
   return new Promise(resolve=>{
-    let approved=false;ui.dialog.addEventListener('close',()=>resolve(approved),{once:true});
+    let approved=null;ui.dialog.addEventListener('close',()=>resolve(approved),{once:true});
+    const approve=(mode)=>{if(!workflowCurrent(repo)||state.busy)return;approved=mode;ui.dialog.close();};
     (async()=>{try{
       const result=await api('/api/repo/checkout-review?'+new URLSearchParams({path:repo.path,target}));
       if(!ui.dialog.isConnected)return;
-      if(!workflowCurrent(repo)){ui.body.textContent='Repository changed. Reopen this action.';return;}
-      ui.body.replaceChildren(el('h3','',`${result.status.branch||'Detached HEAD'} → ${target}`),el('p','',`${result.currentOnly} commits source-only · ${result.targetOnly} target-only · ${result.changedFiles.length} changed files`));
-      ui.body.append(el('h4','','Files changed between commits'),workflowList(result.changedFiles.slice(0,100)));
-      if(result.changedFiles.length>100)ui.body.append(el('p','','Showing the first 100 files'));
+      if(!workflowCurrent(repo)){ui.body.textContent=t('Repository changed. Reopen this action.');return;}
+      const plan=result.localChanges||{mode:result.status.files.length?'stash':'clean',dirty:result.status.files.map(f=>f.path),overlap:[],blockingUntracked:[]};
+      ui.body.replaceChildren(el('h3','',`${result.status.branch||t('Detached HEAD')} → ${target}`),el('p','',t('{ahead} commits source-only · {behind} target-only · {files} changed files',{ahead:result.currentOnly,behind:result.targetOnly,files:result.changedFiles.length})));
+      const files=el('details','checkout-files');files.append(el('summary','',t('Files changed between commits ({count})',{count:result.changedFiles.length})),workflowList(result.changedFiles.slice(0,100)));
+      if(result.changedFiles.length>100)files.append(el('p','',t('Showing the first 100 files')));
+      ui.body.append(files);
       if(result.blocked){
-        ui.body.append(el('p','workflow-warning','Cannot check out yet. Resolve pending changes or the active Git operation first.'),workflowList(result.status.files.map(f=>f.status+' '+f.path)));
-        ui.actions.append(workflowButton('Review changed files',()=>{ui.dialog.close();if(workflowCurrent(repo))selectWorkspaceTab('changes');}),workflowButton('Open Stashes / stash manually',()=>{ui.dialog.close();if(workflowCurrent(repo))selectWorkspaceTab('stashes');}));
-      }else ui.actions.append(workflowButton('Confirm checkout',()=>{if(!workflowCurrent(repo)||state.busy)return;approved=true;ui.dialog.close();}));
-      ui.body.append(el('small','','No automatic stashing. Pending changes are checked again before switching branches.'));
-    }catch(error){if(ui.dialog.isConnected)ui.body.textContent='Check failed. Checkout was not performed: '+error.message;}})();
+        ui.body.append(el('p','workflow-warning',t('A merge, rebase or cherry-pick is still in progress. Finish or abort it before switching.')));
+        ui.actions.append(workflowButton(t('Open File Status'),()=>{ui.dialog.close();if(workflowCurrent(repo))selectWorkspaceTab('changes');}));
+      }else if(plan.mode==='carry'){
+        ui.body.append(el('p','workflow-ok',t('Your {count} uncommitted change(s) will come along to {target}. None of them touch files that differ between the two branches.',{count:plan.dirty.length,target})),workflowList(plan.dirty.slice(0,20)));
+        ui.actions.append(Object.assign(workflowButton(t('Switch and keep my changes'),()=>approve('carry')),{className:'primary'}));
+      }else if(plan.mode==='stash'){
+        const clash=[...plan.overlap,...plan.blockingUntracked];
+        ui.body.append(el('p','workflow-warning',t('{count} of your changed file(s) are also different on {target}, so Git cannot carry them over directly:',{count:clash.length,target})),workflowList(clash.slice(0,20)));
+        ui.body.append(el('p','',t('Git Deck can stash your changes, switch, and restore them. If restoring conflicts, you resolve it in File Status and a copy stays in the stash, so nothing is lost.')));
+        ui.actions.append(workflowButton(t('Review changed files'),()=>{ui.dialog.close();if(workflowCurrent(repo))selectWorkspaceTab('changes');}),Object.assign(workflowButton(t('Stash, switch and restore'),()=>approve('stash')),{className:'primary'}));
+      }else ui.actions.append(Object.assign(workflowButton(t('Confirm checkout'),()=>approve('clean')),{className:'primary'}));
+    }catch(error){if(ui.dialog.isConnected)ui.body.textContent=t('Check failed. Checkout was not performed: {error}',{error:error.message});}})();
   });
 }
 const workflowBaseAction=runWorkspaceAction;
 runWorkspaceAction=async function(action,payload={},confirmation='',options={}){
   if(['branch-switch','branch-track','checkout-commit'].includes(action)){
     const repo=state.workspaceRepo;if(!repo||state.busy||checkoutReviewBusy)return null;
-    checkoutReviewBusy=true;try{if(!await confirmCheckoutReview(repo,payload.branch||payload.commit)||!workflowCurrent(repo))return null;}finally{checkoutReviewBusy=false;}
-    return workflowBaseAction(action,payload,'',options);
+    let mode=null;
+    checkoutReviewBusy=true;try{mode=await confirmCheckoutReview(repo,payload.branch||payload.commit);if(!mode||!workflowCurrent(repo))return null;}finally{checkoutReviewBusy=false;}
+    const result=await workflowBaseAction(action,mode==='clean'?payload:{...payload,localChanges:mode},'',options);
+    if(result?.conflicts?.length&&workflowCurrent(repo))selectWorkspaceTab('changes');
+    return result;
   }
   return workflowBaseAction(action,payload,confirmation,options);
 };

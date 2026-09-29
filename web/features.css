@@ -137,3 +137,7 @@ body.workbench-mode #tree-content .ref-filter-tabs button { flex: 1 0 auto; min-
 .ai-push-review { display: grid; gap: 4px; margin: 8px 0; }
 .ai-notes { width: min(640px, 80vw); font: 12px/1.5 Consolas, monospace; }
 .ai-policy select { justify-self: start; }
+
+/* Checkout review: what happens to uncommitted changes. */
+.workflow-ok { padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--success, #1a7f37) 35%, var(--line)); border-left: 3px solid var(--success, #1a7f37); border-radius: 6px; background: color-mix(in srgb, var(--success, #1a7f37) 7%, transparent); }
+.checkout-files > summary { cursor: pointer; font-weight: 600; margin: 6px 0; }

@@ -28,7 +28,10 @@ function Get-CheckoutReview([string]$Path,[string]$Target) {
         $ahead=[int]$counts[0];$behind=[int]$counts[1]
         $files=@((Invoke-GitOrThrow $Path @('diff','--name-only',$status.head,$hash,'--')) -split "`r?`n" | Where-Object {$_})
     }
-    return @{status=$status;target=$Target;targetHash=$hash;currentOnly=$ahead;targetOnly=$behind;changedFiles=$files;blocked=($status.files.Count -gt 0 -or $status.operation.active)}
+    # Uncommitted changes no longer block: the plan says whether they come along (carry)
+    # or need stash-switch-restore (stash). Only an unfinished merge/rebase blocks.
+    $plan=Get-GitDeckSwitchPlan $Path $hash
+    return @{status=$status;target=$Target;targetHash=$hash;currentOnly=$ahead;targetOnly=$behind;changedFiles=$files;localChanges=$plan;blocked=[bool]$status.operation.active}
 }
 
 function New-TrainingRepository {

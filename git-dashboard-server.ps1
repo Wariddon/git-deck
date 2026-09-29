@@ -9,6 +9,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Runtime.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Features.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Pull.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Switch.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
 $script:RepoList = Join-Path $PSScriptRoot 'git-repositories.txt'
@@ -1293,14 +1294,15 @@ function Invoke-Action($Body) {
         'branch-create' {
             $branchName = ([string]$Body.branch).Trim()
             Assert-BranchName $path $branchName
-            Assert-CleanWorkingTree $path 'Commit or stash changes before creating and switching branch.'
+            # A new branch starts at HEAD, so uncommitted changes simply come along (as in plain git).
+            if ((Get-GitOperationState $path).active) { throw 'Finish or abort the merge, rebase or cherry-pick in progress first.' }
             $output = Invoke-GitOrThrow $path @('switch','-c',$branchName)
             return @{message="Created and switched to $branchName.";output=$output}
         }
         'checkout-commit' {
-            $commit=([string]$Body.commit).Trim();Assert-CommitHash $path $commit;Assert-CleanWorkingTree $path 'Commit or stash changes before checking out a commit.'
-            $output=Invoke-GitOrThrow $path @('switch','--detach',$commit)
-            return @{message="Checked out $commit in detached HEAD mode.";output=$output}
+            $commit=([string]$Body.commit).Trim();Assert-CommitHash $path $commit
+            $result=Invoke-GitDeckSwitch $path @('--detach',$commit) ([string]$Body.localChanges) ($commit.Substring(0,[Math]::Min(8,$commit.Length))+' (detached HEAD)')
+            return $result
         }
         'branch-push' {
             $branchName=([string]$Body.branch).Trim();$remote=([string]$Body.remote).Trim();Assert-BranchName $path $branchName;if(-not $remote){$remote='origin'};Assert-RemoteName $path $remote
@@ -1317,24 +1319,22 @@ function Invoke-Action($Body) {
         'branch-switch' {
             $branchName = ([string]$Body.branch).Trim()
             Assert-BranchName $path $branchName
-            Assert-CleanWorkingTree $path 'Commit or stash changes before switching branch.'
             $exists = Invoke-GitCapture $path @('show-ref','--verify','--quiet',('refs/heads/'+$branchName))
             if ($exists.Code -ne 0) { throw 'Local branch was not found.' }
-            $output = Invoke-GitOrThrow $path @('switch',$branchName)
-            return @{message="Switched to $branchName.";output=$output}
+            return Invoke-GitDeckSwitch $path @($branchName) ([string]$Body.localChanges) $branchName
         }
         'branch-track' {
             $remoteBranch = ([string]$Body.branch).Trim()
             if ($remoteBranch -notmatch '^[A-Za-z0-9._/-]+$' -or $remoteBranch -notmatch '/') { throw 'Invalid remote branch.' }
-            Assert-CleanWorkingTree $path 'Commit or stash changes before switching branch.'
             $exists = Invoke-GitCapture $path @('show-ref','--verify','--quiet',('refs/remotes/'+$remoteBranch))
             if ($exists.Code -ne 0) { throw 'Remote branch was not found. Fetch first.' }
             $localName = $remoteBranch.Substring($remoteBranch.IndexOf('/')+1)
             Assert-BranchName $path $localName
             $localExists = Invoke-GitCapture $path @('show-ref','--verify','--quiet',('refs/heads/'+$localName))
             if ($localExists.Code -eq 0) { throw "Local branch $localName already exists. Switch to it from Local branches." }
-            $output = Invoke-GitOrThrow $path @('switch','--track',$remoteBranch)
-            return @{message="Created local branch $localName tracking $remoteBranch.";output=$output}
+            $result = Invoke-GitDeckSwitch $path @('--track',$remoteBranch) ([string]$Body.localChanges) "$localName (tracking $remoteBranch)"
+            $result.message = $result.message -replace '^Switched to ', 'Created and switched to '
+            return $result
         }
         'branch-rename' {
             $old=([string]$Body.branch).Trim();$new=([string]$Body.newName).Trim();Assert-BranchName $path $old;Assert-BranchName $path $new

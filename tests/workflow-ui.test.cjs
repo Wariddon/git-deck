@@ -30,3 +30,8 @@ async function run(){
  console.log('PASS: focus refresh preserves History, refreshes changed files, rejects stale repo results and skips writes');
 }
 run();`,statusContext).catch(error=>{console.error(error);process.exitCode=1});
+// Checkout with uncommitted changes (like git/Sourcetree): carry unrelated changes, stash-switch-restore for overlaps.
+assert(checkout.includes("approve('carry')")&&checkout.includes("approve('stash')")&&checkout.includes("approve('clean')"),'checkout offers carry, stash and clean modes');
+assert(source.includes("mode==='clean'?payload:{...payload,localChanges:mode}"),'the approved mode is sent to the server');
+assert(source.includes("if(result?.conflicts?.length&&workflowCurrent(repo))selectWorkspaceTab('changes');"),'restore conflicts open File Status');
+console.log('PASS: checkout review modes for uncommitted changes');
