@@ -136,4 +136,19 @@ GitDeckI18n.register('th',{
   'Text size':'ขนาดตัวอักษร',
   'Default size':'ขนาดปกติ',
   '{size}px text':'ตัวอักษร {size}px',
+  // Look picker
+  'Look':'หน้าตา',
+  'Clean':'เรียบ',
+  'Classic':'แบบเดิม',
+  'Fewer borders and hints':'เส้นขอบและคำแนะนำน้อยลง',
+  'The original dense layout':'หน้าตาแบบเดิมที่แน่นกว่า',
+  // Clean layout
+  'View':'มุมมอง',
+  'Sort order and list or folder view':'ลำดับการเรียง และแสดงแบบรายการหรือโฟลเดอร์',
+  'Sort':'เรียงตาม',
+  'Layout':'รูปแบบ',
+  'Commit message':'Commit message',
+  '{message} · Ctrl+Enter to commit':'{message} · กด Ctrl+Enter เพื่อ commit',
+  'Order':'ลำดับ',
+  'More diff tools':'เครื่องมือ diff เพิ่มเติม',
 });

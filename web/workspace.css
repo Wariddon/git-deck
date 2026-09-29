@@ -1662,9 +1662,9 @@ body .release-dialog form>label input {width:100%;box-sizing:border-box;}
 body .backdrop:not(#workspace-backdrop) :is(input,select,textarea):disabled {color:var(--text-secondary);opacity:.6;}
 
 /* Shared UI typography: override legacy per-component sizes, not code or icons. */
-:root { --ui-text-size: 11px; }
+:root { --ui-text-size: 12px; }
 body { font-size: var(--ui-text-size); }
-body :not(:where(pre, pre *, .diff-lines, .diff-lines *, svg, svg *, .repo-icon, .logo, .rail button)) {
+body :not(:where(pre, pre *, .diff-lines, .diff-lines *, svg, svg *, .repo-icon, .logo, .rail button, .diff-viewer-body, .diff-viewer-body *)) {
   font-size: var(--ui-text-size) !important;
 }
 body :is(button, input, select, textarea) {

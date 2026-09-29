@@ -11,7 +11,7 @@ test('shared UI typography is included in an existing packaged stylesheet', () =
 });
 test('UI uses one size while preserving code and scalable icons', () => {
   const css = fs.readFileSync(path.join(root, 'web/workspace.css'), 'utf8').split('/* Shared UI typography:')[1];
-  assert.match(css, /--ui-text-size: 11px/);
+  assert.match(css, /--ui-text-size: 12px/);
   assert.match(css, /font-size: var\(--ui-text-size\) !important/);
   assert.match(css, /pre, pre \*, \.diff-lines, \.diff-lines \*, svg, svg \*/);
   assert.doesNotMatch(css, /--diff-font-size\s*:/);

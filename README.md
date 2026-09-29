@@ -96,7 +96,13 @@ In **File Status**, click `+`/`−` lines in a hunk (Shift+click selects a range
 
 Keyboard shortcuts (outside text fields): `J`/`K` next/previous file or commit, `S`/`U` stage/unstage the selected file, `C` commit message, `/` search, `R` refresh, `F` fetch, `Shift+P` push, `Ctrl+Z` undo, `?` shortcut list.
 
-## Language
+## Appearance
+
+The theme menu also sets the **Look** and **Text size**, stored per browser:
+
+- **Clean** (default) uses fewer borders and hides repeated hints. File Status sorting and layout sit under **View**, History order and layout join its **View ▾** menu, and rarely used diff tools move under **⋯**. The Ctrl+Enter hint lives in the commit message placeholder. **Classic** is the original dense layout, unchanged.
+- **Text size** 8 / 10 / 12 / 14 px (default 12) scales all UI copy. Diff text keeps its own A− / A+ size.
+
 
 The theme menu has a **Language** switch (English / ไทย), stored per browser. Source copy is English; `web/i18n.js` looks each string up with `t('English text', {placeholders})` and falls back to English when there is no translation. Thai strings live in `web/i18n-th.js`, and `tests/i18n.test.cjs` fails when a `t()` key has no Thai entry, when an entry is no longer used, or when placeholders differ. Migration is gradual: the GitHub tab, line staging, commit helpers, pre-push checks, pull, undo and shortcuts are translated; the main workspace (`app.js`, `diff-ui.js`, `release-ui.js`, `workflow-ui.js`) is still English-only.
 

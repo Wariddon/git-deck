@@ -43,40 +43,63 @@ const html = web('index.html');
 assert(html.indexOf('/overview-panel.js') < html.indexOf('src="/app.js"'), 'Loaded before app.js so the first render includes the steps');
 assert.match(web('app.js'), /if\(typeof renderOverviewSteps==='function'\)filters\.after\(renderOverviewSteps\(data\)\)/);
 
-// ---- Text size --------------------------------------------------------------
-function loadTextSize(saved) {
-  const storage = new Map(saved ? [['gitdeck.textSize', saved]] : []);
+
+// ---- Appearance: text size and look -----------------------------------------
+function loadAppearance(saved = {}) {
+  const storage = new Map(Object.entries(saved));
   const style = new Map();
+  const classes = new Set();
   const menus = [];
   const node = () => ({ children: [], dataset: {}, attrs: {}, append(...xs) { this.children.push(...xs); }, setAttribute(k, v) { this.attrs[k] = v; }, getAttribute(k) { return this.attrs[k]; }, addEventListener(type, fn) { this['on' + type] = fn; }, querySelector: () => null });
   const buttons = [];
+  const events = [];
   const context = {
     t: format,
+    CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
     localStorage: { getItem: (k) => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, v), removeItem: (k) => storage.delete(k) },
     document: {
       readyState: 'complete',
-      documentElement: { style: { setProperty: (k, v) => style.set(k, v), removeProperty: (k) => style.delete(k) } },
+      dispatchEvent: (event) => events.push(event.type + ':' + event.detail.look + ':' + event.detail.size),
+      documentElement: { style: { setProperty: (k, v) => style.set(k, v), removeProperty: (k) => style.delete(k) }, classList: { toggle: (name, on) => on ? classes.add(name) : classes.delete(name) } },
       createElement: () => { const n = node(); buttons.push(n); return n; },
-      querySelectorAll: (selector) => selector === '.theme-menu' ? menus : buttons.filter((b) => b.dataset.textSize),
+      querySelectorAll: (selector) => selector === '.theme-menu' ? menus : buttons.filter((b) => b.dataset.textSize || b.dataset.look),
     },
   };
   context.window = context;
   menus.push(node());
-  vm.runInNewContext(web('text-size.js'), context);
-  return { context, storage, style, menus };
+  vm.runInNewContext(web('appearance.js'), context);
+  const [lookGroup, sizeGroup] = menus[0].children;
+  return { context, storage, style, classes, lookGroup, sizeGroup, events };
 }
-let ts = loadTextSize();
-assert.equal(ts.context.GitDeckTextSize.size, 11);
-assert.equal(ts.style.has('--ui-text-size'), false, 'Default keeps the stylesheet value');
-const picker = ts.menus[0].children[0];
-const sizeButtons = picker.children.filter((c) => c.dataset.textSize);
-assert.deepEqual(sizeButtons.map((b) => b.dataset.textSize), ['11', '12', '13', '14']);
-sizeButtons[2].onclick();
-assert.equal(ts.style.get('--ui-text-size'), '13px'); assert.equal(ts.storage.get('gitdeck.textSize'), '13');
-assert.equal(sizeButtons[2].attrs['aria-pressed'], 'true'); assert.equal(sizeButtons[0].attrs['aria-pressed'], 'false');
+let ap = loadAppearance();
+assert.equal(ap.context.GitDeckAppearance.size, 12);
+assert.equal(ap.style.get('--ui-text-size'), '12px');
+assert.equal(ap.classes.has('ui-clean'), true, 'Clean is the default look');
+const sizeButtons = ap.sizeGroup.children.filter((c) => c.dataset.textSize);
+assert.deepEqual(sizeButtons.map((b) => b.dataset.textSize), ['8', '10', '12', '14']);
+assert.equal(sizeButtons[2].attrs['aria-pressed'], 'true');
 sizeButtons[0].onclick();
-assert.equal(ts.style.has('--ui-text-size'), false); assert.equal(ts.storage.has('gitdeck.textSize'), false, 'Back to default clears the preference');
-assert.equal(loadTextSize('14').style.get('--ui-text-size'), '14px', 'Saved size applies before first paint');
-assert.equal(loadTextSize('40').context.GitDeckTextSize.size, 11, 'Unknown sizes fall back to the default');
-assert(html.indexOf('/text-size.js') < html.indexOf('id="startup-controller"'), 'Applied before the splash and workspace render');
-console.log('PASS: overview next steps and actions, text size picker, persistence and defaults');
+assert.equal(ap.style.get('--ui-text-size'), '8px'); assert.equal(ap.storage.get('gitdeck.textSize'), '8');
+assert.equal(sizeButtons[0].attrs['aria-pressed'], 'true'); assert.equal(sizeButtons[2].attrs['aria-pressed'], 'false');
+sizeButtons[2].onclick();
+assert.equal(ap.storage.has('gitdeck.textSize'), false, 'Back to default clears the preference');
+const lookButtons = ap.lookGroup.children.filter((c) => c.dataset.look);
+assert.deepEqual(lookButtons.map((b) => b.dataset.look), ['clean', 'classic']);
+lookButtons[1].onclick();
+assert.equal(ap.classes.has('ui-clean'), false); assert.equal(ap.storage.get('gitdeck.look'), 'classic');
+assert.equal(lookButtons[1].attrs['aria-pressed'], 'true');
+lookButtons[0].onclick();
+assert.equal(ap.classes.has('ui-clean'), true); assert.equal(ap.storage.has('gitdeck.look'), false);
+assert.deepEqual([...ap.events], ['gitdeck:appearance:clean:8', 'gitdeck:appearance:clean:12', 'gitdeck:appearance:classic:12', 'gitdeck:appearance:clean:12'], 'Every change is announced so views can re-render');
+assert.equal(loadAppearance({ 'gitdeck.textSize': '14' }).style.get('--ui-text-size'), '14px', 'Saved size applies before first paint');
+assert.equal(loadAppearance({ 'gitdeck.textSize': '11' }).context.GitDeckAppearance.size, 12, 'Old 11px preference falls back to the default');
+assert.equal(loadAppearance({ 'gitdeck.look': 'classic' }).classes.has('ui-clean'), false, 'Saved Classic look applies before first paint');
+assert(html.indexOf('/appearance.js') < html.indexOf('id="startup-controller"'), 'Applied before the splash and workspace render');
+const links = [...html.matchAll(/rel="stylesheet" href="([^"]+)"/g)].map((m) => m[1]);
+assert.equal(links.at(-1), '/clean.css', 'clean.css loads last so it can override legacy rules');
+const cleanCss = web('clean.css');
+for (const rule of cleanCss.replace(/\/\*[\s\S]*?\*\//g, '').split('}').map((r) => r.trim()).filter(Boolean)) {
+  const selectors = rule.slice(0, rule.indexOf('{')).split(',').map((s) => s.trim());
+  for (const selector of selectors) assert(selector.startsWith('html.ui-clean'), `clean.css selector not scoped to html.ui-clean: ${selector}`);
+}
+console.log('PASS: overview next steps and actions, appearance text size 8/10/12/14 and Clean/Classic look');

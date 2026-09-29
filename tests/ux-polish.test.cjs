@@ -63,3 +63,20 @@ const workflow = fs.readFileSync(path.join(root, 'web/workflow-ui.js'), 'utf8');
 assert.match(workflow, /classList\.add\('repo-tab-search','repo-tab-worksets'\)/);
 assert.doesNotMatch(workflow, /workflowButton\('Worksets'[^;]*;button\.classList\.add\('repo-tab-add'\)/);
 console.log('PASS: diff line numbers and hidden headers, fetch freshness, tab sync, status bar hints, worksets slot');
+
+// ---- Audit fixes ------------------------------------------------------------
+// No machine-specific export path in shipped copy; the server writes to <GitDeck>\exports.
+assert.doesNotMatch(app, /my-git-tools/);
+assert.match(app, /exports folder next to Git Deck/);
+// Add-on scripts wrap render functions after app.js; a cached first paint must be redone once they load.
+assert.match(app, /document\.addEventListener\('DOMContentLoaded',\(\)=>\{if\(state\.workspace\)paintWorkspace\(state\.workspace\);\}\);/);
+// Diff A-/A+ must win over the shared UI text size rule.
+const workspaceCss = fs.readFileSync(path.join(root, 'web/workspace.css'), 'utf8');
+assert.match(workspaceCss, /body :not\(:where\([^)]*\.diff-viewer-body, \.diff-viewer-body \*\)\)/);
+assert.match(workspaceCss, /\.improved-diff \.diff-viewer-body\{[^}]*font:var\(--diff-font-size/);
+// Clean layout only restructures in Clean mode and re-renders on look changes.
+const cleanLayout = fs.readFileSync(path.join(root, 'web/clean-layout.js'), 'utf8');
+assert.match(cleanLayout, /if\(isClean\(\)\)\{try\{groupViewOptions\(content\);moveShortcutHint\(content\);\}/);
+assert.match(cleanLayout, /addEventListener\('gitdeck:appearance',\(\)=>\{if\(state\.workspace\)renderWorkspace\(\);\}\)/);
+assert.doesNotMatch(cleanLayout, /requestAnimationFrame\(/, 'rAF pauses while the window is hidden');
+console.log('PASS: audit fixes (export path, add-on repaint, diff font size) and clean layout guards');

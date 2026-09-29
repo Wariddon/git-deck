@@ -1,0 +1,144 @@
+/* Clean look (default). Loaded last and scoped to html.ui-clean, so the Classic
+   look in the theme menu is the untouched legacy stylesheet stack.
+   Goals: fewer boxes, one accent, quiet secondary controls, no repeated hints.
+   Legacy rules use !important heavily; overrides here match that where needed. */
+
+html.ui-clean {
+  --clean-radius: 6px;
+  --clean-hover: color-mix(in srgb, var(--text-primary, #1f2328) 6%, transparent);
+  --clean-selected: color-mix(in srgb, var(--green, #0969da) 12%, transparent);
+  --clean-divider: color-mix(in srgb, var(--border-default, #d0d7de) 70%, transparent);
+}
+
+/* ---- Page frame: one surface, hairline dividers, no card-in-card ---------- */
+html.ui-clean body .workspace-modal-head,
+html.ui-clean body .workbench-tree,
+html.ui-clean body .changes-workspace,
+html.ui-clean body .changes-commandbar,
+html.ui-clean body .change-groups,
+html.ui-clean body .change-group-head,
+html.ui-clean body .working-diff,
+html.ui-clean body .commit-composer {
+  box-shadow: none !important;
+}
+html.ui-clean body .changes-workspace { border: 0 !important; background: var(--surface) !important; }
+html.ui-clean body .workspace-modal-head { border-bottom: 1px solid var(--clean-divider) !important; background: var(--surface) !important; }
+html.ui-clean body .workbench-tree { border-right: 1px solid var(--clean-divider) !important; background: var(--surface-subtle) !important; }
+
+/* ---- Toolbar: ghost buttons, one visual group for sync ------------------ */
+html.ui-clean body .sync-actions { gap: 2px !important; }
+html.ui-clean body .sync-actions > button,
+html.ui-clean body .sync-actions .toolbar-pull-group > button,
+html.ui-clean body .sync-more > summary,
+html.ui-clean body .workbench-secondary > summary {
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: var(--clean-radius) !important;
+  color: var(--text-primary) !important;
+}
+html.ui-clean body .sync-actions > button:hover,
+html.ui-clean body .sync-actions .toolbar-pull-group > button:hover,
+html.ui-clean body .sync-more > summary:hover,
+html.ui-clean body .workbench-secondary > summary:hover { background: var(--clean-hover) !important; }
+html.ui-clean body .sync-actions > button:focus-visible,
+html.ui-clean body .sync-actions .toolbar-pull-group > button:focus-visible { outline: 2px solid var(--green) !important; outline-offset: 1px; }
+html.ui-clean body .sync-actions #pull-strategy { border-color: transparent !important; background: transparent !important; color: var(--text-secondary) !important; }
+html.ui-clean body .sync-actions #pull-strategy:hover { background: var(--clean-hover) !important; }
+/* Visual break between "work" (commit/sync) and "create" (branch/tag) groups. */
+html.ui-clean body #toolbar-create-branch { margin-left: 10px !important; }
+html.ui-clean body .toolbar-branch { color: var(--text-secondary) !important; }
+
+/* ---- Branch panel ------------------------------------------------------- */
+html.ui-clean body .tree-view-switcher { border: 0 !important; background: transparent !important; gap: 2px; }
+html.ui-clean body .tree-view-switcher > button { border: 0 !important; border-radius: var(--clean-radius) !important; background: transparent !important; color: var(--text-secondary) !important; box-shadow: none !important; }
+html.ui-clean body .tree-view-switcher > button.active { background: var(--surface) !important; color: var(--text-primary) !important; box-shadow: 0 0 0 1px var(--clean-divider) !important; }
+html.ui-clean body .tree-search { border-color: var(--clean-divider) !important; background: var(--surface) !important; }
+html.ui-clean body .ref-current-card { border: 0 !important; background: transparent !important; padding-left: 8px !important; }
+html.ui-clean body #tree-content .ref-filter-tabs button { border-color: transparent !important; background: transparent !important; color: var(--text-secondary) !important; }
+html.ui-clean body #tree-content .ref-filter-tabs button[aria-pressed="true"] { background: var(--surface) !important; color: var(--text-primary) !important; box-shadow: 0 0 0 1px var(--clean-divider); }
+html.ui-clean body .overview-step { border-top: 0; border-right: 0; border-bottom: 0; background: var(--surface); }
+
+/* ---- File Status: rows, not boxes --------------------------------------- */
+html.ui-clean body .changes-commandbar { border-bottom: 1px solid var(--clean-divider) !important; background: transparent !important; }
+html.ui-clean body .changes-commandbar select,
+html.ui-clean body .changes-commandbar .changes-search { border-color: transparent !important; background: var(--surface-subtle) !important; }
+html.ui-clean body .changes-commandbar select:hover { background: var(--clean-hover) !important; }
+html.ui-clean body .change-groups { background: transparent !important; }
+html.ui-clean body .change-group-head { border: 0 !important; background: transparent !important; padding-top: 10px !important; }
+html.ui-clean body .change-group-label strong { color: var(--text-secondary) !important; text-transform: uppercase; letter-spacing: .06em; }
+html.ui-clean body .change-group-action { border-color: transparent !important; background: transparent !important; color: var(--green) !important; }
+html.ui-clean body .change-group-action:hover:not(:disabled) { background: var(--clean-hover) !important; }
+html.ui-clean body .change-file { border: 0 !important; border-radius: var(--clean-radius); background: transparent !important; }
+html.ui-clean body .change-file:hover { background: var(--clean-hover) !important; }
+html.ui-clean body .change-file-main { border: 0 !important; background: transparent !important; box-shadow: none !important; }
+html.ui-clean body .change-file:has(.change-file-main.active) { background: var(--clean-selected) !important; box-shadow: inset 3px 0 0 var(--green); }
+html.ui-clean body .change-file-action { border-color: transparent !important; background: transparent !important; opacity: .55; }
+html.ui-clean body .change-file:hover .change-file-action,
+html.ui-clean body .change-file-action:focus-visible { opacity: 1; }
+/* Multi-select boxes appear on hover, focus, or once anything is selected. */
+html.ui-clean body .change-select { opacity: 0; transition: opacity .12s; }
+html.ui-clean body .change-file:hover .change-select,
+html.ui-clean body .change-select:focus-visible,
+html.ui-clean body .change-groups:has(.change-select:checked) .change-select { opacity: 1; }
+
+/* ---- Diff pane ----------------------------------------------------------- */
+html.ui-clean body .working-diff { border-left: 1px solid var(--clean-divider) !important; }
+html.ui-clean body .patch-toolbar small { display: none !important; }
+html.ui-clean body .patch-hunk { border-bottom: 1px solid var(--clean-divider) !important; }
+html.ui-clean body .patch-hunk:last-child { border-bottom: 0 !important; }
+html.ui-clean body .patch-hunk-actions { border: 0 !important; background: transparent !important; }
+html.ui-clean body .patch-hunk-actions button { border-color: var(--clean-divider) !important; background: transparent !important; }
+html.ui-clean body .patch-hunk-actions button:hover { background: var(--clean-hover) !important; }
+html.ui-clean body .patch-hunk-actions button.danger { color: var(--danger) !important; }
+html.ui-clean body .line-stage-hint { display: none !important; }
+
+/* ---- Commit box: message first, context quiet ---------------------------- */
+html.ui-clean body .commit-composer { border: 0 !important; border-top: 1px solid var(--clean-divider) !important; background: var(--surface-subtle) !important; }
+html.ui-clean body .commit-composer textarea { border-color: var(--clean-divider) !important; background: var(--surface) !important; border-radius: var(--clean-radius) !important; }
+html.ui-clean body .commit-composer textarea:focus { border-color: var(--green) !important; outline: 0; box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 20%, transparent) !important; }
+html.ui-clean body .commit-scope-note { display: none !important; }
+html.ui-clean body .commit-assist select,
+html.ui-clean body .commit-assist button { border-color: transparent !important; background: transparent !important; }
+html.ui-clean body .commit-assist select:hover,
+html.ui-clean body .commit-assist button:hover:not(:disabled) { background: var(--clean-hover) !important; }
+html.ui-clean body .commit-action-block .action-target { color: var(--text-secondary) !important; opacity: .8; }
+
+/* ---- Status bar ------------------------------------------------------------ */
+html.ui-clean body .workspace-statusbar { border-top: 1px solid var(--clean-divider) !important; background: var(--surface) !important; }
+html.ui-clean body .workspace-statusbar button,
+html.ui-clean body .workspace-statusbar > span { border: 0 !important; background: transparent !important; color: var(--text-secondary) !important; }
+html.ui-clean body .workspace-statusbar button:hover:not(:disabled) { background: var(--clean-hover) !important; color: var(--text-primary) !important; }
+html.ui-clean body .workspace-statusbar #status-branch { color: var(--text-primary) !important; }
+
+/* ---- Repo tab strip ---------------------------------------------------------- */
+html.ui-clean body .repo-tabs { border-bottom: 1px solid var(--clean-divider) !important; background: var(--surface-subtle) !important; }
+html.ui-clean body .repo-tab-search,
+html.ui-clean body .repo-tab-add { border-left: 0 !important; background: var(--surface-subtle) !important; color: var(--text-secondary) !important; }
+html.ui-clean body .repo-tab-search:hover,
+html.ui-clean body .repo-tab-add:hover { background: var(--clean-hover) !important; color: var(--text-primary) !important; }
+html.ui-clean body .repo-tab.active { background: var(--surface) !important; box-shadow: inset 0 -2px 0 var(--green) !important; }
+
+/* ---- Structural decluttering (web/clean-layout.js adds the View menu) ------ */
+html.ui-clean body .commit-shortcut,
+html.ui-clean body .commit-action-block .action-target,
+html.ui-clean body #tree-content .ref-current-card,
+html.ui-clean body #tree-content .overview-steps ~ .ref-tree-options { display: none !important; }
+html.ui-clean body .changes-view-options { position: relative; }
+html.ui-clean body .changes-view-options > summary { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: var(--clean-radius); background: var(--surface-subtle); color: var(--text-primary); cursor: pointer; list-style: none; }
+html.ui-clean body .changes-view-options > summary::-webkit-details-marker { display: none; }
+html.ui-clean body .changes-view-options > summary::after { content: '▾'; margin-left: 6px; color: var(--text-secondary); }
+html.ui-clean body .changes-view-options > summary:hover { background: var(--clean-hover); }
+html.ui-clean body .changes-view-panel { position: absolute; top: calc(100% + 4px); right: 0; z-index: 30; display: grid; gap: 8px; min-width: 220px; padding: 10px; border: 1px solid var(--clean-divider); border-radius: 8px; background: var(--surface); box-shadow: 0 12px 32px rgb(0 0 0 / 18%); }
+html.ui-clean body .changes-view-panel label { display: grid; gap: 4px; color: var(--text-secondary); }
+html.ui-clean body .changes-view-panel select { width: 100%; border: 1px solid var(--clean-divider) !important; background: var(--surface) !important; }
+html.ui-clean body .clean-history-options { display: grid; gap: 6px; padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--clean-divider); }
+html.ui-clean body .clean-history-options label { display: grid; gap: 3px; color: var(--text-secondary); }
+html.ui-clean body .clean-history-options select { width: 100%; }
+html.ui-clean body .clean-diff-more { position: relative; margin-left: auto; }
+html.ui-clean body .clean-diff-more > summary { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; min-height: 26px; border-radius: var(--clean-radius); cursor: pointer; list-style: none; font-weight: 800; }
+html.ui-clean body .clean-diff-more > summary::-webkit-details-marker { display: none; }
+html.ui-clean body .clean-diff-more > summary:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
+html.ui-clean body .clean-diff-more-panel { position: absolute; top: calc(100% + 4px); right: 0; z-index: 30; display: grid; min-width: 150px; padding: 4px; border: 1px solid var(--clean-divider); border-radius: 8px; background: var(--surface); box-shadow: 0 12px 32px rgb(0 0 0 / 18%); }
+html.ui-clean body .clean-diff-more-panel button { justify-content: flex-start; width: 100%; border: 0 !important; background: transparent !important; color: var(--text-primary) !important; text-align: left; }
+html.ui-clean body .clean-diff-more-panel button:hover { background: var(--clean-hover) !important; }

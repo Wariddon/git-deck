@@ -101,12 +101,12 @@ button.overview-step:focus-visible { outline: 2px solid var(--green, #1a7f37); o
 .overview-step.tone-ok { border-left-color: #1a7f37; }
 .overview-step.tone-muted { border-left-color: var(--line, #d5ddd7); }
 
-/* Text size picker (web/text-size.js) inside the theme menu, styled like the language picker. */
-.text-size-choice { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
-.text-size-choice strong { width: 100%; padding: 3px 5px; color: var(--muted); font-size: 8px; letter-spacing: .11em; text-transform: uppercase; }
-.text-size-choice button { flex: 1; min-height: 28px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
-.text-size-choice button:hover { background: color-mix(in srgb, var(--green) 10%, transparent); }
-.text-size-choice button[aria-pressed="true"] { border-color: var(--green); color: var(--green); }
+/* Look and text size pickers (web/appearance.js) inside the theme menu, styled like the language picker. */
+.look-choice, .text-size-choice { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+.look-choice strong, .text-size-choice strong { width: 100%; padding: 3px 5px; color: var(--muted); font-size: 8px; letter-spacing: .11em; text-transform: uppercase; }
+.look-choice button, .text-size-choice button { flex: 1; min-height: 28px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.look-choice button:hover, .text-size-choice button:hover { background: color-mix(in srgb, var(--green) 10%, transparent); }
+.look-choice button[aria-pressed="true"], .text-size-choice button[aria-pressed="true"] { border-color: var(--green); color: var(--green); }
 
 /* Branch filter tabs size to their labels ("Overview" was clipped at 11px) and wrap at larger text sizes. */
 body.workbench-mode #tree-content .ref-filter-tabs { flex-wrap: wrap; }
