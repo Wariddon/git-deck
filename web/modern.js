@@ -273,10 +273,21 @@
     );
     panel.append(head,list);return panel;
   }
+  // GitHub Desktop layout: the commit box sits under the file list (one column to
+  // read top to bottom) instead of spanning the whole window. The view is rebuilt on
+  // every render and on look changes, so nothing needs to be moved back.
+  function composerInColumn(content,data){
+    const groups=content.querySelector('.changes-layout > .change-groups');const form=content.querySelector('.changes-workspace > .commit-composer');
+    if(!groups||!form)return;
+    const column=el('div','modern-changes-column');groups.before(column);column.append(groups,form);
+    const submit=form.querySelector('.commit-submit');
+    if(submit&&data?.branch)submit.after(el('small','modern-commit-target',t('to {branch}',{branch:data.branch})));
+  }
   if(typeof renderChangesView==='function'){
     const baseChanges=renderChangesView;
     renderChangesView=function(content,data){
       const result=baseChanges(content,data);
+      try{if(isModern())composerInColumn(content,data);}catch(error){console.warn('Modern commit layout unavailable',error);}
       try{
         if(isModern()&&data&&!(data.files||[]).length&&!conflictCount(data)){
           const target=content.querySelector('.working-diff');const panel=nothingToCommit(data);

@@ -286,4 +286,5 @@ GitDeckI18n.register('th',{
   "Browse history":"ดูประวัติ",
   "See recent commits on every branch":"ดู commit ล่าสุดของทุก branch",
   "Open History":"เปิดประวัติ",
+  "to {branch}":"ไปที่ {branch}",
 });

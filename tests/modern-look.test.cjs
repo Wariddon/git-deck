@@ -82,6 +82,9 @@ assert.match(modernJs, /const local=action&&localKinds\.includes\(action\.kind\)
 assert.match(modernCss, /\.sync-actions > \[data-git-action\],\s*html\.ui-modern body \.sync-actions > \.toolbar-pull-group \{ display: none !important; \}/);
 // No local changes: suggestions replace the empty diff area.
 assert.match(modernJs, /if\(isModern\(\)&&data&&!\(data\.files\|\|\[\]\)\.length&&!conflictCount\(data\)\)/);
+// Commit box under the file list; the file-list resizer is placed after that column, not inside it.
+assert.match(modernJs, /const column=el\('div','modern-changes-column'\);groups\.before\(column\);column\.append\(groups,form\);/);
+assert.match(web('release-ui.js'), /\(layout\.querySelector\(':scope > \.modern-changes-column'\)\|\|layout\.querySelector\('\.change-groups'\)\)\.after\(handle\)/);
 // The rail's first item shows or hides the repository list.
 assert.match(modernJs, /railButton\(\['repos','folder',\(\)=>t\('Repos'\)\]\)/);
 // Rail items carry a visible label, not only an icon.

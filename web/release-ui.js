@@ -141,7 +141,8 @@ function enhanceChangeFiles(){
   let width=Number(localStorage.getItem(key))||300;
   const set=value=>{width=Math.round(Math.min(Math.max(200,value),Math.max(200,layout.clientWidth-260)));layout.style.setProperty('--files-width',width+'px');handle.setAttribute('aria-valuenow',String(width));handle.setAttribute('aria-valuemin','200');handle.setAttribute('aria-valuemax',String(Math.max(200,layout.clientWidth-260)));};
   const save=()=>{try{localStorage.setItem(key,String(width));}catch{}};
-  layout.querySelector('.change-groups').after(handle);requestAnimationFrame(()=>set(width));
+  // Modern wraps the file list and commit box in one column; the handle goes after that column.
+  (layout.querySelector(':scope > .modern-changes-column')||layout.querySelector('.change-groups')).after(handle);requestAnimationFrame(()=>set(width));
   handle.onpointerdown=e=>{e.preventDefault();handle.setPointerCapture(e.pointerId);};handle.onpointermove=e=>{if(handle.hasPointerCapture(e.pointerId))set(e.clientX-layout.getBoundingClientRect().left);};handle.onpointerup=e=>{if(handle.hasPointerCapture(e.pointerId)){handle.releasePointerCapture(e.pointerId);save();}};
   handle.onkeydown=e=>{if(['ArrowLeft','ArrowRight','Home'].includes(e.key)){e.preventDefault();set(e.key==='Home'?300:width+(e.key==='ArrowLeft'?-20:20));save();}};handle.ondblclick=()=>{set(300);save();};
 }
