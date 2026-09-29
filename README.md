@@ -26,7 +26,7 @@ cd git-deck
 .\git-dashboard.bat
 ```
 
-Open **http://127.0.0.1:8765/** if the browser does not open automatically. Keep the server running while using the UI.
+Git Deck opens in its own app window (Microsoft Edge `--app` mode: no tabs or address bar) when Edge is installed, otherwise in your default browser. Open **http://127.0.0.1:8765/** if nothing opens automatically. Keep the server running while using the UI.
 
 Use **Clone**, **Add** or **Scan** to register your own repositories. Scan can discover repositories nested inside the chosen folder. Start with a disposable repository to learn the workflow.
 
@@ -39,7 +39,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Build-GitDeck.ps1
 .\GitDeck.exe
 ```
 
-The build uses the Windows .NET Framework C# compiler. Keep the generated executable alongside the scripts and `web/` folder; it is not a standalone bundled application. The executable is unsigned. A server started by the launcher stops by itself about 90 seconds after the last Git Deck window closes (`-IdleShutdownSeconds`); `git-dashboard.bat` keeps running until you close its window.
+The build uses the Windows .NET Framework C# compiler. Keep the generated executable alongside the scripts and `web/` folder; it is not a standalone bundled application. The executable is unsigned. The launcher opens Git Deck as an Edge app window (Edge in Program Files, Program Files (x86) or a per-user install), falling back to the default browser. A server started by the launcher stops by itself about 90 seconds after the last Git Deck window closes (`-IdleShutdownSeconds`); `git-dashboard.bat` keeps running until you close its window.
 
 ## Features
 
@@ -53,6 +53,8 @@ The build uses the Windows .NET Framework C# compiler. Keep the generated execut
 - Fetch, pull and push with a push selection dialog; pull keeps uncommitted work by stashing and restoring it.
 - GitLab project and merge-request workflows with optional GitLab CLI.
 - GitHub pull requests, Actions runs, PR checkout and PR creation with optional GitHub CLI.
+- Optional AI helpers (explain errors and commits, PR/MR drafts, merge proposals, commit splitting, pre-push review, release notes, reflog questions, natural-language commands), controlled per repository.
+- Modern look with a view rail, repo / branch switcher and a smart primary button; Classic layout still available.
 - Themes, resizable panels and saved UI preferences.
 - Bounded in-session workspace snapshots and on-demand LFS/submodule checks.
 
@@ -100,7 +102,8 @@ Keyboard shortcuts (outside text fields): `J`/`K` next/previous file or commit, 
 
 The theme menu also sets the **Look** and **Text size**, stored per browser:
 
-- **Clean** (default) uses fewer borders and hides repeated hints. File Status sorting and layout sit under **View**, History order and layout join its **View ▾** menu, and rarely used diff tools move under **⋯**, and change/file navigation becomes arrows. The Ctrl+Enter hint lives in the commit message placeholder. The toolbar keeps Commit, Fetch, Pull, Push and More (Branch and Tag sit at the top of More). The repository list folds Create / Add / Scan into **＋ Add**, shows counts on the filter chips instead of the summary tiles, and hides an empty Scan locations card. **Classic** is the original dense layout, unchanged.
+- **Modern** (default) uses local line icons (`web/icons.js`, nothing is downloaded), zinc neutrals with one accent colour and a neutral dark theme, 32px rows, 8px corners and shadows only on menus and popovers. The header shows **repo / branch ▾** (click the repository to switch repositories, the branch for a searchable branch switcher) and one primary button that follows the repository state: *Resolve conflicts*, *Commit N*, *Review N changes*, *Pull N*, *Push N*, *Publish branch* or *Fetch*. A left rail opens File Status, History, Branches, Stashes, Tags, Compare, Conflicts (only when there are any), Recovery, Tools and Settings, with counts. History shows author initials, relative times (hover for the date) and coloured ref chips (current branch, local, remote, tag, stash). Loading shows skeletons, empty views show an icon and, where obvious, a next step; menus and toasts animate briefly (off with the system “reduce motion” setting). A saved **Clean** preference from earlier versions opens as Modern. Modern also includes the Clean layout:
+- The Clean layout uses fewer borders and hides repeated hints. File Status sorting and layout sit under **View**, History order and layout join its **View ▾** menu, and rarely used diff tools move under **⋯**, and change/file navigation becomes arrows. The Ctrl+Enter hint lives in the commit message placeholder. The toolbar keeps Commit, Fetch, Pull, Push and More (Branch and Tag sit at the top of More). The repository list folds Create / Add / Scan into **＋ Add**, shows counts on the filter chips instead of the summary tiles, and hides an empty Scan locations card. **Classic** is the original dense layout, unchanged.
 - **Text size** 8 / 10 / 12 / 14 px (default 12) scales all UI copy. Diff text keeps its own A− / A+ size.
 
 
@@ -126,6 +129,24 @@ The Push dialog scans the commits that the remote does not have yet: added lines
 ```
 
 `GITDECK_AI_PROVIDER` and `GITDECK_AI_MODEL` override the file. Always review the draft before committing.
+
+## AI helpers (optional)
+
+The same provider powers a few more ✨ buttons. AI only explains or proposes; anything that changes the repository still goes through the normal Git Deck action and its confirmation, and AI answers never run Git commands. Git Deck asks once per repository and provider per session before sending anything, scans every line it would send for secrets (and refuses to send if it finds one), and caps the size.
+
+| Where | Button | Sends |
+| --- | --- | --- |
+| Error card | ✨ Explain | the error text and repository status |
+| GitHub PR form / GitLab MR dialog | ✨ Draft title & description | commits and diff against the base branch |
+| History commit details | ✨ Explain | that commit and its diff |
+| Conflict Center | ✨ Propose merge | Base / Ours / Theirs of the selected file; the result box is filled for you to review and save |
+| Commit box | ✨ Split | the staged diff; each proposed group can be kept staged on its own (the rest moves back to unstaged, working files untouched) |
+| Push dialog | ✨ AI review | the commits about to be pushed (advice only, never blocks) |
+| Ctrl+K palette | ✨ Ask AI | your request and the list of command names; it suggests one command and asks before opening it |
+| Recovery | ✨ Ask about history | your question and the reflog; suggested commits can become a recovery branch |
+| Tags | ✨ Release notes | commit messages in the chosen range |
+
+**Per-repository policy** (Settings › AI for this repository): *Allowed*, *Local model only (Ollama)* or *Off*. It is stored in that repository's own `.git/config` (`gitdeck.ai`), is never committed, and is enforced by the server — use *Off* or *Local only* for work repositories whose code must not leave your machine.
 
 ## GitHub
 

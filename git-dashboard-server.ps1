@@ -1594,7 +1594,7 @@ $listener = New-Object Net.HttpListener
 $listener.Prefixes.Add($script:BaseUrl)
 try { $listener.Start() }
 catch {
-    try { Invoke-WebRequest -Uri ($script:BaseUrl+'api/health') -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop | Out-Null; if(-not $NoBrowser){Start-Process $script:BaseUrl}; exit 0 }
+    try { Invoke-WebRequest -Uri ($script:BaseUrl+'api/health') -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop | Out-Null; if(-not $NoBrowser){Open-GitDeckWindow $script:BaseUrl}; exit 0 }
     catch { Write-Host "[ERROR] Cannot start Git Deck on $($script:BaseUrl)" -ForegroundColor Red; Write-Host $_.Exception.Message; exit 1 }
 }
 
@@ -1608,7 +1608,7 @@ if (-not $Serial) {
 Write-Host "Git Deck is running at $($script:BaseUrl)" -ForegroundColor Green
 Write-Host 'Close this window or press Ctrl+C to stop it.' -ForegroundColor DarkGray
 if ($IdleShutdownSeconds -gt 0) { Write-Host "The server stops $IdleShutdownSeconds seconds after the last Git Deck window closes." -ForegroundColor DarkGray }
-if(-not $NoBrowser){Start-Process $script:BaseUrl}
+if(-not $NoBrowser){Open-GitDeckWindow $script:BaseUrl}
 
 try {
     $pendingContext = $null

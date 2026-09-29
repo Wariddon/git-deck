@@ -75,7 +75,8 @@ internal static class GitDeckLauncher
         {
             FileName = "powershell.exe",
             // The hidden server stops by itself once every Git Deck window has closed.
-            Arguments = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File \"" + server + "\" -IdleShutdownSeconds 90",
+            // -NoBrowser: this launcher opens the window itself (with ?path= support).
+            Arguments = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File \"" + server + "\" -NoBrowser -IdleShutdownSeconds 90",
             WorkingDirectory = root,
             UseShellExecute = false,
             CreateNoWindow = true,
@@ -94,12 +95,30 @@ internal static class GitDeckLauncher
             if (!string.IsNullOrEmpty(requested) && Directory.Exists(requested))
                 url += "?path=" + Uri.EscapeDataString(requested);
         }
-        string edge = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft", "Edge", "Application", "msedge.exe");
-        if (File.Exists(edge))
+        string edge = FindEdge();
+        if (edge != null)
         {
             Process.Start(new ProcessStartInfo(edge, "--app=\"" + url + "\" --start-maximized") { UseShellExecute = true });
             return;
         }
         Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+    }
+
+    // Edge lives in Program Files (x86) on most machines, but per-machine x64 and
+    // per-user installs use the other two folders.
+    private static string FindEdge()
+    {
+        var folders = new[] {
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
+        };
+        foreach (string folder in folders)
+        {
+            if (string.IsNullOrEmpty(folder)) continue;
+            string candidate = Path.Combine(folder, "Microsoft", "Edge", "Application", "msedge.exe");
+            if (File.Exists(candidate)) return candidate;
+        }
+        return null;
     }
 }

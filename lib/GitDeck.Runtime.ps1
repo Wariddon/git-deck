@@ -217,3 +217,19 @@ function Stop-GitDeckRuntime {
     foreach ($client in $script:EventClients.ToArray()) { Close-GitDeckEventClient $client }
     foreach ($key in @($script:RepoWatchers.Keys)) { Remove-GitDeckRepoWatcher $key }
 }
+
+# Open Git Deck as its own app window (Edge --app: no tabs or address bar) when
+# Edge is installed; otherwise fall back to the default browser.
+function Get-GitDeckEdgePath {
+    foreach ($base in @(${env:ProgramFiles(x86)}, $env:ProgramFiles, $env:LOCALAPPDATA)) {
+        if (-not $base) { continue }
+        $candidate = Join-Path $base 'Microsoft\Edge\Application\msedge.exe'
+        if (Test-Path -LiteralPath $candidate) { return $candidate }
+    }
+    return $null
+}
+function Open-GitDeckWindow([string]$Url) {
+    $edge = Get-GitDeckEdgePath
+    if ($edge) { Start-Process -FilePath $edge -ArgumentList @(('--app="{0}"' -f $Url), '--start-maximized') }
+    else { Start-Process $Url }
+}

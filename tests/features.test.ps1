@@ -53,4 +53,16 @@ $blocked=$false;try{New-AiCommitMessage 'repo' 'plain'|Out-Null}catch{$blocked=$
 $script:diffText="diff --git a/k b/k`n+++ b/k`n+-----BEGIN RSA PRIVATE KEY-----"
 $blocked=$false;try{New-AiCommitMessage 'repo' 'plain'|Out-Null}catch{$blocked=$_.Exception.Message -match 'secret'};if(-not $blocked){throw 'Diffs with secrets must never be sent'}
 $env:ANTHROPIC_API_KEY=''
-'PASS: secret scan, protected branches, GitHub slugs, static paths, change filter, AI request'
+
+# App window: Edge --app when installed, default browser otherwise; the launcher opens its own window.
+function Start-Process { param($FilePath,$ArgumentList) $script:opened=@{file=$FilePath;args=@($ArgumentList)} }
+function Get-GitDeckEdgePath { return 'C:\Edge\msedge.exe' }
+Open-GitDeckWindow 'http://127.0.0.1:8765/'
+if($script:opened.file -ne 'C:\Edge\msedge.exe' -or $script:opened.args[0] -ne '--app="http://127.0.0.1:8765/"'){throw 'Edge must open Git Deck as an app window'}
+function Get-GitDeckEdgePath { return $null }
+Open-GitDeckWindow 'http://127.0.0.1:8765/'
+if($script:opened.file -ne 'http://127.0.0.1:8765/'){throw 'Without Edge the default browser opens the URL'}
+Remove-Item Function:\Start-Process
+$launcher=Get-Content -Raw (Join-Path (Split-Path $PSScriptRoot -Parent) 'launcher\GitDeckLauncher.cs')  # $root was reassigned via $script:Root
+if($launcher -notmatch '-NoBrowser -IdleShutdownSeconds'){throw 'The launcher must start the server with -NoBrowser (it opens its own window)'}
+'PASS: secret scan, protected branches, GitHub slugs, static paths, change filter, AI request, app window'
