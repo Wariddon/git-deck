@@ -175,6 +175,14 @@
   const railBottom=[['tools','tools',()=>t('Tools')],['settings','settings',()=>t('Settings')]];
   let rail=null;
   const libraryOpen=()=>!document.body.classList.contains('library-collapsed');
+  // Unpinned, the repository list is a drawer over the workspace (Fork / Tower style)
+  // instead of a fourth column; pinned keeps the column. Outside click or Esc closes it.
+  const syncDrawer=()=>document.body.classList.toggle('modern-library-drawer',!state.meta?.libraryPinned);
+  const drawerOpen=()=>document.body.classList.contains('modern-library-drawer')&&libraryOpen();
+  const closeDrawer=()=>{if(drawerOpen()){$id('library-collapse')?.click();setTimeout(renderRail,0);}};
+  document.addEventListener('mousedown',(event)=>{if(isModern()&&drawerOpen()&&!event.target.closest('.repos, .modern-rail-item[data-tab="repos"], .repo-switcher, dialog, .modal'))closeDrawer();});
+  document.addEventListener('keydown',(event)=>{if(event.key==='Escape'&&isModern()&&drawerOpen()&&!popover&&!document.querySelector('dialog[open]'))closeDrawer();});
+  document.addEventListener('click',(event)=>{if(event.target.closest('#library-pin'))setTimeout(()=>{if(isModern()){syncDrawer();renderRail();}},0);});
   function toggleLibrary(){(libraryOpen()?$id('library-collapse'):$id('library-open'))?.click();setTimeout(renderRail,0);}
   function railButton([tab,name,label]){
     const button=el('button','modern-rail-item');button.type='button';button.dataset.tab=tab;
@@ -323,8 +331,8 @@
   }
 
   // ---- Lifecycle -------------------------------------------------------------------------------
-  function refresh(){if(!isModern())return;buildHeader();buildRail();decorateToolbar();renderHeader();renderRail();}
-  function teardown(){closePopover();restoreToolbar();document.querySelectorAll('.modern-made').forEach(node=>node.remove());document.querySelectorAll('[data-modern]').forEach(node=>delete node.dataset.modern);document.querySelector('.modern-no-changes')?.classList.remove('modern-no-changes');bar=rail=primary=null;}
+  function refresh(){if(!isModern())return;syncDrawer();buildHeader();buildRail();decorateToolbar();renderHeader();renderRail();}
+  function teardown(){closePopover();restoreToolbar();document.querySelectorAll('.modern-made').forEach(node=>node.remove());document.querySelectorAll('[data-modern]').forEach(node=>delete node.dataset.modern);document.querySelector('.modern-no-changes')?.classList.remove('modern-no-changes');document.body?.classList.remove('modern-library-drawer');bar=rail=primary=null;}
   if(typeof renderWorkspaceStatus==='function'){
     const baseStatus=renderWorkspaceStatus;
     renderWorkspaceStatus=function(...args){const result=baseStatus.apply(this,args);try{refresh();}catch(error){console.warn('Modern header unavailable',error);}return result;};

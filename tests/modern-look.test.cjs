@@ -86,6 +86,10 @@ assert.match(modernJs, /if\(isModern\(\)&&data&&!\(data\.files\|\|\[\]\)\.length
 // Commit box under the file list; the file-list resizer is placed after that column, not inside it.
 assert.match(modernJs, /const column=el\('div','modern-changes-column'\);groups\.before\(column\);column\.append\(groups,form\);/);
 assert.match(web('release-ui.js'), /\(layout\.querySelector\(':scope > \.modern-changes-column'\)\|\|layout\.querySelector\('\.change-groups'\)\)\.after\(handle\)/);
+// Unpinned repository list is a drawer (closes on outside click / Esc); pinned stays a column.
+assert.match(modernJs, /const syncDrawer=\(\)=>document\.body\.classList\.toggle\('modern-library-drawer',!state\.meta\?\.libraryPinned\);/);
+assert.match(modernCss, /body\.workbench-mode\.modern-library-drawer:not\(\.library-collapsed\) \.repos \{/);
+assert.doesNotMatch(modernCss, /\.patch-hunk \{[^}]*overflow: hidden/, 'overflow on the hunk card would break its sticky header');
 // The rail's first item shows or hides the repository list.
 assert.match(modernJs, /railButton\(\['repos','folder',\(\)=>t\('Repos'\)\]\)/);
 // Rail items carry a visible label, not only an icon.
