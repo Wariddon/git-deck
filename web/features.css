@@ -118,3 +118,22 @@ body.workbench-mode #tree-content .ref-filter-tabs button { flex: 1 0 auto; min-
 #workspace-backdrop.workspace-idle .workbench-secondary,
 #workspace-backdrop.workspace-idle .workspace-statusbar,
 #workspace-backdrop.workspace-idle .toolbar-branch { display: none !important; }
+
+/* AI helpers (web/ai-features.js) */
+.ai-button { font-weight: 600; }
+.ai-button[aria-busy="true"] { opacity: .7; cursor: progress; }
+.ai-answer { display: grid; gap: 4px; margin: 8px 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--green, #0969da) 35%, transparent); border-radius: 8px; background: color-mix(in srgb, var(--green, #0969da) 6%, transparent); }
+.ai-answer p { margin: 0; white-space: pre-wrap; }
+.ai-answer-note { color: var(--muted, #6b7a71); }
+.ai-card { display: grid; gap: 6px; margin: 8px 0 12px; padding: 12px; border: 1px solid var(--line, #d0d7de); border-radius: 8px; }
+.ai-card > small { color: var(--muted, #6b7a71); }
+.ai-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ai-ask input { flex: 1 1 220px; min-width: 0; }
+.ai-candidate { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ai-candidate span { flex: 1; }
+.ai-split-group { display: grid; gap: 4px; margin: 8px 0; padding: 10px; border: 1px solid var(--line, #d0d7de); border-radius: 8px; }
+.ai-split-group small { color: var(--muted, #6b7a71); overflow-wrap: anywhere; }
+.ai-split-group button { justify-self: start; }
+.ai-push-review { display: grid; gap: 4px; margin: 8px 0; }
+.ai-notes { width: min(640px, 80vw); font: 12px/1.5 Consolas, monospace; }
+.ai-policy select { justify-self: start; }
