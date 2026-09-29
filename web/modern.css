@@ -506,3 +506,51 @@ html.ui-modern body .diff-viewer-toolbar { min-height: 40px; padding: 4px 12px !
 html.ui-modern body .diff-viewer-toolbar > strong { font-family: var(--modern-mono); font-weight: 600; }
 html.ui-modern body .patch-hunk-actions { top: 40px !important; border-radius: 8px 8px 0 0; }
 html.ui-modern body .patch-hunk > .diff-code { border-radius: 0 0 8px 8px; overflow: hidden; }
+
+/* ---- Branches page: grouped list with icons (GitHub / GitLab) --------------------------------------- */
+html.ui-modern body .workspace-list:has(> .branch-card) { display: block; gap: 0; padding: 0 4px; }
+html.ui-modern body .modern-list-heading { display: flex; align-items: center; gap: 8px; margin: 16px 8px 4px; font-size: .92em; font-weight: 600; color: var(--text-tertiary); }
+html.ui-modern body .modern-list-heading:first-child { margin-top: 4px; }
+html.ui-modern body .modern-list-heading small { padding: 0 7px; border-radius: 999px; background: var(--surface-subtle); font-size: .92em; }
+html.ui-modern body .branch-card { margin: 0 !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; box-shadow: none !important; }
+html.ui-modern body .branch-card:hover, html.ui-modern body .branch-card.expanded { background: var(--surface-hover) !important; }
+html.ui-modern body .branch-card > .workspace-row { min-height: 48px; padding: 6px 10px 6px 40px !important; border: 0 !important; background: transparent !important; position: relative; }
+html.ui-modern body .branch-card > .workspace-row::before {
+  content: ""; position: absolute; left: 14px; top: 50%; width: 16px; height: 16px; margin-top: -8px; background: var(--text-tertiary);
+  -webkit-mask: var(--modern-branch-icon) center / contain no-repeat; mask: var(--modern-branch-icon) center / contain no-repeat;
+  --modern-branch-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='6' cy='18' r='2.5'/><circle cx='18' cy='6' r='2.5'/><path d='M6 3v12.5M18 8.5A9.5 9.5 0 0 1 8.5 18'/></svg>");
+}
+html.ui-modern body .branch-card[data-kind="remote"] > .workspace-row::before { --modern-branch-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'><path d='M17.5 19H9a7 7 0 1 1 6.7-9h1.8a4.5 4.5 0 1 1 0 9z'/></svg>"); }
+html.ui-modern body .branch-card[data-current] > .workspace-row::before { background: var(--green); }
+html.ui-modern body .branch-card > .workspace-row strong { font-weight: 600; color: var(--text-primary) !important; }
+html.ui-modern body .branch-card[data-current] > .workspace-row strong { color: var(--green) !important; }
+html.ui-modern body .branch-card > .workspace-row small { color: var(--text-tertiary) !important; }
+/* Actions appear on hover/focus; the current branch keeps Manage visible. */
+html.ui-modern body .branch-card .workspace-row-actions { opacity: 0; transition: opacity .15s; }
+html.ui-modern body .branch-card:is(:hover, :focus-within, .expanded) .workspace-row-actions,
+html.ui-modern body .branch-card[data-current] .workspace-row-actions { opacity: 1; }
+html.ui-modern body .branch-card .branch-manage { padding: 8px 10px 12px 40px !important; border: 0 !important; background: transparent !important; gap: 6px; }
+html.ui-modern body .branch-card .branch-manage :is(button, select, input) { height: 28px; border: 1px solid var(--border-default) !important; border-radius: 6px !important; background: var(--surface) !important; }
+html.ui-modern body .branch-result-summary { margin: 4px 12px; color: var(--text-tertiary); }
+html.ui-modern body .workspace-content > .history-search { margin: 0 12px 4px; height: 32px; border: 1px solid var(--border-default) !important; border-radius: 8px !important; background: var(--surface) !important; }
+html.ui-modern body .workspace-section-head .workspace-form :is(select, input) { height: 32px; border: 1px solid var(--border-default) !important; border-radius: 6px !important; background: var(--surface) !important; }
+html.ui-modern body .workspace-section-head .workspace-form button.primary { height: 32px; padding: 0 14px; border: 0 !important; border-radius: 6px !important; background: var(--green) !important; color: var(--accent-contrast, #fff) !important; font-weight: 600; }
+
+/* ---- Repository tabs (browser / VS Code tabs) --------------------------------------------------------- */
+html.ui-modern body .repo-tabs { height: 36px; padding: 4px 8px 0 !important; gap: 2px; align-items: flex-end; border-bottom: 1px solid var(--border-default) !important; background: var(--surface-subtle) !important; }
+html.ui-modern body .repo-tab { height: 32px; border: 1px solid transparent !important; border-bottom: 0 !important; border-radius: 8px 8px 0 0 !important; background: transparent !important; box-shadow: none !important; }
+html.ui-modern body .repo-tab:hover { background: var(--surface-hover) !important; }
+html.ui-modern body .repo-tab.active { position: relative; top: 1px; border-color: var(--border-default) !important; background: var(--surface) !important; box-shadow: none !important; }
+html.ui-modern body .repo-tab.active::before { content: ""; position: absolute; left: 10px; right: 10px; top: 0; height: 2px; border-radius: 0 0 2px 2px; background: var(--green); }
+html.ui-modern body .repo-tab :is(.repo-tab-open, .repo-tab-close) { height: 30px; border: 0 !important; background: transparent !important; color: var(--text-secondary) !important; }
+html.ui-modern body .repo-tab.active .repo-tab-open { color: var(--text-primary) !important; font-weight: 600; }
+html.ui-modern body .repo-tab .repo-tab-close { opacity: .5; border-radius: 6px !important; }
+html.ui-modern body .repo-tab:hover .repo-tab-close { opacity: 1; }
+html.ui-modern body .repo-tabs > :is(.repo-tab-search, .repo-tab-add) { height: 28px; margin-bottom: 3px; border: 0 !important; border-radius: 6px !important; background: transparent !important; color: var(--text-secondary) !important; font-weight: 500; }
+html.ui-modern body .repo-tabs > :is(.repo-tab-search, .repo-tab-add):hover { background: var(--surface-hover) !important; color: var(--text-primary) !important; }
+
+/* ---- Status bar (VS Code) -------------------------------------------------------------------------------- */
+html.ui-modern body .workspace-statusbar { height: 26px; min-height: 26px; padding: 0 8px !important; gap: 2px; border-top: 1px solid var(--border-default) !important; background: var(--surface-subtle) !important; color: var(--text-secondary); font-size: .92em; }
+html.ui-modern body .workspace-statusbar > :is(button, span) { height: 22px; padding: 0 8px !important; border: 0 !important; border-radius: 4px !important; background: transparent !important; color: inherit !important; }
+html.ui-modern body .workspace-statusbar > button:hover { background: var(--surface-hover) !important; color: var(--text-primary) !important; }
+html.ui-modern body .workspace-statusbar kbd { padding: 0 5px; border: 1px solid var(--border-default); border-radius: 4px; background: var(--surface); font-size: .85em; }

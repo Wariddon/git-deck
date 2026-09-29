@@ -259,6 +259,22 @@
     }
   }
 
+  // ---- Branches page: grouped list (GitHub / GitLab branch pages) ------------------------------------
+  function decorateBranches(root){
+    const cards=[...root.querySelectorAll('.workspace-list > .branch-card:not([data-modern])')];if(!cards.length)return;
+    for(const card of cards){
+      card.dataset.modern='1';
+      const detail=card.querySelector('.workspace-row > div:first-child small')?.textContent||'';
+      card.dataset.kind=/^Remote branch/.test(detail)?'remote':'local';
+      if(card.querySelector('.current-branch'))card.dataset.current='1';
+    }
+    const list=cards[0].parentElement;list.querySelectorAll(':scope > .modern-list-heading').forEach(node=>node.remove());
+    for(const [kind,label] of [['local',t('Local branches')],['remote',t('Remote branches')]]){
+      const group=[...list.querySelectorAll(`:scope > .branch-card[data-kind="${kind}"]`)];if(!group.length)continue;
+      const heading=el('h4','modern-list-heading modern-made');heading.append(el('span','',label),el('small','',String(group.length)));group[0].before(heading);
+    }
+  }
+
   // ---- No local changes: suggested next steps --------------------------------------------------------
   function suggestion(name,title,detail,label,run,primaryStyle=false){
     const card=el('section','modern-suggestion');const text=el('div','modern-suggestion-text');
@@ -343,7 +359,7 @@
   }
   const content=$id('workspace-content');let pending=false;
   // setTimeout, not requestAnimationFrame: rAF is paused while the window is hidden.
-  if(content)new MutationObserver(()=>{if(pending||!isModern())return;pending=true;setTimeout(()=>{pending=false;decorateHistory(content);renderRail();},0);}).observe(content,{childList:true,subtree:true});
+  if(content)new MutationObserver(()=>{if(pending||!isModern())return;pending=true;setTimeout(()=>{pending=false;decorateHistory(content);decorateBranches(content);renderRail();},0);}).observe(content,{childList:true,subtree:true});
   // The "Last fetched" caption ages; refresh it every minute.
   setInterval(()=>{if(isModern())try{renderHeader();}catch{}},60000);
   const applyLook=()=>{if(isModern())refresh();else teardown();};

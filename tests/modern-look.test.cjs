@@ -90,6 +90,9 @@ assert.match(web('release-ui.js'), /\(layout\.querySelector\(':scope > \.modern-
 assert.match(modernJs, /const syncDrawer=\(\)=>document\.body\.classList\.toggle\('modern-library-drawer',!state\.meta\?\.libraryPinned\);/);
 assert.match(modernCss, /body\.workbench-mode\.modern-library-drawer:not\(\.library-collapsed\) \.repos \{/);
 assert.doesNotMatch(modernCss, /\.patch-hunk \{[^}]*overflow: hidden/, 'overflow on the hunk card would break its sticky header');
+// Branches page: local and remote groups with headings; decorated once per rendered card.
+assert.match(modernJs, /card\.dataset\.kind=\/\^Remote branch\/\.test\(detail\)\?'remote':'local';/);
+assert.match(modernJs, /decorateHistory\(content\);decorateBranches\(content\);renderRail\(\);/);
 // The rail's first item shows or hides the repository list.
 assert.match(modernJs, /railButton\(\['repos','folder',\(\)=>t\('Repos'\)\]\)/);
 // Rail items carry a visible label, not only an icon.
