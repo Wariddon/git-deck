@@ -80,3 +80,18 @@ assert.match(cleanLayout, /if\(isClean\(\)\)\{try\{groupViewOptions\(content\);m
 assert.match(cleanLayout, /addEventListener\('gitdeck:appearance',\(\)=>\{if\(state\.workspace\)renderWorkspace\(\);\}\)/);
 assert.doesNotMatch(cleanLayout, /requestAnimationFrame\(/, 'rAF pauses while the window is hidden');
 console.log('PASS: audit fixes (export path, add-on repaint, diff font size) and clean layout guards');
+
+// ---- Clean chrome (static toolbar / repository list) ---------------------------
+const features = fs.readFileSync(path.join(root, 'web/features.css'), 'utf8');
+// With no repository open, toolbar and status bar would describe the one just closed.
+for (const part of ['.sync-actions', '.workbench-secondary', '.workspace-statusbar', '.toolbar-branch']) {
+  assert(features.includes(`#workspace-backdrop.workspace-idle ${part}`), `Idle workspace hides ${part}`);
+}
+// Moves are recorded and undone for Classic; generated menus are removed again.
+assert.match(cleanLayout, /const restore=\(\)=>\{while\(moved\.length\)/);
+assert.match(cleanLayout, /document\.querySelectorAll\('\.clean-made'\)\.forEach\(node=>node\.remove\(\)\)/);
+assert.match(cleanLayout, /const applyLook=\(\)=>\{if\(isClean\(\)\)applyChrome\(\);else\{restore\(\);syncFilterCounts\(\);\}\};/);
+for (const id of ['toolbar-create-branch', 'toolbar-create-tag']) assert(cleanLayout.includes(`'${id}'`), `${id} moves into More`);
+// Diff arrows keep the full label for tooltips and screen readers.
+assert.match(cleanLayout, /button\.title=label;button\.setAttribute\('aria-label',label\);button\.textContent=arrows\[label\]/);
+console.log('PASS: idle workspace chrome, reversible clean chrome, accessible diff arrows');

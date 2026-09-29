@@ -111,3 +111,10 @@ button.overview-step:focus-visible { outline: 2px solid var(--green, #1a7f37); o
 /* Branch filter tabs size to their labels ("Overview" was clipped at 11px) and wrap at larger text sizes. */
 body.workbench-mode #tree-content .ref-filter-tabs { flex-wrap: wrap; }
 body.workbench-mode #tree-content .ref-filter-tabs button { flex: 1 0 auto; min-width: max-content; padding: 2px 6px; text-overflow: clip; }
+
+/* No repository open: the toolbar and status bar would act on / describe the
+   repository that was just closed, so hide them until one is opened. */
+#workspace-backdrop.workspace-idle .sync-actions,
+#workspace-backdrop.workspace-idle .workbench-secondary,
+#workspace-backdrop.workspace-idle .workspace-statusbar,
+#workspace-backdrop.workspace-idle .toolbar-branch { display: none !important; }

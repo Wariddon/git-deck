@@ -151,4 +151,7 @@ GitDeckI18n.register('th',{
   '{message} · Ctrl+Enter to commit':'{message} · กด Ctrl+Enter เพื่อ commit',
   'Order':'ลำดับ',
   'More diff tools':'เครื่องมือ diff เพิ่มเติม',
+  'CREATE':'สร้าง',
+  '＋ Add ▾':'＋ เพิ่ม ▾',
+  'Create, add or scan for repositories':'สร้าง เพิ่ม หรือสแกนหา repository',
 });

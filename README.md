@@ -100,7 +100,7 @@ Keyboard shortcuts (outside text fields): `J`/`K` next/previous file or commit, 
 
 The theme menu also sets the **Look** and **Text size**, stored per browser:
 
-- **Clean** (default) uses fewer borders and hides repeated hints. File Status sorting and layout sit under **View**, History order and layout join its **View ▾** menu, and rarely used diff tools move under **⋯**. The Ctrl+Enter hint lives in the commit message placeholder. **Classic** is the original dense layout, unchanged.
+- **Clean** (default) uses fewer borders and hides repeated hints. File Status sorting and layout sit under **View**, History order and layout join its **View ▾** menu, and rarely used diff tools move under **⋯**, and change/file navigation becomes arrows. The Ctrl+Enter hint lives in the commit message placeholder. The toolbar keeps Commit, Fetch, Pull, Push and More (Branch and Tag sit at the top of More). The repository list folds Create / Add / Scan into **＋ Add**, shows counts on the filter chips instead of the summary tiles, and hides an empty Scan locations card. **Classic** is the original dense layout, unchanged.
 - **Text size** 8 / 10 / 12 / 14 px (default 12) scales all UI copy. Diff text keeps its own A− / A+ size.
 
 

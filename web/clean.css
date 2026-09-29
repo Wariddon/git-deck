@@ -142,3 +142,31 @@ html.ui-clean body .clean-diff-more > summary:hover { background: color-mix(in s
 html.ui-clean body .clean-diff-more-panel { position: absolute; top: calc(100% + 4px); right: 0; z-index: 30; display: grid; min-width: 150px; padding: 4px; border: 1px solid var(--clean-divider); border-radius: 8px; background: var(--surface); box-shadow: 0 12px 32px rgb(0 0 0 / 18%); }
 html.ui-clean body .clean-diff-more-panel button { justify-content: flex-start; width: 100%; border: 0 !important; background: transparent !important; color: var(--text-primary) !important; text-align: left; }
 html.ui-clean body .clean-diff-more-panel button:hover { background: var(--clean-hover) !important; }
+
+/* ---- Repository list ------------------------------------------------------ */
+html.ui-clean body .repo-overview { display: none !important; }
+html.ui-clean body #scan-locations:has(.scan-location-empty) { display: none !important; }
+html.ui-clean body #quick-filters button[data-count]::after { content: attr(data-count); margin-left: 5px; color: var(--text-secondary); font-weight: 600; }
+html.ui-clean body #quick-filters button { border-color: transparent !important; background: transparent !important; }
+html.ui-clean body #quick-filters button.active { background: var(--clean-selected) !important; color: var(--text-primary) !important; }
+html.ui-clean body .panel-buttons .btn.soft { border-color: transparent !important; background: transparent !important; }
+html.ui-clean body .panel-buttons .btn.soft:hover { background: var(--clean-hover) !important; }
+html.ui-clean body .clean-add-menu { position: relative; }
+html.ui-clean body .clean-add-menu > summary { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: var(--clean-radius); cursor: pointer; list-style: none; font-weight: 700; }
+html.ui-clean body .clean-add-menu > summary::-webkit-details-marker { display: none; }
+html.ui-clean body .clean-add-menu > summary:hover { background: var(--clean-hover); }
+html.ui-clean body .clean-menu-panel { position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; display: grid; min-width: 160px; padding: 4px; border: 1px solid var(--clean-divider); border-radius: 8px; background: var(--surface); box-shadow: 0 12px 32px rgb(0 0 0 / 18%); }
+html.ui-clean body .clean-menu-panel > button { justify-content: flex-start; width: 100%; text-align: left; }
+
+/* ---- Toolbar: Branch / Tag live in More under "Create" -------------------- */
+html.ui-clean body .sync-more #toolbar-create-branch,
+html.ui-clean body .sync-more #toolbar-create-tag { display: grid !important; width: 100%; margin: 0 !important; text-align: left; }
+
+/* ---- Diff navigation arrows ------------------------------------------------ */
+html.ui-clean body .diff-navigation .clean-arrow { min-width: 28px; padding: 0 6px; font-weight: 800; }
+/* No repository open: the centred "Select a repository" message is enough. */
+html.ui-clean body #workspace-backdrop.workspace-idle .workspace-modal-head { display: none !important; }
+
+/* ---- History: raw diff headers and the repeated filter summary ----------- */
+html.ui-clean body .diff-lines .clean-raw-header { display: none !important; }
+html.ui-clean body .workspace-section-head:has(.history-controls) > div:first-child > p { display: none !important; }
