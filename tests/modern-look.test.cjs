@@ -10,7 +10,7 @@ const context = {
   state: { workspace: null, workspaceRepo: null, workspaceTab: 'history' },
   selectWorkspaceTab: () => {}, renderWorkspaceStatus: () => {}, workspaceEmpty: () => ({ prepend() { throw new Error('Classic must not be decorated'); }, append() {} }),
   document: { readyState: 'complete', documentElement: { classList: { contains: () => false } }, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [], addEventListener: () => {} },
-  setTimeout,
+  setTimeout, setInterval: () => 0,
 };
 context.window = context;
 vm.runInNewContext(web('icons.js'), context);
@@ -66,11 +66,24 @@ assert(html.indexOf('/clean-layout.js') < html.indexOf('/modern.js'));
 assert.match(web('app.js'), /if\(item\.time\)date\.dateTime=new Date\(item\.time\*1000\)\.toISOString\(\);/);
 assert.match(fs.readFileSync(path.join(__dirname, '../git-dashboard-server.ps1'), 'utf8'), /%D%x1f%at'\)/);
 // Everything added is marked for removal when switching to Classic.
-assert.match(web('modern.js'), /function teardown\(\)\{closeBranchMenu\(\);restoreToolbar\(\);.*document\.querySelectorAll\('\.modern-made'\)\.forEach\(node=>node\.remove\(\)\)/);
-// Nothing to do shows "Up to date" instead of a second Fetch; the toolbar hides its copy of the primary action.
+assert.match(web('modern.js'), /function teardown\(\)\{closePopover\(\);restoreToolbar\(\);.*document\.querySelectorAll\('\.modern-made'\)\.forEach\(node=>node\.remove\(\)\)/);
+// One sync button (GitHub Desktop pattern): its label follows the branch; the accent button is only for local work.
 const modernJs = web('modern.js'), modernCss = web('modern.css');
-assert.match(modernJs, /primary\.hidden=!action\|\|idle;upToDate\.hidden=!idle;/);
-assert.match(modernCss, /\.sync-actions\[data-primary-kind="push"\] > \[data-git-action="push"\] \{ display: none !important; \}/);
+const sync = (data) => modern.syncAction(data, now);
+assert.equal(sync({ ...base, remotes: [] }), null, 'No remote: no sync button');
+assert.equal(sync({ ...base, sync: { ...base.sync, behind: 3, ahead: 1 } }).label, 'Pull origin');
+assert.equal(sync({ ...base, sync: { ...base.sync, behind: 3 } }).badge, '↓3');
+assert.equal(sync({ ...base, sync: { ...base.sync, ahead: 2 } }).label, 'Push origin');
+assert.equal(sync({ ...base, sync: { upstream: 'upstream/main', ahead: 2 } }).label, 'Push upstream', 'Remote name comes from the upstream');
+assert.equal(sync({ ...base, sync: {} }).label, 'Publish branch');
+assert.equal(sync({ ...base, lastFetchAt: new Date(now - 5 * 60000).toISOString() }).caption, 'Last fetched 5m ago');
+assert.equal(sync(base).caption, 'Not fetched yet');
+assert.match(modernJs, /const local=action&&localKinds\.includes\(action\.kind\);primary\.hidden=!local;/);
+assert.match(modernCss, /\.sync-actions > \[data-git-action\],\s*html\.ui-modern body \.sync-actions > \.toolbar-pull-group \{ display: none !important; \}/);
+// No local changes: suggestions replace the empty diff area.
+assert.match(modernJs, /if\(isModern\(\)&&data&&!\(data\.files\|\|\[\]\)\.length&&!conflictCount\(data\)\)/);
+// The rail's first item shows or hides the repository list.
+assert.match(modernJs, /railButton\(\['repos','folder',\(\)=>t\('Repos'\)\]\)/);
 // Rail items carry a visible label, not only an icon.
 assert.match(modernJs, /el\('span','modern-rail-label',label\(\)\)/);
 console.log('PASS: modern look primary action, relative time, initials, ref kinds, icons and wiring');

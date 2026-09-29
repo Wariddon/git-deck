@@ -84,20 +84,9 @@ html.ui-modern body :is(.theme-menu, .help-menu-panel, .sync-more > div, .clean-
 /* ---- Header: breadcrumb and primary action ------------------------------------------------------------ */
 html.ui-modern body .workspace-modal-head { gap: 12px; min-height: 48px; padding: 0 12px !important; }
 html.ui-modern body .workspace-modal-head > div:has(> #workspace-title) { display: none !important; }
-html.ui-modern body .modern-crumbs { display: flex; align-items: center; gap: 2px; min-width: 0; flex: 0 1 auto; }
-html.ui-modern body .modern-crumb {
-  display: inline-flex; align-items: center; gap: 6px; min-width: 0; height: 32px; padding: 0 8px;
-  border: 0 !important; border-radius: 6px; background: transparent !important; color: var(--text-primary) !important;
-  font-weight: 600; cursor: pointer;
-}
-html.ui-modern body .modern-crumb span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
-html.ui-modern body .modern-crumb-branch { font-weight: 500; color: var(--text-secondary) !important; }
-html.ui-modern body .modern-crumb:hover { background: var(--clean-hover) !important; }
-html.ui-modern body .modern-crumb .gd-icon { flex: none; color: var(--text-tertiary); }
-html.ui-modern body .modern-crumb-sep { color: var(--text-tertiary); padding: 0 2px; }
 html.ui-modern body .sync-actions { align-items: center; gap: 4px !important; margin-left: auto; }
 html.ui-modern body .sync-actions > button[data-workbench-nav="changes"] { display: none !important; }
-html.ui-modern body .sync-actions :is(button, summary):not(.hidden):not([hidden]):not([data-workbench-nav="changes"]) { display: inline-flex !important; flex-direction: row !important; align-items: center; gap: 6px; height: 32px; min-height: 32px !important; padding: 0 10px !important; font-weight: 500; }
+html.ui-modern body .sync-actions :is(button, summary):not(.hidden):not([hidden]):not([data-workbench-nav="changes"]):not([data-git-action]) { display: inline-flex !important; flex-direction: row !important; align-items: center; gap: 6px; height: 32px; min-height: 32px !important; padding: 0 10px !important; font-weight: 500; }
 html.ui-modern body .sync-actions :is(button, summary) small { display: none !important; }
 html.ui-modern body .sync-actions :is(button, summary) strong { font-weight: 500; }
 html.ui-modern body .sync-actions .gd-icon { flex: none; color: var(--text-secondary); }
@@ -110,11 +99,11 @@ html.ui-modern body .sync-actions .modern-primary .gd-icon { color: inherit; }
 html.ui-modern body .sync-actions .modern-primary:hover { background: color-mix(in srgb, var(--green) 88%, #000) !important; }
 html.ui-modern body .sync-actions .modern-primary[hidden] { display: none !important; }
 /* ---- Branch menu -------------------------------------------------------------------------- */
-html.ui-modern body .modern-branch-menu {
+html.ui-modern body .modern-popover {
   position: fixed; z-index: 13000; display: grid; gap: 4px; width: 320px; max-height: min(460px, 70vh);
   padding: 8px; background: var(--surface); color: var(--text-primary); animation: modern-pop .15s var(--modern-ease);
 }
-html.ui-modern body .modern-branch-menu input { height: 32px; padding: 0 10px; border: 1px solid var(--border-default); background: var(--surface-subtle); color: var(--text-primary); }
+html.ui-modern body .modern-popover input { height: 32px; padding: 0 10px; border: 1px solid var(--border-default); background: var(--surface-subtle); color: var(--text-primary); }
 html.ui-modern body .modern-branch-list { overflow: auto; display: grid; align-content: start; }
 html.ui-modern body .modern-branch-row,
 html.ui-modern body .modern-branch-foot button {
@@ -135,7 +124,7 @@ html.ui-modern body .modern-branch-foot button { flex: 1; justify-content: cente
 /* Absolutely placed so it never takes a cell in the workbench grid (whatever its column variant). */
 html.ui-modern body .workbench-body:has(> .modern-rail) { position: relative; padding-left: 48px; }
 html.ui-modern body .workspace-idle .workbench-body { padding-left: 0; }
-html.ui-modern body .workspace-idle :is(.modern-rail, .modern-crumb-branch, .modern-primary) { display: none !important; }
+html.ui-modern body .workspace-idle :is(.modern-rail, .modern-toolbar, .modern-primary) { display: none !important; }
 html.ui-modern body .modern-rail {
   position: absolute; inset: 0 auto 0 0; z-index: 2; box-sizing: border-box;
   display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 0 0 48px; width: 48px; padding: 8px 0;
@@ -228,14 +217,6 @@ html.ui-modern body .ai-button { border-radius: 6px; }
 html.ui-modern body { line-height: 1.45; --text-tertiary: #6b6b75; }
 html.ui-modern body.theme-dark:not(.theme-midnight) { --text-tertiary: #8b8b94; }
 
-/* ---- Toolbar: primary, "Up to date", no duplicate actions ---------------------------- */
-html.ui-modern body .modern-uptodate:not([hidden]) {
-  order: -1; display: inline-flex; align-items: center; gap: 6px; height: 28px; margin-right: 8px; padding: 0 10px;
-  border-radius: 999px; background: color-mix(in srgb, var(--success, #1a7f37) 12%, transparent);
-  color: color-mix(in srgb, var(--success, #1a7f37) 85%, var(--text-primary)); font-weight: 500; white-space: nowrap;
-}
-html.ui-modern body .sync-actions[data-primary-kind="pull"] .toolbar-pull-group > [data-git-action="pull"],
-html.ui-modern body .sync-actions[data-primary-kind="push"] > [data-git-action="push"] { display: none !important; }
 html.ui-modern body .sync-actions :is(button, summary):not(.modern-primary) { color: var(--text-secondary) !important; }
 html.ui-modern body .sync-actions :is(button, summary):not(.modern-primary):hover { color: var(--text-primary) !important; }
 html.ui-modern body .sync-actions #pull-strategy { height: 28px; padding: 0 6px; font-size: .92em; }
@@ -355,3 +336,97 @@ html.ui-modern body .repo-list .repo-main > * { display: block; overflow: hidden
 html.ui-modern body .repo-list .repo-meta { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden; }
 html.ui-modern body .repo-list .repo-meta b { min-width: 0; max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html.ui-modern body .repo-list .repo-meta i { flex: none; }
+
+/* =====================================================================================
+   v3: patterns from widely used Git clients.
+   ===================================================================================== */
+
+/* ---- Header toolbar: labelled blocks (GitHub Desktop) ----------------------------------------- */
+html.ui-modern body .workspace-modal-head { min-height: 56px; height: 56px; padding: 0 12px 0 0 !important; align-items: stretch !important; }
+html.ui-modern body .workspace-modal-head > :not(.modern-toolbar) { align-self: center; }
+html.ui-modern body .modern-toolbar { display: flex; align-items: stretch; min-width: 0; flex: 0 1 auto; }
+html.ui-modern body .modern-tb {
+  position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; width: 240px; padding: 0 16px;
+  border: 0 !important; border-right: 1px solid var(--border-default) !important; border-radius: 0 !important;
+  background: transparent !important; color: var(--text-primary) !important; text-align: left; cursor: pointer;
+}
+html.ui-modern body .modern-tb:hover, html.ui-modern body .modern-tb[aria-expanded="true"] { background: var(--surface-hover) !important; }
+html.ui-modern body .modern-tb[hidden], html.ui-modern body .modern-tb-sync-group[hidden] { display: none !important; }
+html.ui-modern body .modern-tb-icon { display: grid; flex: none; color: var(--text-tertiary); }
+html.ui-modern body .modern-tb-text { display: grid; min-width: 0; line-height: 1.25; }
+html.ui-modern body .modern-tb-caption { overflow: hidden; color: var(--text-tertiary); font-size: .86em; text-overflow: ellipsis; white-space: nowrap; }
+html.ui-modern body .modern-tb-value { overflow: hidden; font-size: 1.08em; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+html.ui-modern body :is(.modern-tb-repo, .modern-tb-branch)::after {
+  content: ""; flex: none; width: 14px; height: 14px; margin-left: auto; background: var(--text-tertiary);
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>") center / contain no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>") center / contain no-repeat;
+}
+html.ui-modern body .modern-tb-repo { width: 220px; }
+html.ui-modern body .modern-tb-sync-group { display: flex; border-right: 1px solid var(--border-default); }
+html.ui-modern body .modern-tb-sync { width: 230px; border-right: 0 !important; }
+html.ui-modern body .modern-tb-sync[data-kind="pull"] .modern-tb-icon,
+html.ui-modern body .modern-tb-sync[data-kind="push"] .modern-tb-icon { color: var(--green); }
+html.ui-modern body .modern-tb-badge { flex: none; margin-left: auto; padding: 1px 8px; border-radius: 999px; background: var(--modern-accent-soft); color: var(--green); font-family: var(--modern-mono); font-size: .9em; font-weight: 600; }
+html.ui-modern body .modern-tb-more { display: grid; place-items: center; width: 34px; padding: 0; border: 0 !important; border-left: 1px solid var(--border-muted) !important; border-radius: 0 !important; background: transparent !important; color: var(--text-tertiary) !important; cursor: pointer; }
+html.ui-modern body .modern-tb-more:hover, html.ui-modern body .modern-tb-more[aria-expanded="true"] { background: var(--surface-hover) !important; color: var(--text-primary) !important; }
+/* The sync block replaces the separate Fetch / Pull (+ strategy) / Push buttons. */
+html.ui-modern body .sync-actions > [data-git-action],
+html.ui-modern body .sync-actions > .toolbar-pull-group { display: none !important; }
+html.ui-modern body .sync-actions .modern-primary { height: 34px; padding: 0 14px !important; }
+
+/* ---- Popovers and menus ------------------------------------------------------------------------ */
+html.ui-modern body .modern-popover {
+  position: fixed; z-index: 13000; display: grid; gap: 2px; max-height: min(480px, 72vh); padding: 6px;
+  border: 1px solid var(--border-default); border-radius: 10px; background: var(--surface); color: var(--text-primary);
+  box-shadow: var(--modern-shadow-pop); animation: modern-pop .15s var(--modern-ease);
+}
+html.ui-modern body .modern-branch-menu { width: 340px; }
+html.ui-modern body .modern-sync-menu { width: 300px; }
+html.ui-modern body .modern-menu-item {
+  display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 6px 10px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--text-primary); text-align: left; cursor: pointer;
+}
+html.ui-modern body .modern-menu-item:hover:not(:disabled), html.ui-modern body .modern-menu-item:focus-visible { background: var(--surface-hover); }
+html.ui-modern body .modern-menu-item .gd-icon { flex: none; color: var(--text-tertiary); }
+html.ui-modern body .modern-menu-item .gd-icon-check { color: var(--green); }
+html.ui-modern body .modern-menu-text { display: grid; min-width: 0; line-height: 1.3; }
+html.ui-modern body .modern-menu-text strong { font-weight: 500; }
+html.ui-modern body .modern-menu-text small { color: var(--text-tertiary); }
+html.ui-modern body .modern-menu-spacer { width: 16px; flex: none; }
+html.ui-modern body .modern-menu-heading { margin: 6px 10px 2px; padding-top: 8px; border-top: 1px solid var(--border-default); color: var(--text-tertiary); font-size: .86em; font-weight: 600; }
+html.ui-modern body .modern-sync-menu .modern-menu-heading ~ .modern-menu-item { min-height: 32px; }
+
+/* ---- Rail: repository list toggle ------------------------------------------------------------- */
+html.ui-modern body .modern-rail-sep { width: 32px; height: 1px; margin: 4px 0; background: var(--border-default); }
+html.ui-modern body .modern-rail-item[data-tab="repos"].active { background: var(--surface) !important; color: var(--text-primary) !important; }
+html.ui-modern body .modern-rail-item[data-tab="repos"].active::before { display: none; }
+
+/* ---- No local changes (GitHub Desktop) ------------------------------------------------------------ */
+html.ui-modern body .modern-clean { display: grid; align-content: start; justify-items: center; gap: 20px; padding: 48px 24px; overflow: auto; }
+html.ui-modern body .modern-clean-head { display: grid; justify-items: center; gap: 6px; text-align: center; }
+html.ui-modern body .modern-clean-head .modern-empty-icon { background: color-mix(in srgb, var(--success, #1a7f37) 12%, transparent); color: var(--success, #1a7f37); }
+html.ui-modern body .modern-clean-head h3 { margin: 4px 0 0; font-size: 1.35em; letter-spacing: -.01em; }
+html.ui-modern body .modern-clean-head p { margin: 0; color: var(--text-secondary); }
+html.ui-modern body .modern-suggestions { display: grid; gap: 8px; width: min(560px, 100%); }
+html.ui-modern body .modern-suggestion { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--surface); }
+html.ui-modern body .modern-suggestion-icon { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 8px; background: var(--surface-subtle); color: var(--text-secondary); }
+html.ui-modern body .modern-suggestion-text { flex: 1; min-width: 0; }
+html.ui-modern body .modern-suggestion-text strong { display: block; font-weight: 600; }
+html.ui-modern body .modern-suggestion-text p { margin: 2px 0 0; color: var(--text-secondary); }
+html.ui-modern body .modern-suggestion-action { flex: none; height: 32px; padding: 0 14px; border: 1px solid var(--border-default); border-radius: 6px; background: var(--surface); color: var(--text-primary); font-weight: 500; cursor: pointer; }
+html.ui-modern body .modern-suggestion-action:hover { background: var(--surface-hover); }
+html.ui-modern body .modern-suggestion-action.primary { border-color: transparent !important; background: var(--green) !important; color: var(--accent-contrast, #fff) !important; }
+html.ui-modern body .modern-no-changes .commit-composer { opacity: .6; }
+
+/* ---- Command palette (Raycast / Linear) ------------------------------------------------------------- */
+html.ui-modern body .command-palette { padding-top: min(16vh, 140px); background: rgb(9 9 11 / 35%); backdrop-filter: blur(2px); }
+html.ui-modern body .command-palette-box { width: min(680px, calc(100vw - 32px)); border: 1px solid var(--border-default); border-radius: 14px; background: var(--surface); box-shadow: 0 24px 64px rgb(0 0 0 / 28%); animation: modern-pop .15s var(--modern-ease); }
+html.ui-modern body .command-palette-search { height: 56px; padding: 0 18px; gap: 12px; border-bottom: 1px solid var(--border-default); }
+html.ui-modern body .command-palette-search input { background: transparent; color: var(--text-primary); font-size: 1.3em; }
+html.ui-modern body .command-list { padding: 6px; }
+html.ui-modern body .command-list > button { min-height: 40px; padding: 6px 12px; border-radius: 8px; }
+html.ui-modern body .command-list > button.active, html.ui-modern body .command-list > button:hover { background: var(--modern-accent-soft); }
+html.ui-modern body .command-list strong { font-size: 1em; font-weight: 500; }
+html.ui-modern body .command-list small { font-size: .86em; color: var(--text-tertiary); }
+html.ui-modern body :is(.command-palette-search, .command-list) kbd { padding: 2px 6px; border: 1px solid var(--border-default); border-radius: 5px; background: var(--surface-subtle); color: var(--text-tertiary); font-size: .8em; }
+html.ui-modern body .command-list kbd:empty { display: none; }
