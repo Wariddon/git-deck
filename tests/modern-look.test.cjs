@@ -66,5 +66,11 @@ assert(html.indexOf('/clean-layout.js') < html.indexOf('/modern.js'));
 assert.match(web('app.js'), /if\(item\.time\)date\.dateTime=new Date\(item\.time\*1000\)\.toISOString\(\);/);
 assert.match(fs.readFileSync(path.join(__dirname, '../git-dashboard-server.ps1'), 'utf8'), /%D%x1f%at'\)/);
 // Everything added is marked for removal when switching to Classic.
-assert.match(web('modern.js'), /function teardown\(\)\{closeBranchMenu\(\);restoreToolbar\(\);document\.querySelectorAll\('\.modern-made'\)\.forEach\(node=>node\.remove\(\)\)/);
+assert.match(web('modern.js'), /function teardown\(\)\{closeBranchMenu\(\);restoreToolbar\(\);.*document\.querySelectorAll\('\.modern-made'\)\.forEach\(node=>node\.remove\(\)\)/);
+// Nothing to do shows "Up to date" instead of a second Fetch; the toolbar hides its copy of the primary action.
+const modernJs = web('modern.js'), modernCss = web('modern.css');
+assert.match(modernJs, /primary\.hidden=!action\|\|idle;upToDate\.hidden=!idle;/);
+assert.match(modernCss, /\.sync-actions\[data-primary-kind="push"\] > \[data-git-action="push"\] \{ display: none !important; \}/);
+// Rail items carry a visible label, not only an icon.
+assert.match(modernJs, /el\('span','modern-rail-label',label\(\)\)/);
 console.log('PASS: modern look primary action, relative time, initials, ref kinds, icons and wiring');

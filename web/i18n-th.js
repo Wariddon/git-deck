@@ -237,7 +237,6 @@ GitDeckI18n.register('th',{
   "Switch from {from} to branch {to}?":"สลับจาก {from} ไปที่ branch {to} ไหม?",
   "New branch…":"branch ใหม่…",
   "All branches":"branch ทั้งหมด",
-  "File Status":"สถานะไฟล์",
   "History":"ประวัติ",
   "Branches":"Branches",
   "Stashes":"Stashes",
@@ -257,4 +256,7 @@ GitDeckI18n.register('th',{
   "Review changes":"ตรวจการเปลี่ยนแปลง",
   "Switch repository":"สลับ repository",
   "Manage remotes":"จัดการ remotes",
+  "Up to date":"อัปเดตแล้ว",
+  "No local changes and nothing to pull or push (as of the last Fetch)":"ไม่มีการเปลี่ยนแปลง และไม่มีอะไรต้อง pull หรือ push (ตาม Fetch ล่าสุด)",
+  "Changes":"การเปลี่ยนแปลง",
 });

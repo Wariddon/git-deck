@@ -54,15 +54,23 @@
     head.prepend(crumbs);
     const sync=document.querySelector('.sync-actions');
     primary=el('button','modern-primary modern-made');primary.type='button';primary.addEventListener('click',()=>runPrimary(primary.dataset.kind));
-    if(sync)sync.prepend(primary);
+    // Nothing to do: a quiet status instead of a second Fetch button.
+    upToDate=el('span','modern-uptodate modern-made');upToDate.setAttribute('role','status');
+    if(sync)sync.prepend(primary,upToDate);
   }
+  let upToDate;
   function renderHeader(){
     if(!crumbs)return;const data=state.workspace;const repo=state.workspaceRepo;
     repoButton.replaceChildren(icon('folder'),el('span','',repo?.name||t('Select a repository')));
     branchButton.hidden=!repo;
     branchButton.replaceChildren(icon('branch'),el('span','',data?.branch||t('Detached HEAD')),icon('chevron',14));
-    const action=repo?primaryAction(data):null;primary.hidden=!action;
-    if(action){primary.dataset.kind=action.kind;primary.title=action.title;primary.replaceChildren(icon(action.icon),el('span','',action.label));}
+    const action=repo?primaryAction(data):null;const idle=action?.kind==='fetch';
+    primary.hidden=!action||idle;upToDate.hidden=!idle;
+    upToDate.replaceChildren(icon('check',14),el('span','',t('Up to date')));upToDate.title=t('No local changes and nothing to pull or push (as of the last Fetch)');
+    // The toolbar hides its own copy of the primary action (e.g. Push next to "Push 2").
+    const sync=document.querySelector('.sync-actions');
+    if(sync){if(action&&!idle)sync.dataset.primaryKind=action.kind;else delete sync.dataset.primaryKind;}
+    if(action&&!idle){primary.dataset.kind=action.kind;primary.title=action.title;primary.replaceChildren(icon(action.icon),el('span','',action.label));}
   }
 
   // ---- Branch menu -----------------------------------------------------------------------------
@@ -105,7 +113,7 @@
 
   // ---- Left rail -------------------------------------------------------------------------------
   const railItems=[
-    ['changes','changes',()=>t('File Status')],['history','history',()=>t('History')],['branches','branch',()=>t('Branches')],
+    ['changes','changes',()=>t('Changes')],['history','history',()=>t('History')],['branches','branch',()=>t('Branches')],
     ['stashes','stash',()=>t('Stashes')],['tags','tag',()=>t('Tags')],['compare','compare',()=>t('Compare')],
     ['conflicts','conflict',()=>t('Conflicts')],['recovery','recovery',()=>t('Recovery')],
   ];
@@ -116,7 +124,7 @@
     rail=el('nav','modern-rail modern-made');rail.setAttribute('aria-label',t('Views'));
     const add=(target,[tab,name,label])=>{
       const button=el('button','modern-rail-item');button.type='button';button.dataset.tab=tab;
-      button.title=label();button.setAttribute('aria-label',label());button.append(icon(name,18),el('b','modern-rail-badge'));
+      button.title=label();button.append(icon(name,18),el('span','modern-rail-label',label()),el('b','modern-rail-badge'));
       button.addEventListener('click',()=>selectWorkspaceTab(tab));target.append(button);
     };
     railItems.forEach(item=>add(rail,item));
@@ -212,7 +220,7 @@
 
   // ---- Lifecycle -------------------------------------------------------------------------------
   function refresh(){if(!isModern())return;buildHeader();buildRail();decorateToolbar();renderHeader();renderRail();}
-  function teardown(){closeBranchMenu();restoreToolbar();document.querySelectorAll('.modern-made').forEach(node=>node.remove());document.querySelectorAll('[data-modern]').forEach(node=>delete node.dataset.modern);crumbs=rail=primary=null;}
+  function teardown(){closeBranchMenu();restoreToolbar();const sync=document.querySelector('.sync-actions');if(sync)delete sync.dataset.primaryKind;document.querySelectorAll('.modern-made').forEach(node=>node.remove());document.querySelectorAll('[data-modern]').forEach(node=>delete node.dataset.modern);crumbs=rail=primary=null;}
   if(typeof renderWorkspaceStatus==='function'){
     const baseStatus=renderWorkspaceStatus;
     renderWorkspaceStatus=function(...args){const result=baseStatus.apply(this,args);try{refresh();}catch(error){console.warn('Modern header unavailable',error);}return result;};
