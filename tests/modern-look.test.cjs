@@ -93,6 +93,18 @@ assert.doesNotMatch(modernCss, /\.patch-hunk \{[^}]*overflow: hidden/, 'overflow
 // Branches page: local and remote groups with headings; decorated once per rendered card.
 assert.match(modernJs, /card\.dataset\.kind=\/\^Remote branch\/\.test\(detail\)\?'remote':'local';/);
 assert.match(modernJs, /decorateHistory\(content\);decorateBranches\(content\);renderRail\(\);/);
+// Readable accent: a black accent on the dark theme is inverted, a blue one on light is kept,
+// a pale yellow on light is darkened until it reaches at least 3:1 against the surface.
+const light = [255, 255, 255], dark = [17, 17, 19];
+const same = (actual, expected) => assert.deepEqual(JSON.parse(JSON.stringify(actual)), expected);
+same(modern.readableAccent([17, 17, 17], dark), [228, 228, 231]);
+same(modern.readableAccent([9, 105, 218], light), [9, 105, 218]);
+const yellow = modern.readableAccent([250, 230, 90], light);
+assert(modern.contrast(yellow, light) >= 3, 'pale accent is darkened');
+assert(modern.contrast(modern.readableAccent([30, 60, 200], dark), dark) >= 3, 'dark blue accent is lightened on the dark theme');
+// "View & tools": both legacy panels live in one menu, and go back for Classic.
+assert.match(modernJs, /for\(const node of \[\.\.\.secondary\.children\]\.filter\(node=>node\.tagName!=='SUMMARY'\)\)\{movedTools\.push/);
+assert.match(modernJs, /function teardown\(\)\{closePopover\(\);restoreToolbar\(\);restoreToolsPanel\(\);/);
 // The rail's first item shows or hides the repository list.
 assert.match(modernJs, /railButton\(\['repos','folder',\(\)=>t\('Repos'\)\]\)/);
 // Rail items carry a visible label, not only an icon.

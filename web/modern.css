@@ -554,3 +554,79 @@ html.ui-modern body .workspace-statusbar { height: 26px; min-height: 26px; paddi
 html.ui-modern body .workspace-statusbar > :is(button, span) { height: 22px; padding: 0 8px !important; border: 0 !important; border-radius: 4px !important; background: transparent !important; color: inherit !important; }
 html.ui-modern body .workspace-statusbar > button:hover { background: var(--surface-hover) !important; color: var(--text-primary) !important; }
 html.ui-modern body .workspace-statusbar kbd { padding: 0 5px; border: 1px solid var(--border-default); border-radius: 4px; background: var(--surface); font-size: .85em; }
+
+/* ---- Header never wraps: blocks shrink, menus keep their size ------------------------------------ */
+html.ui-modern body .workspace-modal-head { flex-wrap: nowrap !important; gap: 8px; }
+html.ui-modern body .modern-toolbar { flex: 1 1 auto; min-width: 0; }
+html.ui-modern body .modern-tb { flex: 0 1 240px; width: auto !important; min-width: 120px; }
+html.ui-modern body .modern-tb-repo { flex-basis: 220px; }
+html.ui-modern body .modern-tb-sync-group { flex: 0 1 264px; min-width: 150px; }
+html.ui-modern body .modern-tb-sync { flex: 1 1 auto; width: auto !important; min-width: 0; }
+html.ui-modern body .sync-actions { flex: none; margin-left: auto; }
+html.ui-modern body .workbench-secondary { position: relative; flex: none; margin: 0 !important; }
+
+/* ---- "View & tools": one menu instead of two overlapping panels ------------------------------------ */
+html.ui-modern body .workbench-secondary > summary {
+  display: inline-flex !important; align-items: center; gap: 6px; width: auto !important; height: 32px !important; padding: 0 10px !important;
+  border: 0 !important; border-radius: 6px !important; background: transparent !important; box-shadow: none !important;
+  color: var(--text-secondary) !important; font-weight: 500; cursor: pointer; list-style: none; white-space: nowrap;
+}
+html.ui-modern body .workbench-secondary > summary::-webkit-details-marker { display: none; }
+html.ui-modern body .workbench-secondary > summary:hover, html.ui-modern body .workbench-secondary[open] > summary { background: var(--surface-hover) !important; color: var(--text-primary) !important; }
+html.ui-modern body .modern-tools-panel {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 60; display: flex; flex-direction: column; gap: 2px;
+  width: 280px; max-height: min(80vh, 640px); overflow: auto; padding: 6px;
+  border: 1px solid var(--border-default); border-radius: 10px; background: var(--surface); box-shadow: var(--modern-shadow-pop);
+  animation: modern-pop .15s var(--modern-ease);
+}
+html.ui-modern body .workbench-secondary:not([open]) .modern-tools-panel { display: none; }
+/* Everything inside flows as one list. */
+html.ui-modern body .modern-tools-panel :is(.workspace-header-actions, .workbench-layout-controls, .workflow-toolbar) {
+  position: static !important; inset: auto !important; display: flex !important; flex-direction: row; flex-wrap: wrap; align-items: stretch; gap: 2px;
+  width: auto !important; min-width: 0 !important; margin: 0 !important; padding: 0 !important; transform: none !important;
+  border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; visibility: visible !important; opacity: 1 !important;
+}
+html.ui-modern body .modern-tools-panel .workbench-layout-controls { margin-top: 4px !important; padding-top: 6px !important; border-top: 1px solid var(--border-default) !important; }
+html.ui-modern body .modern-tools-panel .workflow-toolbar { flex-basis: 100%; margin-top: 4px !important; padding-top: 6px !important; border-top: 1px solid var(--border-default) !important; }
+html.ui-modern body .modern-tools-panel :is(button, details > summary) {
+  display: flex !important; align-items: center; gap: 8px; flex: 1 1 100%; width: 100% !important; height: 32px !important; min-height: 32px;
+  padding: 0 10px !important; border: 0 !important; border-radius: 6px !important; background: transparent !important; box-shadow: none !important;
+  color: var(--text-primary) !important; font-weight: 400 !important; text-align: left; justify-content: flex-start; cursor: pointer; list-style: none;
+}
+html.ui-modern body .modern-tools-panel :is(button, details > summary):hover { background: var(--surface-hover) !important; }
+html.ui-modern body .modern-tools-panel details > summary::-webkit-details-marker { display: none; }
+html.ui-modern body .modern-tools-panel details { display: block !important; flex: 1 1 100%; position: static !important; }
+/* Back / Forward / Favorite: a compact row of square buttons at the top. */
+html.ui-modern body .modern-tools-panel :is(#view-back, #view-forward, [data-workspace-quick="favorite"]) { flex: 0 0 36px; width: 36px !important; justify-content: center; padding: 0 !important; color: var(--text-secondary) !important; }
+html.ui-modern body .modern-tools-panel :is(#view-back, #view-forward):disabled { opacity: .35; }
+/* Submenus (Theme, Help, Open) open inside the list, not as another floating box. */
+html.ui-modern body .modern-tools-panel details > summary::after { content: "›"; margin-left: auto; color: var(--text-tertiary); transition: transform .15s; }
+html.ui-modern body .modern-tools-panel details[open] > summary::after { transform: rotate(90deg); }
+html.ui-modern body .modern-tools-panel details > :not(summary) {
+  position: static !important; inset: auto !important; display: grid !important; gap: 2px; width: auto !important; min-width: 0 !important; max-height: none !important;
+  margin: 2px 0 4px 12px !important; padding: 0 0 0 8px !important; border: 0 !important; border-left: 1px solid var(--border-default) !important;
+  border-radius: 0 !important; background: transparent !important; box-shadow: none !important; transform: none !important; animation: none !important;
+}
+html.ui-modern body .modern-tools-panel details:not([open]) > :not(summary) { display: none !important; }
+html.ui-modern body .modern-tools-panel .theme-menu > strong, html.ui-modern body .modern-tools-panel .theme-menu :is(.look-choice, .text-size-choice) > strong { margin: 6px 0 2px; color: var(--text-tertiary); font-size: .86em; font-weight: 600; }
+html.ui-modern body .modern-tools-panel .theme-menu :is(.look-choice, .text-size-choice) { display: flex; flex-wrap: wrap; gap: 4px; }
+html.ui-modern body .modern-tools-panel .theme-menu :is(.look-choice, .text-size-choice) > strong { flex-basis: 100%; }
+html.ui-modern body .modern-tools-panel .theme-menu :is(.look-choice, .text-size-choice) > button { flex: 1 1 0; width: auto !important; justify-content: center; border: 1px solid var(--border-default) !important; }
+html.ui-modern body .modern-tools-panel .theme-menu :is(.look-choice, .text-size-choice) > button[aria-pressed="true"],
+html.ui-modern body .modern-tools-panel .theme-menu > button.active { background: var(--modern-accent-soft) !important; border-color: var(--green) !important; }
+html.ui-modern body .modern-tools-panel .theme-menu > button { height: auto !important; min-height: 36px; padding: 4px 10px !important; }
+html.ui-modern body .modern-tools-panel .theme-menu > button span { display: grid; line-height: 1.25; }
+html.ui-modern body .modern-tools-panel .theme-menu > button small { color: var(--text-tertiary); }
+html.ui-modern body .modern-tools-panel .theme-custom { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 10px; }
+html.ui-modern body .modern-tools-panel .theme-picker-label { display: none; }
+html.ui-modern body .modern-tools-panel .modern-theme-label { color: inherit; }
+html.ui-modern body .modern-tools-panel hr { width: 100%; margin: 4px 0; border: 0; border-top: 1px solid var(--border-default); }
+/* Layout row: density select and Reset side by side. */
+html.ui-modern body .modern-tools-panel .workbench-layout-controls > select { flex: 1 1 auto; height: 32px; padding: 0 8px; border: 1px solid var(--border-default) !important; border-radius: 6px !important; background: var(--surface) !important; }
+html.ui-modern body .modern-tools-panel .workbench-layout-controls > button { flex: 0 0 auto; width: auto !important; }
+html.ui-modern body .modern-tools-panel .create-mr-button { color: var(--text-primary) !important; }
+/* Menus opened from the header must sit above sticky view toolbars below it. */
+html.ui-modern body .workspace-modal-head { position: relative; z-index: 50; }
+html.ui-modern body .modern-tools-panel .workspace-header-actions { justify-content: flex-start !important; }
+html.ui-modern body .modern-tools-panel :is(#view-back, #view-forward, [data-workspace-quick="favorite"]) { order: -1; }
+html.ui-modern body .modern-tools-panel [data-workspace-quick="favorite"] { margin-left: auto !important; }

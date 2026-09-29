@@ -223,6 +223,25 @@
       if(words!==text){label.dataset.modernText=text;label.textContent=words;}
     }
   }
+  // "View & tools": its two legacy panels (header actions, layout/workflow tools) were
+  // positioned separately and overlapped. Modern moves both into one menu panel; the
+  // nodes keep their listeners and go back exactly where they were for Classic.
+  const movedTools=[];
+  function buildToolsPanel(){
+    const secondary=document.querySelector('.workbench-secondary');if(!secondary||secondary.querySelector('.modern-tools-panel'))return;
+    const panel=el('div','modern-tools-panel modern-made');
+    for(const node of [...secondary.children].filter(node=>node.tagName!=='SUMMARY')){movedTools.push({node,parent:secondary,next:node.nextSibling});panel.append(node);}
+    secondary.append(panel);
+    const theme=secondary.querySelector('.theme-picker > summary');
+    if(theme&&!theme.querySelector('.modern-made'))theme.append(el('span','modern-theme-label modern-made',t('Theme')));
+  }
+  function restoreToolsPanel(){while(movedTools.length){const {node,parent,next}=movedTools.pop();parent.insertBefore(node,next&&next.parentElement===parent?next:null);}}
+  // Close the menu after choosing an action (not when opening a submenu or changing a field).
+  document.addEventListener('click',(event)=>{
+    const secondary=event.target.closest('.modern-tools-panel')?.closest('.workbench-secondary');
+    if(secondary&&event.target.closest('button')&&!event.target.closest('select'))secondary.open=false;
+    document.querySelectorAll('.workbench-secondary[open]').forEach(menu=>{if(isModern()&&!menu.contains(event.target))menu.open=false;});
+  });
   function restoreToolbar(){for(const label of document.querySelectorAll('[data-modern-text]')){label.textContent=label.dataset.modernText;delete label.dataset.modernText;}}
 
   // ---- History: avatars, relative time, ref chips ---------------------------------------------
@@ -346,9 +365,47 @@
     };
   }
 
+  // ---- Readable accent -----------------------------------------------------------------------------
+  // The accent is user-chosen. A black accent on the dark theme (or a pale one on light)
+  // would draw text, icons and highlights in the background colour. When the accent has
+  // less than 3:1 contrast with the surface, body gets a lighter/darker version of it
+  // (and a matching text colour for accent buttons); every stylesheet reads --green.
+  function toRgb(value){
+    const ctx=toRgb.ctx||(toRgb.ctx=document.createElement('canvas').getContext('2d'));
+    ctx.fillStyle='#000';ctx.fillStyle=value;const color=ctx.fillStyle;
+    if(color[0]==='#')return [1,3,5].map(index=>parseInt(color.slice(index,index+2),16));
+    return (color.match(/[\d.]+/g)||['0','0','0']).slice(0,3).map(Number);
+  }
+  function luminance(rgb){const channel=(value)=>{value/=255;return value<=.03928?value/12.92:((value+.055)/1.055)**2.4;};return .2126*channel(rgb[0])+.7152*channel(rgb[1])+.0722*channel(rgb[2]);}
+  function contrast(a,b){const [light,dark]=[luminance(a),luminance(b)].sort((x,y)=>y-x);return (light+.05)/(dark+.05);}
+  function readableAccent(accent,surface){
+    if(contrast(accent,surface)>=3)return accent;
+    const target=luminance(surface)<.5?[255,255,255]:[0,0,0];
+    // A grey/black/white accent becomes its opposite (e.g. black → near-white buttons on
+    // dark), the way monochrome themes invert; a coloured accent is only lightened/darkened.
+    if(Math.max(...accent)-Math.min(...accent)<32)return luminance(surface)<.5?[228,228,231]:[39,39,42];
+    for(let step=1;step<=20;step++){const t=step/20;const color=accent.map((value,index)=>Math.round(value+(target[index]-value)*t));if(contrast(color,surface)>=3.5)return color;}
+    return target;
+  }
+  function syncAccent(){
+    const body=document.body;if(!body)return;
+    body.style.removeProperty('--green');body.style.removeProperty('--accent-contrast');
+    const style=getComputedStyle(body);
+    const accent=toRgb(style.getPropertyValue('--green').trim()||'#0969da');const surface=toRgb(style.getPropertyValue('--surface').trim()||'#ffffff');
+    const fixed=readableAccent(accent,surface);if(fixed===accent)return;
+    body.style.setProperty('--green','#'+fixed.map(value=>value.toString(16).padStart(2,'0')).join(''));
+    body.style.setProperty('--accent-contrast',luminance(fixed)>.4?'#111113':'#ffffff');
+  }
+  // Theme (body class) and accent (html style) changes both need a re-check.
+  if(window.MutationObserver&&document.body){
+    const watch=new MutationObserver(()=>{if(isModern())syncAccent();});
+    watch.observe(document.body,{attributes:true,attributeFilter:['class']});
+    watch.observe(document.documentElement,{attributes:true,attributeFilter:['style','class']});
+  }
+
   // ---- Lifecycle -------------------------------------------------------------------------------
-  function refresh(){if(!isModern())return;syncDrawer();buildHeader();buildRail();decorateToolbar();renderHeader();renderRail();}
-  function teardown(){closePopover();restoreToolbar();document.querySelectorAll('.modern-made').forEach(node=>node.remove());document.querySelectorAll('[data-modern]').forEach(node=>delete node.dataset.modern);document.querySelector('.modern-no-changes')?.classList.remove('modern-no-changes');document.body?.classList.remove('modern-library-drawer');bar=rail=primary=null;}
+  function refresh(){if(!isModern())return;syncAccent();syncDrawer();buildHeader();buildToolsPanel();buildRail();decorateToolbar();renderHeader();renderRail();}
+  function teardown(){closePopover();restoreToolbar();restoreToolsPanel();document.querySelectorAll('.modern-made').forEach(node=>node.remove());document.querySelectorAll('[data-modern]').forEach(node=>delete node.dataset.modern);document.querySelector('.modern-no-changes')?.classList.remove('modern-no-changes');document.body?.classList.remove('modern-library-drawer');document.body?.style.removeProperty('--green');document.body?.style.removeProperty('--accent-contrast');bar=rail=primary=null;}
   if(typeof renderWorkspaceStatus==='function'){
     const baseStatus=renderWorkspaceStatus;
     renderWorkspaceStatus=function(...args){const result=baseStatus.apply(this,args);try{refresh();}catch(error){console.warn('Modern header unavailable',error);}return result;};
@@ -365,5 +422,5 @@
   const applyLook=()=>{if(isModern())refresh();else teardown();};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyLook);else applyLook();
   document.addEventListener('gitdeck:appearance',applyLook);
-  window.GitDeckModern={primaryAction,syncAction,relativeTime,initials,refKind};
+  window.GitDeckModern={primaryAction,syncAction,relativeTime,initials,refKind,readableAccent,contrast};
 })();

@@ -289,4 +289,5 @@ GitDeckI18n.register('th',{
   "to {branch}":"ไปที่ {branch}",
   "Local branches":"Branch ในเครื่อง",
   "Remote branches":"Branch บน remote",
+  "Theme":"ธีม",
 });
