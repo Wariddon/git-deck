@@ -65,3 +65,24 @@
 .language-choice button { flex: 1; min-height: 28px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
 .language-choice button:hover { background: color-mix(in srgb, var(--green) 10%, transparent); }
 .language-choice button[aria-pressed="true"] { border-color: var(--green); color: var(--green); }
+
+/* Worksets sits left of "Repos" in the sticky right-hand group of the repo tab strip. */
+.repo-tab-search.repo-tab-worksets { right: 104px; width: auto; padding: 0 10px; }
+.repo-tab-worksets + .repo-tab-search { margin-left: 0; }
+body.workbench-mode .repo-tab-search.repo-tab-worksets { right: 98px; }
+
+/* File Status diff: real old/new line numbers, raw git headers hidden (rows kept for line staging). */
+.patch-view .diff-code.numbered > div { display: grid; grid-template-columns: 34px 34px max-content; column-gap: 0; padding-left: 4px; }
+.patch-view .diff-code.numbered > div::before,
+.patch-view .diff-code.numbered > div::after { width: auto; margin: 0; padding-right: 8px; color: #687b70; text-align: right; user-select: none; }
+.patch-view .diff-code.numbered > div::before { content: attr(data-old); order: -2; }
+.patch-view .diff-code.numbered > div::after { content: attr(data-new); order: -1; }
+.patch-view .diff-code.numbered > .diff-meta { display: none; }
+.patch-view .diff-code.numbered > .diff-file { color: var(--muted, #8a968f); font-style: italic; }
+.patch-view .diff-code.numbered > .diff-eof { color: var(--muted, #8a968f); }
+
+/* Status bar: clickable fetch freshness and a visible command palette hint. */
+/* compact-workbench forces status bar colors with !important. */
+body .workspace-statusbar .status-fetch.status-stale { color: #9a6700 !important; font-weight: 700; }
+body.theme-dark .workspace-statusbar .status-fetch.status-stale { color: #e3b341 !important; }
+.workspace-statusbar #status-commands kbd { padding: 0 4px; border: 1px solid currentColor; border-radius: 3px; font: inherit; font-weight: 700; opacity: .8; }

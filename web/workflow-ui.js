@@ -137,7 +137,7 @@ async function showActionReasons(){
 
 function readWorksets(){const value=GitDeckRelease.read(localStorage,'git-deck-worksets-v1',[]);return Array.isArray(value)?value.filter(x=>typeof x.name==='string'&&Array.isArray(x.paths)).slice(0,30):[];}
 const worksetTabs=renderRepoTabs;
-renderRepoTabs=function(){worksetTabs();const button=workflowButton('Worksets',showWorksets);button.classList.add('repo-tab-add');button.title='Save or open a group of repositories';$('repo-tabs').append(button);};
+renderRepoTabs=function(){worksetTabs();const button=workflowButton('Worksets',showWorksets);button.classList.add('repo-tab-search','repo-tab-worksets');button.title='Save or open a group of repositories';const tabs=$('repo-tabs'),search=tabs.querySelector('.repo-tab-search');if(search)search.before(button);else tabs.append(button);};
 function showWorksets(){
   const ui=releaseDialog('Repository worksets');const draw=()=>{ui.body.replaceChildren(el('p','','Open as tabs while keeping existing tabs and drafts. No branch checkout is performed.'));const sets=readWorksets();
     sets.forEach((set,index)=>{const row=el('div','workflow-workset');row.append(el('strong','',set.name),el('small','',set.paths.length+' repos'),workflowButton('Open workset',()=>{

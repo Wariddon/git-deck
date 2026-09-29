@@ -77,6 +77,12 @@ try{
     if((Invoke-GitOrThrow $local @('rev-parse','HEAD')).Trim() -eq $start){throw 'Pull did not land'}
     if((Invoke-GitOrThrow $local @('stash','list')) -notmatch 'autostash'){throw 'Autostash entry must be kept'}
 
+    # Last fetch time comes from FETCH_HEAD; a repository that never fetched has none.
+    $fetchedAt=Get-GitDeckLastFetchAt $local
+    if(-not $fetchedAt -or ([datetime]::UtcNow-[datetime]::Parse($fetchedAt).ToUniversalTime()).TotalMinutes -gt 10){throw "Unexpected last fetch time '$fetchedAt'"}
+    $fresh=Join-Path $base 'fresh';Run-Git $base @('init','-q',$fresh)
+    if($null -ne (Get-GitDeckLastFetchAt $fresh)){throw 'A repository that never fetched must report no fetch time'}
+
     # Invalid input.
     $bad=$false;try{Invoke-GitDeckPull $local 'octopus' $true|Out-Null}catch{$bad=$_.Exception.Message -match 'Invalid pull strategy'};if(-not $bad){throw 'Strategy must be validated'}
     'PASS: pull preview overlap/blockers, consent gate, autostash restore for ff-only/merge/rebase, conflict keeps stash'

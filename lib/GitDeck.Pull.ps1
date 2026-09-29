@@ -78,3 +78,13 @@ function Invoke-GitDeckPull([string]$Path, [string]$Strategy, [bool]$Autostash, 
     $restored = if ($dirty) { ' Local changes were stashed and restored.' } else { '' }
     return @{ message = "Pulled $label using $Strategy.$restored"; output = $output; conflicts = @(); stashKept = $false }
 }
+
+function Get-GitDeckLastFetchAt([string]$Path) {
+    # FETCH_HEAD is rewritten by every fetch/pull, so its time is the last contact with a remote.
+    $gitPath = Invoke-GitCapture $Path @('rev-parse', '--git-path', 'FETCH_HEAD')
+    if ($gitPath.Code -ne 0 -or -not $gitPath.Output) { return $null }
+    $file = $gitPath.Output.Trim()
+    if (-not [IO.Path]::IsPathRooted($file)) { $file = Join-Path $Path $file }
+    if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { return $null }
+    return (Get-Item -LiteralPath $file).LastWriteTimeUtc.ToString('o')
+}
