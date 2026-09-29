@@ -10,6 +10,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Features.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Pull.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Switch.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Parity.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
 $script:RepoList = Join-Path $PSScriptRoot 'git-repositories.txt'
@@ -1157,7 +1158,8 @@ function Invoke-Action($Body) {
         }
         'conflict-resolve' {
             $file=[string]$Body.file;$mode=([string]$Body.mode).Trim();$operation=Get-GitOperationState $path
-            if(-not $operation.active -or -not ($operation.conflicts -contains $file)){throw 'File is not an active merge conflict.'}
+            # Any unmerged file can be resolved, also after a stash restore (no merge/rebase in progress).
+            if(-not ($operation.conflicts -contains $file)){throw 'File is not an active merge conflict.'}
             if($mode -notin @('ours','theirs','both','manual')){throw 'Invalid conflict resolution mode.'}
             if($mode -in @('ours','theirs')){[void](Invoke-GitOrThrow $path @('checkout',('--'+$mode),'--',$file))}
             else{
@@ -1384,18 +1386,20 @@ function Invoke-Action($Body) {
             $status = Invoke-GitCapture $path @('status','--porcelain')
             if (-not $status.Output) { throw 'There are no changes to stash.' }
             $message = ([string]$Body.message).Trim(); if (-not $message) { $message='Git Deck stash' }
-            $output = Invoke-GitOrThrow $path @('stash','push','-u','-m',$message)
-            return @{message='Changes saved to stash, including untracked files.';output=$output}
+            # keepIndex (Sourcetree: "Keep staged changes"): staged changes stay staged in the working tree too.
+            $arguments = @('stash','push','-u'); if ([bool]$Body.keepIndex) { $arguments += '--keep-index' }
+            $output = Invoke-GitOrThrow $path ($arguments + @('-m',$message))
+            $kept = if ([bool]$Body.keepIndex) { ' Staged changes were kept.' } else { '' }
+            return @{message="Changes saved to stash, including untracked files.$kept";output=$output}
         }
         'stash-pop' {
+            # Like Sourcetree, a stash can be applied onto uncommitted work; git refuses if it would overwrite it.
             $stashRef = ([string]$Body.stash).Trim();Assert-StashRef $stashRef
-            Assert-CleanWorkingTree $path 'Commit or stash current changes before applying another stash.'
-            $output = Invoke-GitOrThrow $path @('stash','pop',$stashRef)
-            return @{message="$stashRef applied and removed from the stash list.";output=$output}
+            return Invoke-GitDeckStashRestore $path 'pop' $stashRef
         }
         'stash-apply' {
-            $stashRef=([string]$Body.stash).Trim();Assert-StashRef $stashRef;Assert-CleanWorkingTree $path 'Commit or stash current changes before applying another stash.'
-            $output=Invoke-GitOrThrow $path @('stash','apply',$stashRef);return @{message="$stashRef applied and kept in the stash list.";output=$output}
+            $stashRef=([string]$Body.stash).Trim();Assert-StashRef $stashRef
+            return Invoke-GitDeckStashRestore $path 'apply' $stashRef
         }
         'stash-drop' {
             $stashRef=([string]$Body.stash).Trim();Assert-StashRef $stashRef;$output=Invoke-GitOrThrow $path @('stash','drop',$stashRef);return @{message="$stashRef deleted.";output=$output}
@@ -1530,6 +1534,8 @@ function Invoke-Action($Body) {
         default {
             $feature = Invoke-GitDeckFeatureAction $Body
             if ($null -ne $feature) { return $feature }
+            $parity = Invoke-GitDeckParityAction $Body
+            if ($null -ne $parity) { return $parity }
             $ai = Invoke-GitDeckAiAction $Body
             if ($null -ne $ai) { return $ai }
             throw 'Action is not allowed.'

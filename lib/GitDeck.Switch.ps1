@@ -31,6 +31,24 @@ function Get-GitDeckSwitchPlan([string]$Path, [string]$TargetHash) {
     return [ordered]@{ mode = $mode; dirty = @($dirty | ForEach-Object { $_.path }); overlap = $overlap; blockingUntracked = $blocking }
 }
 
+function Invoke-GitDeckStashRestore([string]$Path, [string]$Mode, [string]$StashRef) {
+    # Mode: pop | apply. Works on a dirty tree: git refuses (changing nothing) when a
+    # local change would be overwritten; a content conflict is reported and, for pop,
+    # the stash is kept.
+    if ($Mode -notin @('pop', 'apply')) { throw 'Invalid stash mode.' }
+    if ((Get-GitOperationState $Path).active) { throw 'Finish or abort the merge, rebase or cherry-pick in progress first.' }
+    $result = Invoke-GitCapture $Path @('stash', $Mode, $StashRef)
+    if ($result.Code -eq 0) {
+        $what = if ($Mode -eq 'pop') { 'applied and removed from the stash list' } else { 'applied and kept in the stash list' }
+        return @{ message = "$StashRef $what."; output = $result.Output; conflicts = @(); stashKept = ($Mode -eq 'apply') }
+    }
+    $conflicts = @((Invoke-GitCapture $Path @('-c', 'core.quotepath=off', 'diff', '--name-only', '--diff-filter=U')).Output -split "`r?`n" | Where-Object { $_ })
+    if ($conflicts.Count) {
+        return @{ message = "$StashRef was applied with conflicts in $($conflicts.Count) file(s). Resolve them in File Status or Conflict Center; the stash was kept."; output = $result.Output; conflicts = $conflicts; stashKept = $true }
+    }
+    throw "$($result.Output)`nNothing was changed. Commit or stash the files listed above first."
+}
+
 function Invoke-GitDeckSwitch([string]$Path, [string[]]$SwitchArguments, [string]$LocalChanges, [string]$Label) {
     # LocalChanges: '' (require a clean tree, the old behaviour), 'carry' or 'stash'.
     if ((Get-GitOperationState $Path).active) { throw 'Finish or abort the merge, rebase or cherry-pick in progress before switching.' }

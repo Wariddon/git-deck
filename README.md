@@ -123,6 +123,22 @@ Like plain Git (and Sourcetree), switching no longer requires a clean working tr
 
 Creating a new branch from the current commit always keeps your changes.
 
+## More Sourcetree-style actions
+
+- **File Status right-click:**
+  - *Ignore this file / all `*.ext` files / folder* adds the line to `.gitignore`, and says when files already tracked still match.
+  - *Stop tracking (keep the file)* runs `git rm --cached`.
+  - Conflicted files get *Resolve using mine / theirs*.
+  - Untracked files get *Move to Recycle Bin…*: recoverable, unlike Sourcetree's permanent delete.
+- **History file list right-click:**
+  - *Open this version* opens a copy of the file as it was in that commit. Scripts and programs are only shown in Explorer, never run.
+  - *Reset file to this commit…* is refused while the file has uncommitted changes.
+- **Commit box:** *Recent…* reuses one of your recent commit messages.
+- **Stashes:**
+  - *Keep staged changes* adds `--keep-index` when saving.
+  - Apply and Pop work on top of uncommitted work. Git refuses and changes nothing if a file would be overwritten; a content conflict opens File Status and keeps the stash.
+- **Conflicts from a stash restore** (no merge or rebase in progress) can be resolved in the Conflict Center and with mine/theirs, like merge conflicts.
+
 ## Pre-push checks
 
 The Push dialog scans the commits that the remote does not have yet: added lines that look like private keys or API tokens (AWS, GitHub, GitLab, Slack, Anthropic, Google and generic `password = "…"` assignments), files of 5 MB or more, sensitive file names such as `.env` or `*.pem`, and direct or force pushes to `main`, `master`, `develop`, `release/*` and similar branches. Blocking findings ask for confirmation before pushing. Previews are masked, and the scan runs locally only. It is a safety net, not a replacement for server-side secret scanning.
