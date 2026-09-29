@@ -25,6 +25,7 @@
   </dialog>
   <script src="/i18n.js"></script>
   <script src="/i18n-th.js"></script>
+  <script src="/text-size.js"></script>
   <script id="startup-controller" src="/startup.js"></script>
   <main class="shell">
     <section class="workspace">
@@ -318,6 +319,8 @@
   </section>
   <div class="context-menu hidden" id="context-menu" role="menu"></div>
   <script src="/release-tools.js" defer></script>
+  <!-- Before app.js: the first workspace render already draws the Overview steps. -->
+  <script src="/overview-panel.js" defer></script>
   <script src="/app.js" defer></script>
   <script src="/release-ui.js" defer></script>
   <script src="/workflow-ui.js" defer></script>

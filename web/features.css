@@ -86,3 +86,28 @@ body.workbench-mode .repo-tab-search.repo-tab-worksets { right: 98px; }
 body .workspace-statusbar .status-fetch.status-stale { color: #9a6700 !important; font-weight: 700; }
 body.theme-dark .workspace-statusbar .status-fetch.status-stale { color: #e3b341 !important; }
 .workspace-statusbar #status-commands kbd { padding: 0 4px; border: 1px solid currentColor; border-radius: 3px; font: inherit; font-weight: 700; opacity: .8; }
+
+/* Overview panel: next steps for the open repository (web/overview-panel.js). */
+.overview-steps { display: grid; gap: 4px; margin: 8px 0; }
+.overview-steps-title { padding: 0 2px; color: var(--muted, #6b7a71); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.overview-step { display: grid; gap: 1px; width: 100%; padding: 6px 8px; border: 1px solid var(--line, #d5ddd7); border-left-width: 3px; border-radius: 6px; background: transparent; color: var(--ink, #1f2a24); font: inherit; text-align: left; }
+button.overview-step { cursor: pointer; }
+button.overview-step:hover { background: color-mix(in srgb, var(--green, #1a7f37) 8%, transparent); }
+button.overview-step:focus-visible { outline: 2px solid var(--green, #1a7f37); outline-offset: 1px; }
+.overview-step small { overflow: hidden; color: var(--muted, #6b7a71); text-overflow: ellipsis; white-space: nowrap; }
+.overview-step.tone-bad { border-left-color: #cf222e; }
+.overview-step.tone-warn { border-left-color: #bf8700; }
+.overview-step.tone-info { border-left-color: var(--green, #1a7f37); }
+.overview-step.tone-ok { border-left-color: #1a7f37; }
+.overview-step.tone-muted { border-left-color: var(--line, #d5ddd7); }
+
+/* Text size picker (web/text-size.js) inside the theme menu, styled like the language picker. */
+.text-size-choice { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+.text-size-choice strong { width: 100%; padding: 3px 5px; color: var(--muted); font-size: 8px; letter-spacing: .11em; text-transform: uppercase; }
+.text-size-choice button { flex: 1; min-height: 28px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.text-size-choice button:hover { background: color-mix(in srgb, var(--green) 10%, transparent); }
+.text-size-choice button[aria-pressed="true"] { border-color: var(--green); color: var(--green); }
+
+/* Branch filter tabs size to their labels ("Overview" was clipped at 11px) and wrap at larger text sizes. */
+body.workbench-mode #tree-content .ref-filter-tabs { flex-wrap: wrap; }
+body.workbench-mode #tree-content .ref-filter-tabs button { flex: 1 0 auto; min-width: max-content; padding: 2px 6px; text-overflow: clip; }

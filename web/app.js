@@ -256,6 +256,7 @@ function renderWorkbenchTree(data){
     const pinBox=section('home-pins','Pinned',pinned.length,true);pinned.slice(0,10).forEach(({b,kind})=>pinBox.append(branchRow(b,kind)));if(pinned.length)content.append(pinBox);
     const last=recent.map(id=>entries.find(({b,kind})=>kind+':'+b.name===id)).filter(Boolean).slice(0,5);
     const lastBox=section('home-recent','Recently viewed',last.length,true);last.forEach(({b,kind})=>lastBox.append(branchRow(b,kind)));if(last.length)content.append(lastBox);
+    if(typeof renderOverviewSteps==='function')filters.after(renderOverviewSteps(data));
     const all=el('button','ref-manage',`Show all · ${entries.length} branches`);all.type='button';all.onclick=()=>{saved.filter='all';save();renderWorkbenchTree(data);};content.append(all);return;
   }
   const accepts=(b,kind)=>matches(b.name)&&(['all','home'].includes(filter)||filter==='pinned'&&pins.has(kind+':'+b.name)||filter==='recent'&&recent.includes(kind+':'+b.name));
