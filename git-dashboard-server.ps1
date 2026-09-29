@@ -405,11 +405,11 @@ function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
         $remoteBranches.Add([ordered]@{name=$parts[0];hash=$(if($parts.Count -gt 1){$parts[1]}else{''})})
     }
     $history = New-Object 'System.Collections.Generic.List[object]'
-    $historyText = Invoke-GitCapture $Path @('log','--all','--topo-order','-250','--date=short','--format=%h%x1f%H%x1f%P%x1f%ad%x1f%an%x1f%s%x1f%D')
+    $historyText = Invoke-GitCapture $Path @('log','--all','--topo-order','-250','--date=short','--format=%h%x1f%H%x1f%P%x1f%ad%x1f%an%x1f%s%x1f%D%x1f%at')
     if ($historyText.Code -eq 0) {
         foreach ($line in @($historyText.Output -split "`r?`n" | Where-Object { $_ })) {
-            $parts = $line -split ([char]31),7
-            if ($parts.Count -eq 7) { $history.Add([ordered]@{hash=$parts[0];fullHash=$parts[1];parents=@($parts[2] -split ' ' | Where-Object { $_ });date=$parts[3];author=$parts[4];subject=$parts[5];decorations=$parts[6]}) }
+            $parts = $line -split ([char]31),8
+            if ($parts.Count -ge 7) { $history.Add([ordered]@{hash=$parts[0];fullHash=$parts[1];parents=@($parts[2] -split ' ' | Where-Object { $_ });date=$parts[3];author=$parts[4];subject=$parts[5];decorations=$parts[6];time=$(if($parts.Count -gt 7){[long]$parts[7]}else{0})}) }
         }
     }
     $tagDetails = New-Object 'System.Collections.Generic.List[object]'
@@ -477,13 +477,13 @@ function Get-CommitHistory([string]$Path,[string]$Scope,[string]$Ref,[bool]$Incl
     $args.Add($(if($Order -eq 'date'){'--date-order'}else{'--topo-order'}))
     $args.Add('-251');$args.Add("--skip=$Skip")
     if($Query){$args.Add('--fixed-strings');$args.Add('--regexp-ignore-case');$args.Add("--grep=$Query")}
-    $args.Add('--date=short');$args.Add('--format=%h%x1f%H%x1f%P%x1f%ad%x1f%an%x1f%s%x1f%D')
+    $args.Add('--date=short');$args.Add('--format=%h%x1f%H%x1f%P%x1f%ad%x1f%an%x1f%s%x1f%D%x1f%at')
     $result = Invoke-GitCapture $Path $args.ToArray()
     if ($result.Code -ne 0) { throw $result.Output }
     $history = New-Object 'System.Collections.Generic.List[object]'
     foreach ($line in @($result.Output -split "`r?`n" | Where-Object { $_ })) {
-        $parts = $line -split ([char]31),7
-        if ($parts.Count -eq 7) { $history.Add([ordered]@{hash=$parts[0];fullHash=$parts[1];parents=@($parts[2] -split ' ' | Where-Object { $_ });date=$parts[3];author=$parts[4];subject=$parts[5];decorations=$parts[6]}) }
+        $parts = $line -split ([char]31),8
+        if ($parts.Count -ge 7) { $history.Add([ordered]@{hash=$parts[0];fullHash=$parts[1];parents=@($parts[2] -split ' ' | Where-Object { $_ });date=$parts[3];author=$parts[4];subject=$parts[5];decorations=$parts[6];time=$(if($parts.Count -gt 7){[long]$parts[7]}else{0})}) }
     }
     return $history.ToArray()
 }

@@ -1,0 +1,222 @@
+/* Modern look. Loaded after clean.css and scoped to html.ui-modern (set together
+   with html.ui-clean), so Classic never sees these rules.
+   System: zinc neutrals + the user's accent (--green), 4px spacing grid, 32px
+   rows, 8px radius, shadows only on things that float (menus, popovers, toasts),
+   Segoe UI Variable for text and Cascadia Code for code. Structure comes from
+   web/modern.js; icons from web/icons.js. */
+
+html.ui-modern body {
+  --canvas: #fafafa;
+  --surface: #ffffff;
+  --surface-subtle: #f4f4f5;
+  --surface-muted: #e4e4e7;
+  --surface-hover: #f4f4f5;
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --text-tertiary: #71717a;
+  --border-default: #e4e4e7;
+  --border-muted: #f4f4f5;
+  --code-bg: #fcfcfd;
+  --modern-radius: 8px;
+  --modern-row: 32px;
+  --modern-shadow-pop: 0 1px 2px rgb(0 0 0 / 6%), 0 8px 24px rgb(0 0 0 / 12%);
+  --modern-accent-soft: color-mix(in srgb, var(--green) 12%, transparent);
+  --modern-ease: cubic-bezier(.2, .8, .2, 1);
+  --modern-font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --modern-mono: "Cascadia Code", "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
+  --clean-radius: 6px;
+  --clean-divider: var(--border-default);
+  --clean-hover: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  --shadow-sm: none;
+  font-family: var(--modern-font);
+  font-weight: 400;
+  background: var(--canvas);
+}
+/* Neutral dark (zinc), replacing the green-tinted legacy dark greys. Midnight keeps its own palette. */
+html.ui-modern body.theme-dark:not(.theme-midnight) {
+  --canvas: #09090b;
+  --surface: #111113;
+  --surface-subtle: #18181b;
+  --surface-muted: #27272a;
+  --surface-hover: #1f1f23;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #8b8b94;
+  --border-default: #27272a;
+  --border-muted: #1f1f23;
+  --code-bg: #0c0c0e;
+  --modern-shadow-pop: 0 0 0 1px rgb(255 255 255 / 6%), 0 12px 32px rgb(0 0 0 / 55%);
+  --ink: var(--text-primary);
+  --muted: var(--text-secondary);
+  --line: var(--border-default);
+  --paper: var(--canvas);
+}
+html.ui-modern body.theme-dark:not(.theme-midnight) :is(.workspace, .workspace-modal, .workspace-modal-head, .workbench-tree, .workspace-content, .panel, .repos, .details, .workspace-heading, .change-group, .working-diff, .commit-list, .commit-detail, .commit-detail-meta, .commit-files, .commit-diff, .settings-card, .gitlab-inbox-card, .patch-card, .worktree-list, .conflict-file-list, .recovery-list, .journal-box, .pagination, .modal, .gitlab-modal, .repo-switcher, .mr-readiness, .push-modal, #push-form > .modal-actions, .action-feedback, .tag-modal, .about-modal) {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+html.ui-modern body.theme-dark:not(.theme-midnight) :is(button, input, select, textarea, .repo, .tree-item, .commit-row, .workspace-row, .journal-row, .inbox-item, .pipeline-item, .worktree-row, .push-branch-row) {
+  border-color: var(--border-default);
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+}
+html.ui-modern body.theme-dark:not(.theme-midnight) :is(.sync-actions, .repo-tabs, .commit-list-header, .journal-box > h4, .gitlab-inbox-card > h4, .rebase-footer, .push-table > header) {
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+html.ui-modern body.theme-dark:not(.theme-midnight) :is(.commit-row, .tree-item, .change-file-main, .repo):hover { background: var(--surface-hover); }
+html.ui-modern body.theme-dark:not(.theme-midnight) .commit-row { background: transparent; }
+
+/* ---- Type and shape ---------------------------------------------------------------------- */
+html.ui-modern body :is(h2, h3, h4, strong, b, th) { font-weight: 600; }
+html.ui-modern body :is(code, pre, kbd, .commit-hash, .diff-code, .diff-lines, .diff-split-code, .blame-output, textarea.ai-notes) { font-family: var(--modern-mono); }
+html.ui-modern body :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]) { border-radius: 6px; }
+html.ui-modern body :is(input, select, textarea):focus-visible,
+html.ui-modern body button:focus-visible { outline: 2px solid color-mix(in srgb, var(--green) 70%, transparent) !important; outline-offset: 1px; }
+/* Shadows only on things that float. */
+html.ui-modern body :is(.change-group, .working-diff, .commit-list, .commit-detail, .settings-card, .workspace-row, .branch-card, .recovery-row, .journal-row, .workspace-heading, .workspace-section-head) { box-shadow: none !important; }
+html.ui-modern body :is(.theme-menu, .help-menu-panel, .sync-more > div, .clean-menu-panel, .changes-view-panel, .clean-diff-more-panel, .context-menu, .repo-switcher, .action-feedback, .modern-branch-menu, .workbench-layout-controls) {
+  border-radius: var(--modern-radius) !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: var(--modern-shadow-pop) !important;
+}
+
+/* ---- Header: breadcrumb and primary action ------------------------------------------------------------ */
+html.ui-modern body .workspace-modal-head { gap: 12px; min-height: 48px; padding: 0 12px !important; }
+html.ui-modern body .workspace-modal-head > div:has(> #workspace-title) { display: none !important; }
+html.ui-modern body .modern-crumbs { display: flex; align-items: center; gap: 2px; min-width: 0; flex: 0 1 auto; }
+html.ui-modern body .modern-crumb {
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0; height: 32px; padding: 0 8px;
+  border: 0 !important; border-radius: 6px; background: transparent !important; color: var(--text-primary) !important;
+  font-weight: 600; cursor: pointer;
+}
+html.ui-modern body .modern-crumb span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+html.ui-modern body .modern-crumb-branch { font-weight: 500; color: var(--text-secondary) !important; }
+html.ui-modern body .modern-crumb:hover { background: var(--clean-hover) !important; }
+html.ui-modern body .modern-crumb .gd-icon { flex: none; color: var(--text-tertiary); }
+html.ui-modern body .modern-crumb-sep { color: var(--text-tertiary); padding: 0 2px; }
+html.ui-modern body .sync-actions { align-items: center; gap: 4px !important; margin-left: auto; }
+html.ui-modern body .sync-actions > button[data-workbench-nav="changes"] { display: none !important; }
+html.ui-modern body .sync-actions :is(button, summary):not(.hidden):not([hidden]):not([data-workbench-nav="changes"]) { display: inline-flex !important; flex-direction: row !important; align-items: center; gap: 6px; height: 32px; min-height: 32px !important; padding: 0 10px !important; font-weight: 500; }
+html.ui-modern body .sync-actions :is(button, summary) small { display: none !important; }
+html.ui-modern body .sync-actions :is(button, summary) strong { font-weight: 500; }
+html.ui-modern body .sync-actions .gd-icon { flex: none; color: var(--text-secondary); }
+html.ui-modern body .sync-actions .modern-primary {
+  order: -1; margin-right: 8px; border: 0 !important; border-radius: 6px !important;
+  background: var(--green) !important; color: var(--accent-contrast, #fff) !important; font-weight: 600;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--green) 35%, transparent) !important;
+}
+html.ui-modern body .sync-actions .modern-primary .gd-icon { color: inherit; }
+html.ui-modern body .sync-actions .modern-primary:hover { background: color-mix(in srgb, var(--green) 88%, #000) !important; }
+html.ui-modern body .sync-actions .modern-primary[hidden] { display: none !important; }
+/* ---- Branch menu -------------------------------------------------------------------------- */
+html.ui-modern body .modern-branch-menu {
+  position: fixed; z-index: 13000; display: grid; gap: 4px; width: 320px; max-height: min(460px, 70vh);
+  padding: 8px; background: var(--surface); color: var(--text-primary); animation: modern-pop .15s var(--modern-ease);
+}
+html.ui-modern body .modern-branch-menu input { height: 32px; padding: 0 10px; border: 1px solid var(--border-default); background: var(--surface-subtle); color: var(--text-primary); }
+html.ui-modern body .modern-branch-list { overflow: auto; display: grid; align-content: start; }
+html.ui-modern body .modern-branch-row,
+html.ui-modern body .modern-branch-foot button {
+  display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--text-primary); text-align: left; cursor: pointer;
+}
+html.ui-modern body .modern-branch-row:hover:not(:disabled),
+html.ui-modern body .modern-branch-foot button:hover { background: var(--surface-hover); }
+html.ui-modern body .modern-branch-row:disabled { cursor: default; color: var(--green); font-weight: 600; opacity: 1; }
+html.ui-modern body .modern-branch-spacer { width: 14px; flex: none; }
+html.ui-modern body .modern-branch-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.ui-modern body .modern-branch-row small { color: var(--text-tertiary); font-family: var(--modern-mono); }
+html.ui-modern body .modern-branch-empty { margin: 8px; color: var(--text-tertiary); }
+html.ui-modern body .modern-branch-foot { display: flex; gap: 4px; padding-top: 4px; border-top: 1px solid var(--border-default); }
+html.ui-modern body .modern-branch-foot button { flex: 1; justify-content: center; color: var(--text-secondary); }
+
+/* ---- Left rail ---------------------------------------------------------------------------- */
+/* Absolutely placed so it never takes a cell in the workbench grid (whatever its column variant). */
+html.ui-modern body .workbench-body:has(> .modern-rail) { position: relative; padding-left: 48px; }
+html.ui-modern body .workspace-idle .workbench-body { padding-left: 0; }
+html.ui-modern body .workspace-idle :is(.modern-rail, .modern-crumb-branch, .modern-primary) { display: none !important; }
+html.ui-modern body .modern-rail {
+  position: absolute; inset: 0 auto 0 0; z-index: 2; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 0 0 48px; width: 48px; padding: 8px 0;
+  border-right: 1px solid var(--border-default); background: var(--surface);
+}
+html.ui-modern body .modern-rail-bottom { display: flex; flex-direction: column; gap: 4px; margin-top: auto; }
+html.ui-modern body .modern-rail-item {
+  position: relative; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0 !important;
+  border-radius: var(--modern-radius); background: transparent !important; color: var(--text-tertiary) !important; cursor: pointer;
+  transition: background-color .15s, color .15s;
+}
+html.ui-modern body .modern-rail-item:hover { background: var(--surface-hover) !important; color: var(--text-primary) !important; }
+html.ui-modern body .modern-rail-item.active { background: var(--modern-accent-soft) !important; color: var(--green) !important; }
+html.ui-modern body .modern-rail-item.active::before { content: ""; position: absolute; left: -6px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--green); }
+html.ui-modern body .modern-rail-item[hidden] { display: none; }
+html.ui-modern body .modern-rail-badge {
+  position: absolute; top: 2px; right: 0; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
+  background: var(--surface-muted); color: var(--text-secondary); font-size: 10px; font-weight: 600; line-height: 16px; text-align: center;
+}
+html.ui-modern body .modern-rail-badge[hidden] { display: none; }
+html.ui-modern body .modern-rail-alert .modern-rail-badge { background: var(--danger); color: #fff; }
+/* The rail replaces the File Status / History switcher above the branch list. */
+html.ui-modern body .workbench-tree .tree-view-switcher { display: none !important; }
+
+/* ---- Lists: 32px rows, status dots ----------------------------------------------------------- */
+html.ui-modern body :is(.commit-row, .change-file, .tree-item, .push-branch-row) { min-height: var(--modern-row); }
+html.ui-modern body .change-file-main { min-height: var(--modern-row); }
+html.ui-modern body .commit-row { border-radius: 6px; }
+html.ui-modern body .commit-row.selected { background: var(--modern-accent-soft) !important; box-shadow: inset 2px 0 0 var(--green) !important; }
+html.ui-modern body .commit-row time { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+html.ui-modern body .commit-hash { color: var(--text-tertiary); }
+html.ui-modern body .modern-avatar {
+  display: inline-grid; place-items: center; flex: none; width: 20px; height: 20px; margin-right: 6px; border-radius: 50%;
+  background: hsl(var(--avatar-hue, 210) 55% 88%); color: hsl(var(--avatar-hue, 210) 45% 30%);
+  font-size: 9px; font-weight: 600; letter-spacing: .02em; vertical-align: middle;
+}
+html.ui-modern body.theme-dark .modern-avatar { background: hsl(var(--avatar-hue, 210) 30% 24%); color: hsl(var(--avatar-hue, 210) 60% 82%); }
+html.ui-modern body .commit-author { display: inline-flex !important; align-items: center; }
+/* Ref chips: one colour per kind. */
+html.ui-modern body .commit-refs i {
+  border: 0 !important; border-radius: 999px !important; padding: 1px 8px !important; font-style: normal; font-weight: 500;
+  background: var(--surface-muted) !important; color: var(--text-secondary) !important;
+}
+html.ui-modern body .commit-refs i[data-ref="head"] { background: var(--green) !important; color: var(--accent-contrast, #fff) !important; }
+html.ui-modern body .commit-refs i[data-ref="local"] { background: color-mix(in srgb, var(--green) 14%, transparent) !important; color: color-mix(in srgb, var(--green) 80%, var(--text-primary)) !important; }
+html.ui-modern body .commit-refs i[data-ref="remote"] { background: color-mix(in srgb, #3b82f6 14%, transparent) !important; color: color-mix(in srgb, #3b82f6 75%, var(--text-primary)) !important; }
+html.ui-modern body .commit-refs i[data-ref="tag"] { background: color-mix(in srgb, #d97706 16%, transparent) !important; color: color-mix(in srgb, #d97706 80%, var(--text-primary)) !important; }
+html.ui-modern body .commit-refs i[data-ref="stash"] { background: color-mix(in srgb, #8b5cf6 14%, transparent) !important; color: color-mix(in srgb, #8b5cf6 75%, var(--text-primary)) !important; }
+/* Graph: rounder, calmer lines. */
+html.ui-modern body .commit-graph svg .graph-edge { stroke-width: 2; stroke-linecap: round; opacity: .75; }
+html.ui-modern body .commit-graph svg .graph-edge-active { opacity: 1; }
+html.ui-modern body .commit-graph svg .graph-node { stroke: var(--surface); stroke-width: 2; }
+
+/* ---- Empty states and skeletons ------------------------------------------------------------ */
+html.ui-modern body .workspace-empty { display: grid; justify-items: center; gap: 4px; padding: 32px 16px; border: 0 !important; background: transparent !important; text-align: center; }
+html.ui-modern body .modern-empty-icon { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 4px; border-radius: 12px; background: var(--surface-subtle); color: var(--text-tertiary); }
+html.ui-modern body .workspace-empty strong { font-size: 1.1em; color: var(--text-primary); }
+html.ui-modern body .workspace-empty p { max-width: 360px; margin: 0; color: var(--text-secondary); }
+html.ui-modern body .modern-empty-action { margin-top: 8px; height: 32px; padding: 0 12px; border: 1px solid var(--border-default); border-radius: 6px; background: var(--surface); color: var(--text-primary); font-weight: 500; cursor: pointer; }
+html.ui-modern body .modern-empty-action:hover { background: var(--surface-hover); }
+html.ui-modern body .diff-loading { position: relative; padding: 76px 16px 12px !important; color: var(--text-tertiary); font-size: .92em; }
+html.ui-modern body .diff-loading::before {
+  content: ""; position: absolute; inset: 16px 16px auto 16px; height: 52px; border-radius: 6px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--surface) 70%, transparent), transparent) 0 0 / 40% 100% no-repeat,
+    linear-gradient(var(--surface-muted) 0 0) 0 0 / 70% 10px no-repeat,
+    linear-gradient(var(--surface-muted) 0 0) 0 21px / 92% 10px no-repeat,
+    linear-gradient(var(--surface-muted) 0 0) 0 42px / 55% 10px no-repeat;
+  animation: modern-shimmer 1.2s linear infinite;
+}
+
+/* ---- Motion ----------------------------------------------------------------------------------- */
+@keyframes modern-pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes modern-toast { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes modern-shimmer { from { background-position: -40% 0, 0 0, 0 21px, 0 42px; } to { background-position: 140% 0, 0 0, 0 21px, 0 42px; } }
+html.ui-modern body details[open] > :is(.theme-menu, .help-menu-panel, div, .clean-menu-panel, .changes-view-panel, .clean-diff-more-panel),
+html.ui-modern body :is(.context-menu, .repo-switcher:not(.hidden)) { animation: modern-pop .15s var(--modern-ease); }
+html.ui-modern body .action-feedback { animation: modern-toast .18s var(--modern-ease); border-left-width: 3px !important; }
+html.ui-modern body :is(button, summary, .commit-row, .change-file, .tree-item) { transition: background-color .15s, color .15s, border-color .15s; }
+@media (prefers-reduced-motion: reduce) {
+  html.ui-modern body *, html.ui-modern body *::before { animation: none !important; transition: none !important; }
+}
+
+/* ---- AI buttons blend in ------------------------------------------------------------------------------ */
+html.ui-modern body .ai-button { border-radius: 6px; }

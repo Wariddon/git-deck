@@ -74,7 +74,8 @@ function loadAppearance(saved = {}) {
 let ap = loadAppearance();
 assert.equal(ap.context.GitDeckAppearance.size, 12);
 assert.equal(ap.style.get('--ui-text-size'), '12px');
-assert.equal(ap.classes.has('ui-clean'), true, 'Clean is the default look');
+assert.equal(ap.classes.has('ui-modern'), true, 'Modern is the default look');
+assert.equal(ap.classes.has('ui-clean'), true, 'Modern builds on the Clean layout');
 const sizeButtons = ap.sizeGroup.children.filter((c) => c.dataset.textSize);
 assert.deepEqual(sizeButtons.map((b) => b.dataset.textSize), ['8', '10', '12', '14']);
 assert.equal(sizeButtons[2].attrs['aria-pressed'], 'true');
@@ -84,22 +85,33 @@ assert.equal(sizeButtons[0].attrs['aria-pressed'], 'true'); assert.equal(sizeBut
 sizeButtons[2].onclick();
 assert.equal(ap.storage.has('gitdeck.textSize'), false, 'Back to default clears the preference');
 const lookButtons = ap.lookGroup.children.filter((c) => c.dataset.look);
-assert.deepEqual(lookButtons.map((b) => b.dataset.look), ['clean', 'classic']);
+assert.deepEqual(lookButtons.map((b) => b.dataset.look), ['modern', 'classic']);
 lookButtons[1].onclick();
-assert.equal(ap.classes.has('ui-clean'), false); assert.equal(ap.storage.get('gitdeck.look'), 'classic');
+assert.equal(ap.classes.has('ui-clean'), false); assert.equal(ap.classes.has('ui-modern'), false); assert.equal(ap.storage.get('gitdeck.look'), 'classic');
 assert.equal(lookButtons[1].attrs['aria-pressed'], 'true');
 lookButtons[0].onclick();
-assert.equal(ap.classes.has('ui-clean'), true); assert.equal(ap.storage.has('gitdeck.look'), false);
-assert.deepEqual([...ap.events], ['gitdeck:appearance:clean:8', 'gitdeck:appearance:clean:12', 'gitdeck:appearance:classic:12', 'gitdeck:appearance:clean:12'], 'Every change is announced so views can re-render');
+assert.equal(ap.classes.has('ui-modern'), true); assert.equal(ap.storage.has('gitdeck.look'), false);
+assert.deepEqual([...ap.events], ['gitdeck:appearance:modern:8', 'gitdeck:appearance:modern:12', 'gitdeck:appearance:classic:12', 'gitdeck:appearance:modern:12'], 'Every change is announced so views can re-render');
+assert.equal(loadAppearance({ 'gitdeck.look': 'clean' }).classes.has('ui-modern'), true, 'A saved Clean look from older builds opens as Modern');
 assert.equal(loadAppearance({ 'gitdeck.textSize': '14' }).style.get('--ui-text-size'), '14px', 'Saved size applies before first paint');
 assert.equal(loadAppearance({ 'gitdeck.textSize': '11' }).context.GitDeckAppearance.size, 12, 'Old 11px preference falls back to the default');
 assert.equal(loadAppearance({ 'gitdeck.look': 'classic' }).classes.has('ui-clean'), false, 'Saved Classic look applies before first paint');
 assert(html.indexOf('/appearance.js') < html.indexOf('id="startup-controller"'), 'Applied before the splash and workspace render');
 const links = [...html.matchAll(/rel="stylesheet" href="([^"]+)"/g)].map((m) => m[1]);
-assert.equal(links.at(-1), '/clean.css', 'clean.css loads last so it can override legacy rules');
-const cleanCss = web('clean.css');
-for (const rule of cleanCss.replace(/\/\*[\s\S]*?\*\//g, '').split('}').map((r) => r.trim()).filter(Boolean)) {
-  const selectors = rule.slice(0, rule.indexOf('{')).split(',').map((s) => s.trim());
-  for (const selector of selectors) assert(selector.startsWith('html.ui-clean'), `clean.css selector not scoped to html.ui-clean: ${selector}`);
+assert.deepEqual(links.slice(-2), ['/clean.css', '/modern.css'], 'clean.css then modern.css load last so they can override legacy rules');
+for (const [file, scope] of [['clean.css', 'html.ui-clean'], ['modern.css', 'html.ui-modern']]) {
+  const css = web(file).replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/@keyframes[^{]*\{(?:[^{}]*\{[^}]*\})*\s*\}/g, '')
+    .replace(/@media[^{]*\{/g, '');
+  for (const rule of css.split('}').map((r) => r.trim()).filter(Boolean)) {
+    // Split the selector list on top-level commas only (:is(a, b) stays whole).
+    const selectors = [];let depth = 0, current = '';
+    for (const char of rule.slice(0, rule.indexOf('{'))) {
+      if (char === ',' && !depth) { selectors.push(current.trim()); current = ''; continue; }
+      depth += char === '(' ? 1 : char === ')' ? -1 : 0; current += char;
+    }
+    selectors.push(current.trim());
+    for (const selector of selectors) assert(selector.startsWith(scope), `${file} selector not scoped to ${scope}: ${selector}`);
+  }
 }
-console.log('PASS: overview next steps and actions, appearance text size 8/10/12/14 and Clean/Classic look');
+console.log('PASS: overview next steps and actions, appearance text size 8/10/12/14 and Modern/Classic look');

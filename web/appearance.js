@@ -1,20 +1,22 @@
 'use strict';
-// Per-browser appearance: UI text size and Clean/Classic look, both in the theme
+// Per-browser appearance: UI text size and Modern/Classic look, both in the theme
 // menu. Runs before the page renders so neither causes a flash.
 // - Text size overrides --ui-text-size (workspace.css), which sizes all UI copy;
 //   code and diffs that opt out stay unchanged.
-// - Clean adds html.ui-clean, which enables web/clean.css; Classic is the
-//   original stylesheet stack.
+// - Modern adds html.ui-clean (web/clean.css, clean-layout.js: fewer boxes) and
+//   html.ui-modern (web/modern.css, modern.js: tokens, icons, rail, header).
+//   Classic is the original stylesheet stack. A saved 'clean' from older
+//   builds is read as Modern.
 (function(){
   const sizes=[8,10,12,14];const defaultSize=12;
-  const looks=['clean','classic'];const defaultLook='clean';
+  const looks=['modern','classic'];const defaultLook='modern';
   const keys={size:'gitdeck.textSize',look:'gitdeck.look'};
   const read=(key)=>{try{return localStorage.getItem(key);}catch{return null;}};
   const write=(key,value,fallback)=>{try{if(value===fallback)localStorage.removeItem(key);else localStorage.setItem(key,String(value));}catch{}};
   let size=Number(read(keys.size));if(!sizes.includes(size))size=defaultSize;
-  let look=read(keys.look);if(!looks.includes(look))look=defaultLook;
+  let look=read(keys.look);if(look==='clean')look='modern';if(!looks.includes(look))look=defaultLook;
   const root=document.documentElement;
-  const apply=()=>{root.style.setProperty('--ui-text-size',size+'px');root.classList.toggle('ui-clean',look==='clean');};
+  const apply=()=>{root.style.setProperty('--ui-text-size',size+'px');root.classList.toggle('ui-clean',look==='modern');root.classList.toggle('ui-modern',look==='modern');};
   const refresh=()=>document.querySelectorAll('[data-text-size],[data-look]').forEach(button=>{
     const active=button.dataset.textSize?Number(button.dataset.textSize)===size:button.dataset.look===look;
     button.setAttribute('aria-pressed',String(active));
@@ -35,7 +37,7 @@
     if(menu.querySelector('.text-size-choice'))return;
     menu.append(
       group('look-choice',t('Look'),[
-        {data:{look:'clean'},label:t('Clean'),title:t('Fewer borders and hints'),run:()=>setLook('clean')},
+        {data:{look:'modern'},label:t('Modern'),title:t('Icons, side rail and a calmer palette'),run:()=>setLook('modern')},
         {data:{look:'classic'},label:t('Classic'),title:t('The original dense layout'),run:()=>setLook('classic')},
       ]),
       group('text-size-choice',t('Text size'),sizes.map(value=>({
