@@ -749,3 +749,82 @@ html.ui-modern body :is(.settings-check, .worktree-choice, .push-options, .modal
 html.ui-modern body .patch-selected { border: 1px solid var(--border-default); background: var(--surface-subtle) !important; color: var(--text-secondary) !important; }
 html.ui-modern body .recovery-note { border-color: color-mix(in srgb, var(--warning, #9a6700) 35%, var(--border-default)) !important; background: color-mix(in srgb, var(--warning, #9a6700) 8%, var(--surface)) !important; color: var(--text-secondary) !important; }
 html.ui-modern body .recovery-note > strong { color: var(--text-primary) !important; }
+
+/* =====================================================================================
+   Comfort pass: a real type scale, softer contrast (no pure white / pure black),
+   a warm Paper theme, calmer diffs, fewer weights and less accent colour.
+   Measured before: every text 12px, dark theme 20:1 contrast, weights 400-900.
+   ===================================================================================== */
+
+/* ---- Type scale derived from the Text size setting (8/10/12/14) ---------------------------------- */
+html.ui-modern body {
+  --fs-xs: calc(var(--ui-text-size) - 1px);
+  --fs-md: calc(var(--ui-text-size) + 2px);
+  --fs-lg: calc(var(--ui-text-size) + 4px);
+  line-height: 1.5;
+}
+/* The legacy rule forces every element to --ui-text-size with !important; these win by specificity. */
+html.ui-modern body :is(.workspace-section-head h3, .workspace-heading h3, .changes-summary h3, .modern-clean-head h3, .panel-title h2) {
+  font-size: var(--fs-lg) !important; font-weight: 600 !important; line-height: 1.3; letter-spacing: -.01em;
+}
+html.ui-modern body :is(.commit-detail-meta h3, .compact-heading h3, .compare-card > h4, .settings-card h4, .journal-box > h4, .modern-tb-value, .modal h2, dialog h2, dialog h3) {
+  font-size: var(--fs-md) !important; font-weight: 600 !important; line-height: 1.35;
+}
+html.ui-modern body :is(small, time, .commit-hash, .commit-author, .modern-tb-caption, .modern-rail-label, .modern-rail-badge, .modern-menu-text small, .modern-list-heading, .file-line-counts, .ref-sync, .repo-main small, .repo-main em, .workspace-statusbar, .workspace-statusbar *, .modern-commit-target, .action-disabled-reason, .commit-meter, kbd) {
+  font-size: var(--fs-xs) !important;
+}
+html.ui-modern body .compare-stat::first-line { font-size: calc(var(--ui-text-size) * 1.6); }
+
+/* ---- Fewer weights: 400 text, 500 controls, 600 headings and emphasis ------------------------------- */
+html.ui-modern body :is(b, strong, th, h1, h2, h3, h4, h5, .eyebrow) { font-weight: 600 !important; }
+html.ui-modern body :is(.settings-check, .worktree-choice, .push-options, .tag-choice, .commit-option, .history-options-body label) { font-weight: 400 !important; }
+html.ui-modern body :is(small, time, p) { font-weight: 400; }
+
+/* ---- Light: soft white and near-black, not #fff on #000 ------------------------------------------------ */
+html.ui-modern body:not(.theme-dark):not([data-theme="paper"]) {
+  --canvas: #f4f4f5; --surface: #fdfdfc; --surface-subtle: #f4f4f5; --surface-muted: #e7e7ea; --surface-hover: #efeff1;
+  --text-primary: #27272a; --text-secondary: #52525b; --text-tertiary: #6b6b75;
+  --border-default: #e4e4e7; --border-muted: #efeff1; --code-bg: #fbfbfa;
+  --diff-add-bg: #e8f5ea; --diff-add-text: #1f5f2e; --diff-remove-bg: #fbeaea; --diff-remove-text: #8a2320; --diff-hunk-bg: #eef0fb; --diff-hunk-text: #4f53a8;
+}
+
+/* ---- Dark: about 14:1 instead of 20:1, softer surfaces, muted diff colours ----------------------------- */
+html.ui-modern body.theme-dark:not(.theme-midnight) {
+  --canvas: #141416; --surface: #18181b; --surface-subtle: #1d1d21; --surface-muted: #2a2a2f; --surface-hover: #232327;
+  --text-primary: #e4e4e7; --text-secondary: #a1a1aa; --text-tertiary: #8e8e97;
+  --border-default: #2e2e33; --border-muted: #232327; --code-bg: #161618;
+  --diff-add-bg: rgb(46 160 67 / 14%); --diff-add-text: #b4dcbf; --diff-remove-bg: rgb(229 83 75 / 14%); --diff-remove-text: #ebb9b5;
+  --diff-hunk-bg: rgb(99 102 241 / 12%); --diff-hunk-text: #b4b9f5;
+  --ink: var(--text-primary); --muted: var(--text-secondary); --line: var(--border-default); --paper: var(--canvas);
+}
+
+/* ---- Paper: warm cream for long sessions (like e-reader reading modes) -------------------------------- */
+html.ui-modern body[data-theme="paper"] {
+  --canvas: #f1ece1; --surface: #f9f5ec; --surface-subtle: #f1ebdf; --surface-muted: #e6dfd0; --surface-hover: #ede6d8;
+  --text-primary: #3a332a; --text-secondary: #685f51; --text-tertiary: #7f7565;
+  --border-default: #e0d7c5; --border-muted: #eae2d2; --code-bg: #f6f1e6;
+  --diff-add-bg: #e3edd6; --diff-add-text: #35582a; --diff-remove-bg: #f3e0d6; --diff-remove-text: #7b2f1e; --diff-hunk-bg: #ebe4d3; --diff-hunk-text: #685f51;
+  --ink: var(--text-primary); --muted: var(--text-secondary); --line: var(--border-default); --paper: var(--canvas);
+  background: var(--canvas); color: var(--text-primary);
+}
+
+/* ---- Diffs use the theme's diff colours (legacy rules hard-code saturated ones) ------------------------ */
+html.ui-modern body :is(.diff-code, .diff-split-code, .diff-lines) .diff-add { background: var(--diff-add-bg) !important; color: var(--diff-add-text) !important; }
+html.ui-modern body :is(.diff-code, .diff-split-code, .diff-lines) .diff-remove { background: var(--diff-remove-bg) !important; color: var(--diff-remove-text) !important; }
+html.ui-modern body :is(.diff-code, .diff-split-code, .diff-lines) .diff-hunk { background: var(--diff-hunk-bg) !important; color: var(--diff-hunk-text) !important; }
+html.ui-modern body :is(.diff-code, .diff-split-code, .diff-lines, .diff-viewer-body) { background: var(--code-bg); line-height: 1.65; }
+
+/* ---- Accent only for the primary action and the current selection -------------------------------------- */
+html.ui-modern body .modern-rail-item.active { color: var(--text-primary) !important; }
+html.ui-modern body .modern-rail-item.active .modern-rail-badge { background: var(--text-secondary); color: var(--surface); }
+html.ui-modern body #tree-content .ref-branch-row.viewing { background: var(--surface-muted) !important; }
+html.ui-modern body #tree-content .ref-branch-row.viewing .ref-view { color: var(--text-primary) !important; }
+html.ui-modern body .commit-refs i:is([data-ref="local"], [data-ref="remote"]) { background: var(--surface-muted) !important; color: var(--text-secondary) !important; }
+html.ui-modern body .change-group-action { color: var(--text-secondary) !important; }
+html.ui-modern body .change-group-action:hover:not(:disabled) { color: var(--text-primary) !important; text-decoration: underline; }
+html.ui-modern body .branch-card[data-current] > .workspace-row strong { color: var(--text-primary) !important; }
+html.ui-modern body :is(.ref-more, .clean-arrow, .clean-diff-more > summary, kbd) { font-weight: 500 !important; }
+html.ui-modern body :is(.diff-file-position) { font-weight: 400 !important; }
+html.ui-modern body .commit-file-status { font-weight: 600 !important; }
+html.ui-modern body .change-group-action { font-weight: 500 !important; }
+html.ui-modern body .file-status { font-weight: 600 !important; }

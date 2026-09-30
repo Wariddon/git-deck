@@ -141,3 +141,4 @@ body.workbench-mode #tree-content .ref-filter-tabs button { flex: 1 0 auto; min-
 /* Checkout review: what happens to uncommitted changes. */
 .workflow-ok { padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--success, #1a7f37) 35%, var(--line)); border-left: 3px solid var(--success, #1a7f37); border-radius: 6px; background: color-mix(in srgb, var(--success, #1a7f37) 7%, transparent); }
 .checkout-files > summary { cursor: pointer; font-weight: 600; margin: 6px 0; }
+.swatch-paper { background: linear-gradient(135deg,#f9f5ec 58%,#c4a468 58%); }

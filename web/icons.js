@@ -30,6 +30,7 @@
     alert:c(12,12,9.5)+p('M12 8v4.5','M12 16h.01'),
     sparkles:p('M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z','M19 17v4','M17 19h4'),
     cloud:p('M17.5 19H9a7 7 0 1 1 6.7-9h1.8a4.5 4.5 0 1 1 0 9z'),
+    focus:p('M8 3H5a2 2 0 0 0-2 2v3','M21 8V5a2 2 0 0 0-2-2h-3','M3 16v3a2 2 0 0 0 2 2h3','M16 21h3a2 2 0 0 0 2-2v-3'),
   };
   const ns='http://www.w3.org/2000/svg';
   function svg(name,size=16){

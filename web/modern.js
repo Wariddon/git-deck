@@ -155,6 +155,7 @@
     if(!bar)return;const data=state.workspace;const repo=state.workspaceRepo;
     setBlock(repoButton,'folder',repo?.name||t('Select a repository'));
     branchButton.hidden=!repo;setBlock(branchButton,'branch',data?.branch||t('Detached HEAD'));
+    branchButton.title=data&&!data.branch?t('Not on a branch: new commits here are easy to lose. Create a branch to keep them.'):t('Switch branch');
     const sync=repo?syncAction(data):null;syncButton.parentElement.hidden=!sync;
     if(sync){
       syncButton.dataset.kind=sync.kind;syncButton.title=sync.caption;setBlock(syncButton,sync.icon,sync.label,sync.caption);
@@ -172,7 +173,23 @@
     ['stashes','stash',()=>t('Stashes')],['tags','tag',()=>t('Tags')],['compare','compare',()=>t('Compare')],
     ['conflicts','conflict',()=>t('Conflicts')],['recovery','recovery',()=>t('Recovery')],
   ];
-  const railBottom=[['tools','tools',()=>t('Tools')],['settings','settings',()=>t('Settings')]];
+  const railBottom=[['focus','focus',()=>t('Focus')],['tools','tools',()=>t('Tools')],['settings','settings',()=>t('Settings')]];
+  // Plain-language tooltips: what each place is for, without Git jargon.
+  const railHelp={
+    repos:()=>t('Show or hide the list of your repositories'),
+    changes:()=>t('Files you changed but have not committed yet. Stage them and write a commit message here.'),
+    history:()=>t('Every commit on every branch, newest first'),
+    branches:()=>t('Separate lines of work. Switch, merge or create branches here.'),
+    stashes:()=>t('Work you set aside for later without committing it'),
+    tags:()=>t('Named points in history, usually releases such as v1.2'),
+    compare:()=>t('See what differs between two branches before a merge request'),
+    conflicts:()=>t('Files where two changes collided. Choose which version to keep.'),
+    recovery:()=>t('Undo mistakes: find lost commits and earlier branch positions'),
+    focus:()=>t('Hide the side panels to concentrate on files and diffs'),
+    tools:()=>t('Maintenance and advanced Git tools'),
+    settings:()=>t('Name, email, .gitignore and other settings for this repository'),
+  };
+  const toggleFocus=()=>{$id('focus-workbench')?.click();setTimeout(renderRail,0);};
   let rail=null;
   const libraryOpen=()=>!document.body.classList.contains('library-collapsed');
   // Unpinned, the repository list is a drawer over the workspace (Fork / Tower style)
@@ -186,8 +203,8 @@
   function toggleLibrary(){(libraryOpen()?$id('library-collapse'):$id('library-open'))?.click();setTimeout(renderRail,0);}
   function railButton([tab,name,label]){
     const button=el('button','modern-rail-item');button.type='button';button.dataset.tab=tab;
-    button.title=label();button.append(icon(name,18),el('span','modern-rail-label',label()),el('b','modern-rail-badge'));
-    button.addEventListener('click',()=>tab==='repos'?toggleLibrary():selectWorkspaceTab(tab));return button;
+    button.title=label()+(railHelp[tab]?' — '+railHelp[tab]():'');button.append(icon(name,18),el('span','modern-rail-label',label()),el('b','modern-rail-badge'));
+    button.addEventListener('click',()=>tab==='repos'?toggleLibrary():tab==='focus'?toggleFocus():selectWorkspaceTab(tab));return button;
   }
   function buildRail(){
     const body=document.querySelector('.workbench-body');if(!body||body.querySelector('.modern-rail'))return;
@@ -202,8 +219,8 @@
     const counts={changes:(data.files||[]).length,stashes:(data.stashes||[]).length,conflicts:conflictCount(data)};
     for(const button of rail.querySelectorAll('.modern-rail-item')){
       const tab=button.dataset.tab;
-      const active=tab==='repos'?libraryOpen():tab===state.workspaceTab;button.classList.toggle('active',active);
-      if(tab==='repos')button.setAttribute('aria-pressed',String(active));
+      const active=tab==='repos'?libraryOpen():tab==='focus'?document.body.classList.contains('focus-workbench'):tab===state.workspaceTab;button.classList.toggle('active',active);
+      if(tab==='repos'||tab==='focus')button.setAttribute('aria-pressed',String(active));
       else if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
       const count=counts[tab]||0;const badge=button.querySelector('.modern-rail-badge');
       badge.textContent=count>99?'99+':count?String(count):'';badge.hidden=!count;
@@ -338,6 +355,14 @@
     );
     panel.append(head,list);return panel;
   }
+  // "1 staged · 2 unstaged" becomes a sentence that says what to do next.
+  function plainSummary(content,data){
+    const line=content.querySelector('.changes-summary > p');const files=data?.files||[];if(!line||!files.length)return;
+    const staged=files.filter(file=>file.staged).length;const unstaged=files.filter(file=>file.unstaged).length;
+    line.textContent=staged&&unstaged?t('{staged} ready to commit · {unstaged} not staged yet',{staged,unstaged})
+      :staged?t('{count} file(s) ready to commit — write a message below',{count:staged})
+      :t('{count} changed file(s) — stage the ones you want to commit',{count:unstaged});
+  }
   // GitHub Desktop layout: the commit box sits under the file list (one column to
   // read top to bottom) instead of spanning the whole window. The view is rebuilt on
   // every render and on look changes, so nothing needs to be moved back.
@@ -353,6 +378,7 @@
     renderChangesView=function(content,data){
       const result=baseChanges(content,data);
       try{if(isModern())composerInColumn(content,data);}catch(error){console.warn('Modern commit layout unavailable',error);}
+      try{if(isModern())plainSummary(content,data);}catch(error){console.warn('Modern summary unavailable',error);}
       try{
         if(isModern()&&data&&!(data.files||[]).length&&!conflictCount(data)){
           const target=content.querySelector('.working-diff');const panel=nothingToCommit(data);

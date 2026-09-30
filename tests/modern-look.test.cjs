@@ -126,6 +126,24 @@ assert(zOf(/modern-library-drawer:not\(\.library-collapsed\) \.repos \{[^}]*z-in
 assert.match(modernCss, /:is\(\.settings-check, \.worktree-choice, \.push-options, \.modal label, \.gitlab-result-count\) \{ color: var\(--text-secondary\) !important; \}/);
 assert.match(modernCss, /\.patch-selected \{[^}]*background: var\(--surface-subtle\) !important; color: var\(--text-secondary\) !important;/);
 assert.match(modernCss, /\.recovery-note \{[^}]*color: var\(--text-secondary\) !important;/);
+// Comfort: a type scale on top of the Text size setting, no pure white/black, dark text around 14:1.
+assert.match(modernCss, /--fs-lg: calc\(var\(--ui-text-size\) \+ 4px\);/);
+assert.match(modernCss, /\.workspace-section-head h3[^{]*\{\s*font-size: var\(--fs-lg\) !important;/);
+const token = (block, name) => (modernCss.slice(modernCss.indexOf(block)).match(new RegExp(`${name}: (#[0-9a-f]{6})`)) || [])[1];
+const hexLum = (hex) => { const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+const ratio = (a, b) => { const x = hexLum(a), y = hexLum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+for (const block of ['html.ui-modern body.theme-dark:not(.theme-midnight) {\n  --canvas: #141416', 'html.ui-modern body:not(.theme-dark):not([data-theme="paper"]) {', 'html.ui-modern body[data-theme="paper"] {']) {
+  const text = token(block, '--text-primary'), surface = token(block, '--surface');
+  const r = ratio(text, surface);
+  assert(r >= 7 && r <= 16, `${block.slice(0, 60)}: text contrast ${r.toFixed(1)} should be readable but not glaring (7-16:1)`);
+  assert(!['#ffffff', '#000000'].includes(surface) && !['#ffffff', '#000000'].includes(text), 'no pure white or pure black');
+}
+// Paper theme is selectable and survives a reload.
+assert.match(web('app.js'), /\['system','light','dark','midnight','paper'\]\.includes\(saved\.theme\)/);
+assert.equal((web('index.html').match(/data-theme-choice="paper"/g) || []).length, 2, 'Paper appears in both theme menus');
+// Plain-language help on the rail, and a Focus toggle.
+assert.match(modernJs, /changes:\(\)=>t\('Files you changed but have not committed yet\./);
+assert.match(modernJs, /tab==='focus'\?toggleFocus\(\)/);
 // The rail's first item shows or hides the repository list.
 assert.match(modernJs, /railButton\(\['repos','folder',\(\)=>t\('Repos'\)\]\)/);
 // Rail items carry a visible label, not only an icon.
