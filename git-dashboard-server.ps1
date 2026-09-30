@@ -1596,6 +1596,9 @@ function Invoke-GitDeckRequest($context) {
 
 if (-not (Get-Command git.exe -ErrorAction SilentlyContinue)) { Write-Host '[ERROR] Git was not found in PATH.' -ForegroundColor Red; exit 1 }
 if (-not (Test-Path -LiteralPath (Join-Path $script:WebRoot 'index.html'))) { Write-Host '[ERROR] Web UI files are missing.' -ForegroundColor Red; exit 1 }
+# Only GitDeck.exe passes -IdleShutdownSeconds, and it opens the window itself. Older launchers
+# did not pass -NoBrowser, which opened a second window; never open one in that case.
+if ($IdleShutdownSeconds -gt 0) { $NoBrowser = [switch]$true }
 
 $listener = New-Object Net.HttpListener
 $listener.Prefixes.Add($script:BaseUrl)

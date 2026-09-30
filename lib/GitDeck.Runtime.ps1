@@ -228,7 +228,42 @@ function Get-GitDeckEdgePath {
     }
     return $null
 }
+function Show-GitDeckExistingWindow {
+    # Brings an open Git Deck app window to the front (title "Git Deck - ..." with an em dash,
+    # no browser name). Returns $true when one was found.
+    try {
+        if (-not ('GitDeckWindowFinder' -as [type])) {
+            Add-Type -TypeDefinition @'
+using System; using System.Runtime.InteropServices; using System.Text;
+public static class GitDeckWindowFinder {
+    delegate bool EnumProc(IntPtr w, IntPtr p);
+    [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc cb, IntPtr p);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr w, StringBuilder s, int n);
+    [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr w);
+    [DllImport("user32.dll")] static extern bool IsIconic(IntPtr w);
+    [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr w, int c);
+    [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr w);
+    public static bool Focus() {
+        IntPtr found = IntPtr.Zero;
+        EnumWindows((w, p) => {
+            if (!IsWindowVisible(w)) return true;
+            var s = new StringBuilder(512); GetWindowText(w, s, s.Capacity); string t = s.ToString();
+            if (t.StartsWith("Git Deck —", StringComparison.Ordinal) && t.IndexOf("Microsoft", StringComparison.OrdinalIgnoreCase) < 0 && t.IndexOf("Chrome", StringComparison.OrdinalIgnoreCase) < 0) { found = w; return false; }
+            return true;
+        }, IntPtr.Zero);
+        if (found == IntPtr.Zero) return false;
+        if (IsIconic(found)) ShowWindow(found, 9);
+        SetForegroundWindow(found); return true;
+    }
+}
+'@
+        }
+        return [GitDeckWindowFinder]::Focus()
+    } catch { return $false }
+}
 function Open-GitDeckWindow([string]$Url) {
+    # Like Sourcetree: a second start brings the existing window back instead of opening another.
+    if (Show-GitDeckExistingWindow) { return }
     $edge = Get-GitDeckEdgePath
     if ($edge) { Start-Process -FilePath $edge -ArgumentList @(('--app="{0}"' -f $Url), '--start-maximized') }
     else { Start-Process $Url }

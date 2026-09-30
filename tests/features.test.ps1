@@ -56,6 +56,11 @@ $env:ANTHROPIC_API_KEY=''
 
 # App window: Edge --app when installed, default browser otherwise; the launcher opens its own window.
 function Start-Process { param($FilePath,$ArgumentList) $script:opened=@{file=$FilePath;args=@($ArgumentList)} }
+# An existing Git Deck window is brought back instead of opening a second one.
+function Show-GitDeckExistingWindow { return $true }
+$script:opened=$null;Open-GitDeckWindow 'http://127.0.0.1:8765/'
+if($script:opened){throw 'An open Git Deck window must be reused, not duplicated'}
+function Show-GitDeckExistingWindow { return $false }
 function Get-GitDeckEdgePath { return 'C:\Edge\msedge.exe' }
 Open-GitDeckWindow 'http://127.0.0.1:8765/'
 if($script:opened.file -ne 'C:\Edge\msedge.exe' -or $script:opened.args[0] -ne '--app="http://127.0.0.1:8765/"'){throw 'Edge must open Git Deck as an app window'}
@@ -65,4 +70,9 @@ if($script:opened.file -ne 'http://127.0.0.1:8765/'){throw 'Without Edge the def
 Remove-Item Function:\Start-Process
 $launcher=Get-Content -Raw (Join-Path (Split-Path $PSScriptRoot -Parent) 'launcher\GitDeckLauncher.cs')  # $root was reassigned via $script:Root
 if($launcher -notmatch '-NoBrowser -IdleShutdownSeconds'){throw 'The launcher must start the server with -NoBrowser (it opens its own window)'}
+if($launcher -notmatch 'IntPtr existing = specificFolder \? IntPtr.Zero : FindAppWindow\(\);'){throw 'The launcher must reuse an open Git Deck window'}
+$server=Get-Content -Raw (Join-Path (Split-Path $PSScriptRoot -Parent) 'git-dashboard-server.ps1')
+if($server -notmatch 'if \(\$IdleShutdownSeconds -gt 0\) \{ \$NoBrowser = \[switch\]\$true \}'){throw 'A launcher-started server must never open its own window (old launchers did not pass -NoBrowser)'}
+$bat=Get-Content -Raw (Join-Path (Split-Path $PSScriptRoot -Parent) 'git-dashboard.bat')
+if($bat -notmatch 'if /i not "%~1"=="--console" if exist "%~dp0GitDeck.exe"'){throw 'git-dashboard.bat must hand over to GitDeck.exe (no console window)'}
 'PASS: secret scan, protected branches, GitHub slugs, static paths, change filter, AI request, app window'

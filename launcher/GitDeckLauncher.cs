@@ -2,6 +2,8 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -36,7 +38,7 @@ internal static class GitDeckLauncher
                 if (ownsMutex) StartServer(root, server);
                 if (!WaitUntilReady(TimeSpan.FromSeconds(20)))
                 {
-                    MessageBox.Show("Git Deck local service did not start within 20 seconds\n\nRun git-dashboard.bat to inspect the error", "Git Deck", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Git Deck local service did not start within 20 seconds\n\nRun git-dashboard.bat --console to inspect the error", "Git Deck", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
             }
@@ -85,15 +87,57 @@ internal static class GitDeckLauncher
         Process.Start(start);
     }
 
+    private delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);
+    [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr parameter);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int length);
+    [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
+    [DllImport("user32.dll")] private static extern bool IsIconic(IntPtr window);
+    [DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr window, int command);
+    [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr window);
+
+    // An open Git Deck app window: its title is the page title ("Git Deck — …"). Browser tabs
+    // are skipped because their window titles end with the browser name.
+    private static IntPtr FindAppWindow()
+    {
+        IntPtr found = IntPtr.Zero;
+        EnumWindows((window, parameter) =>
+        {
+            if (!IsWindowVisible(window)) return true;
+            var text = new StringBuilder(512);
+            GetWindowText(window, text, text.Capacity);
+            string title = text.ToString();
+            // — = em dash; escaped so the result does not depend on the source code page.
+            if (title.StartsWith("Git Deck —", StringComparison.Ordinal) && title.IndexOf("Microsoft", StringComparison.OrdinalIgnoreCase) < 0 && title.IndexOf("Chrome", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                found = window;
+                return false;
+            }
+            return true;
+        }, IntPtr.Zero);
+        return found;
+    }
+
     private static void OpenAppWindow(string[] args)
     {
         string url = AppUrl;
+        bool specificFolder = false;
         if (args != null && args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
         {
             string requested = args[0].Trim().Trim('"');
             try { requested = Path.GetFullPath(requested); } catch { requested = string.Empty; }
             if (!string.IsNullOrEmpty(requested) && Directory.Exists(requested))
+            {
                 url += "?path=" + Uri.EscapeDataString(requested);
+                specificFolder = true;
+            }
+        }
+        // Like Sourcetree: opening Git Deck again brings the existing window back instead of a second one.
+        IntPtr existing = specificFolder ? IntPtr.Zero : FindAppWindow();
+        if (existing != IntPtr.Zero)
+        {
+            if (IsIconic(existing)) ShowWindow(existing, 9); // SW_RESTORE
+            SetForegroundWindow(existing);
+            return;
         }
         string edge = FindEdge();
         if (edge != null)

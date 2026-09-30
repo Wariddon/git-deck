@@ -17,3 +17,10 @@ const app=fs.readFileSync(path.join(root,'web/app.js'),'utf8');assert.match(app,
 const release=fs.readFileSync(path.join(root,'Build-Release.ps1'),'utf8'),server=fs.readFileSync(path.join(root,'git-dashboard-server.ps1'),'utf8');assert.match(server,/Write-GitDeckStatic \$context \$route/);
 for(const file of ['startup.js','startup.css']){assert(html.includes('/'+file));assert(fs.existsSync(path.join(root,'web',file)));assert(release.includes("'"+path.extname(file)+"'"));}
 console.log('PASS: startup logo, status, completion, slow-load recovery, Escape and no reopening');
+// Splash shows only the logo and a spinner (like Sourcetree); title and status stay for screen readers.
+const splashCss=fs.readFileSync(path.join(root,'web/startup.css'),'utf8');
+assert.match(html,/<div class="startup-spinner" aria-hidden="true"><\/div>/);
+assert.match(html,/<h1 id="startup-title" class="startup-sr">/);assert.match(html,/<p id="startup-status" class="startup-sr" role="status"/);
+assert.match(splashCss,/\.startup-sr \{ position:absolute; width:1px; height:1px;/);
+assert.match(script,/splash\.dataset\.theme=theme==='system'/,'splash uses the saved theme from the first frame');
+console.log('PASS: minimal splash (logo + spinner) in the saved theme');

@@ -19,10 +19,10 @@
 <body>
   <dialog id="startup-splash" aria-labelledby="startup-title" aria-describedby="startup-status">
     <img src="/favicon.svg?v=deck-2" alt="Git Deck logo" width="96" height="96" fetchpriority="high">
-    <h1 id="startup-title">Git Deck</h1>
-    <p class="startup-subtitle">Your local Git workspace</p>
-    <div class="startup-progress" aria-hidden="true"></div>
-    <p id="startup-status" role="status" aria-live="polite">Starting Git Deck…</p>
+    <div class="startup-spinner" aria-hidden="true"></div>
+    <!-- Title and progress text stay for screen readers; the splash shows only the logo and a spinner. -->
+    <h1 id="startup-title" class="startup-sr">Git Deck</h1>
+    <p id="startup-status" class="startup-sr" role="status" aria-live="polite">Starting Git Deck…</p>
     <div id="startup-actions" hidden><p class="startup-subtitle">Taking longer than expected. You can keep waiting or view the workspace for details.</p><button type="button" id="startup-reload">Reload</button><button type="button" id="startup-continue">View workspace</button></div>
   </dialog>
   <script src="/i18n.js"></script>
