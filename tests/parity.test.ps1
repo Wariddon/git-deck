@@ -79,7 +79,20 @@ try{
     Run-Git $repo @('commit','-qam','other')
     $result=Invoke-GitDeckStashRestore $repo 'pop' 'stash@{0}'
     if($result.conflicts -notcontains 'app.txt' -or -not $result.stashKept){throw 'Conflicting pop must report the file and keep the stash'}
-    'PASS: ignore, stop tracking, recycle guard, binary-safe revision, reset file to commit, stash apply/pop onto work in progress'
+    # External diff (VS Code mocked): commit = before vs after that commit; no commit = HEAD vs working copy.
+    Run-Git $repo @('checkout','-f','-q','HEAD');Run-Git $repo @('stash','clear')
+    function Get-Command { param($Name) [pscustomobject]@{ Source = 'C:\fake\code.cmd' } }
+    function Start-Process { param($FilePath,$ArgumentList) $script:launched = @{ file = $FilePath; args = @($ArgumentList) } }
+    $second=(Invoke-GitOrThrow $repo @('rev-parse','HEAD~1')).Trim()
+    [void](Open-GitDeckExternalDiff $repo 'app.txt' $second)
+    if($script:launched.file -ne 'C:\fake\code.cmd' -or $script:launched.args[0] -ne '--diff'){throw 'VS Code must be started with --diff'}
+    $left=$script:launched.args[1].Trim('"');$right=$script:launched.args[2].Trim('"')
+    if((Get-Content -Raw $left) -ne $lines -or (Get-Content -Raw $right) -ne ($lines -replace 'a','A')){throw 'Commit diff must show the file before and after that commit'}
+    Write-Text (Join-Path $repo 'app.txt') "working`n"
+    [void](Open-GitDeckExternalDiff $repo 'app.txt' '')
+    if($script:launched.args[2].Trim('"') -ne (Join-Path $repo 'app.txt')){throw 'Working diff must compare against the working file itself'}
+    Remove-Item Function:\Get-Command,Function:\Start-Process
+    'PASS: ignore, stop tracking, recycle guard, binary-safe revision, reset file to commit, stash apply/pop onto work in progress, external diff'
 } finally {
     if(Test-Path $base){Remove-Item -Recurse -Force $base -ErrorAction SilentlyContinue}
 }

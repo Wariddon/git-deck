@@ -51,3 +51,11 @@ assert.match(parity, /RecycleOption\]::SendToRecycleBin/);
 assert.doesNotMatch(parity, /Remove-Item/);
 assert.match(parity, /if \(Test-GitDeckRunnableFile \$saved\)/);
 console.log('PASS: ignore choices, recent messages, working-file menu, recycle-only removal, runnable files not opened');
+// Push after commit: pre-push checks run first; a blocking finding opens the Push dialog instead of pushing.
+const actions = web('file-actions.js');
+assert.match(actions, /if\(\(checks\.checks\|\|\[\]\)\.some\(check=>check\.level!=='ok'\)\)\{/, 'any warning (not only blocks) stops the automatic push');
+assert.match(actions, /if\(result&&upstream\)\{box\.checked=false;setTimeout\(\(\)=>pushAfterCommit\(upstream\),0\);\}/);
+// Ignore whitespace applies to commit diffs only (staging diffs must stay exact).
+assert.match(actions, /url\.startsWith\('\/api\/repo\/commit-diff\?'\)&&ignoreWs\(\)/);
+assert.doesNotMatch(actions, /working-diff\?[^']*ignoreWhitespace/);
+console.log('PASS: push after commit is gated by pre-push checks; whitespace option only for commit diffs');

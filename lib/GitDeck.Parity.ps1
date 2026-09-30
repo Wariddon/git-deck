@@ -85,6 +85,33 @@ function Restore-GitDeckFileAt([string]$Path, [string]$Commit, [string]$File) {
     return @{ message = "$File now matches $($Commit.Substring(0, [Math]::Min(8, $Commit.Length))). The change is in File Status; discard it to undo."; output = $output }
 }
 
+function Open-GitDeckExternalDiff([string]$Path, [string]$File, [string]$Commit) {
+    # Sourcetree "External Diff": VS Code side by side. Without a commit: HEAD vs the working
+    # file. With a commit: the file before that commit vs after it. Temp copies only.
+    $code = Get-Command code.cmd -ErrorAction SilentlyContinue
+    if (-not $code) { throw 'VS Code (code) was not found in PATH. Install VS Code with "Add to PATH".' }
+    $full = Resolve-GitDeckRepoFile $Path $File
+    $empty = Join-Path ([IO.Path]::GetTempPath()) 'GitDeck\revisions\empty'
+    $blank = { param($name) [void](New-Item -ItemType Directory -Path $empty -Force); $f = Join-Path $empty $name; [IO.File]::WriteAllText($f, ''); $f }
+    $name = [IO.Path]::GetFileName(($File -replace '/', '\'))
+    $exists = { param($ref) (Invoke-GitCapture $Path @('cat-file', '-e', "${ref}:$File")).Code -eq 0 }
+    if ($Commit) {
+        Assert-CommitHash $Path $Commit
+        $hash = (Invoke-GitOrThrow $Path @('rev-parse', $Commit)).Trim()
+        $parent = Invoke-GitCapture $Path @('rev-parse', '--verify', '--quiet', "$hash^")
+        $left = if ($parent.Code -eq 0 -and (& $exists $parent.Output.Trim())) { Save-GitDeckRevision $Path $parent.Output.Trim() $File } else { & $blank ("(none) " + $name) }
+        $right = if (& $exists $hash) { Save-GitDeckRevision $Path $hash $File } else { & $blank ("(deleted) " + $name) }
+        $label = "$($hash.Substring(0, 8))^ <-> $($hash.Substring(0, 8))"
+    } else {
+        $head = Invoke-GitCapture $Path @('rev-parse', '--verify', '--quiet', 'HEAD')
+        $left = if ($head.Code -eq 0 -and (& $exists 'HEAD')) { Save-GitDeckRevision $Path $head.Output.Trim() $File } else { & $blank ("(new) " + $name) }
+        $right = if (Test-Path -LiteralPath $full -PathType Leaf) { $full } else { & $blank ("(deleted) " + $name) }
+        $label = 'HEAD <-> working copy'
+    }
+    Start-Process -FilePath $code.Source -ArgumentList @('--diff', ('"' + $left + '"'), ('"' + $right + '"'))
+    return @{ message = "Opened $File in VS Code ($label)."; output = "$left`r`n$right" }
+}
+
 function Invoke-GitDeckParityAction($Body) {
     $path = [string]$Body.path
     switch ([string]$Body.action) {
@@ -92,6 +119,7 @@ function Invoke-GitDeckParityAction($Body) {
         'untracked-recycle' { return Remove-GitDeckUntracked $path ([string]$Body.file) }
         'untrack-file' { return Stop-GitDeckTracking $path ([string]$Body.file) }
         'file-restore-at' { return Restore-GitDeckFileAt $path ([string]$Body.commit) ([string]$Body.file) }
+        'external-diff' { return Open-GitDeckExternalDiff $path ([string]$Body.file) ([string]$Body.commit) }
         'file-open-revision' {
             $saved = Save-GitDeckRevision $path ([string]$Body.commit) ([string]$Body.file)
             $short = ([string]$Body.commit).Substring(0, [Math]::Min(8, ([string]$Body.commit).Length))

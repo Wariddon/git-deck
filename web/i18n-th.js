@@ -346,4 +346,13 @@ GitDeckI18n.register('th',{
   "{staged} ready to commit · {unstaged} not staged yet":"พร้อม commit {staged} ไฟล์ · ยังไม่ได้ stage {unstaged} ไฟล์",
   "{count} file(s) ready to commit — write a message below":"พร้อม commit {count} ไฟล์ — เขียนข้อความด้านล่างได้เลย",
   "{count} changed file(s) — stage the ones you want to commit":"แก้ไป {count} ไฟล์ — เลือก stage ไฟล์ที่จะ commit",
+  "Compare in VS Code":"เปรียบเทียบใน VS Code",
+  "HEAD ↔ working copy":"HEAD ↔ ไฟล์ในเครื่อง",
+  "Compare with previous in VS Code":"เทียบกับเวอร์ชันก่อนหน้าใน VS Code",
+  "Ignore whitespace":"ไม่สนช่องว่าง",
+  "Hide changes that only add or remove spaces, tabs or line endings":"ซ่อนการเปลี่ยนแปลงที่เป็นแค่ช่องว่าง แท็บ หรือการขึ้นบรรทัด",
+  "Push to {upstream} after commit":"Push ไป {upstream} หลัง commit",
+  "After a successful commit, run the pre-push checks and push. If a check blocks, the Push dialog opens instead.":"หลัง commit สำเร็จ จะตรวจก่อน push แล้ว push ให้ ถ้าการตรวจพบปัญหา จะเปิดหน้าต่าง Push ให้ดูแทน",
+  "Not pushed automatically: a pre-push check needs a look (for example a protected branch or a possible secret). Review it in the Push dialog.":"ยังไม่ได้ push อัตโนมัติ: การตรวจก่อน push มีเรื่องให้ดู (เช่น push เข้า branch หลัก หรืออาจมี secret) ตรวจในหน้าต่าง Push",
+  "Not pushed: pre-push checks failed ({error}).":"ยังไม่ได้ push: ตรวจก่อน push ไม่สำเร็จ ({error})",
 });

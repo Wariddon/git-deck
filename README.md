@@ -134,7 +134,11 @@ Creating a new branch from the current commit always keeps your changes.
 - **History file list right-click:**
   - *Open this version* opens a copy of the file as it was in that commit. Scripts and programs are only shown in Explorer, never run.
   - *Reset file to this commit…* is refused while the file has uncommitted changes.
-- **Commit box:** *Recent…* reuses one of your recent commit messages.
+- **Commit box:**
+  - *Recent…* reuses one of your recent commit messages.
+  - When the branch has an upstream, *Push to origin/x after commit* runs the pre-push checks and pushes. If any check is not green (protected branch, possible secret, large or sensitive file), nothing is pushed and the Push dialog opens instead.
+- **Compare in VS Code** (Sourcetree's External Diff): from File Status it compares HEAD with the working copy; from History it compares the file before and after that commit. It uses temporary copies and needs `code` on PATH.
+- **Ignore whitespace** in commit diffs (History) hides changes that only touch spaces, tabs or line endings. Staging diffs stay exact so hunks still apply.
 - **Stashes:**
   - *Keep staged changes* adds `--keep-index` when saving.
   - Apply and Pop work on top of uncommitted work. Git refuses and changes nothing if a file would be overwritten; a content conflict opens File Status and keeps the stash.

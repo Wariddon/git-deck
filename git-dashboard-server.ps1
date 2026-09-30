@@ -559,7 +559,7 @@ function Get-CommitDetails([string]$Path,[string]$Hash) {
     return [ordered]@{fullHash=$parts[0];hash=$parts[1];parents=@($parts[2] -split ' ' | Where-Object { $_ });author=$parts[3];date=$parts[4];subject=$parts[5];body=$body;files=$files.ToArray()}
 }
 
-function Get-CommitDiff([string]$Path,[string]$Hash,[string]$File) {
+function Get-CommitDiff([string]$Path,[string]$Hash,[string]$File,[bool]$IgnoreWhitespace=$false) {
     Assert-Registered $Path; Assert-CommitHash $Path $Hash
     if(-not $File){throw 'File path is required.'}
     $details=Get-CommitDetails $Path $Hash
@@ -567,7 +567,8 @@ function Get-CommitDiff([string]$Path,[string]$Hash,[string]$File) {
     if(-not ($allowed | Where-Object { [string]::Equals($_,$File,[StringComparison]::Ordinal) })){throw 'File is not part of this commit.'}
     $selected=@($details.files | Where-Object { $_.path -ceq $File -or $_.oldPath -ceq $File })[0]
     $filePaths=@($selected.path);if($selected.oldPath){$filePaths+=@($selected.oldPath)}
-    $output=Invoke-GitOrThrow $Path (@('diff-tree','--root','--first-parent','-m','--no-commit-id','-r','-p','--find-renames','--unified=4',$Hash,'--')+$filePaths)
+    $whitespace=if($IgnoreWhitespace){@('-w')}else{@()}
+    $output=Invoke-GitOrThrow $Path (@('diff-tree','--root','--first-parent','-m','--no-commit-id','-r','-p','--find-renames','--unified=4')+$whitespace+@($Hash,'--')+$filePaths)
     $truncated=$false
     if($output.Length -gt 500000){$output=$output.Substring(0,500000)+"`r`n… diff truncated at 500 KB …";$truncated=$true}
     return [ordered]@{diff=$output;truncated=$truncated}
@@ -1573,7 +1574,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/reflog' { $repoPath=$request.QueryString['path'];Write-Json $context @{reflog=@(Get-ReflogEntries $repoPath)} }
         '/api/repo/commit' { $repoPath=$request.QueryString['path'];$commit=$request.QueryString['commit'];if(Test-GitDeckFullHash $commit){Assert-Registered $repoPath;$details=Get-GitDeckImmutable ("commit|$repoPath|$commit") {Get-CommitDetails $repoPath $commit}}else{$details=Get-CommitDetails $repoPath $commit};Write-Json $context @{commit=$details} }
         '/api/repo/commit-content' { Write-Json $context (Get-CommitFileContent $request.QueryString['path'] $request.QueryString['commit'] $request.QueryString['file']) }
-        '/api/repo/commit-diff' { $repoPath=$request.QueryString['path'];$commit=$request.QueryString['commit'];$file=$request.QueryString['file'];if(Test-GitDeckFullHash $commit){Assert-Registered $repoPath;$diffResult=Get-GitDeckImmutable ("diff|$repoPath|$commit|$file") {Get-CommitDiff $repoPath $commit $file}}else{$diffResult=Get-CommitDiff $repoPath $commit $file};Write-Json $context @{result=$diffResult} }
+        '/api/repo/commit-diff' { $repoPath=$request.QueryString['path'];$commit=$request.QueryString['commit'];$file=$request.QueryString['file'];$ws=($request.QueryString['ignoreWhitespace'] -eq '1');if(Test-GitDeckFullHash $commit){Assert-Registered $repoPath;$diffResult=Get-GitDeckImmutable ("diff|$repoPath|$commit|$file|ws=$ws") {Get-CommitDiff $repoPath $commit $file $ws}}else{$diffResult=Get-CommitDiff $repoPath $commit $file $ws};Write-Json $context @{result=$diffResult} }
         '/api/repo/working-diff' { $repoPath=$request.QueryString['path'];$file=$request.QueryString['file'];$staged=($request.QueryString['staged'] -eq 'true');Write-Json $context @{result=(Get-WorkingDiff $repoPath $file $staged)} }
         '/api/repo/stash-diff' { $repoPath=$request.QueryString['path'];$stash=$request.QueryString['stash'];Write-Json $context @{result=(Get-StashDiff $repoPath $stash)} }
         '/api/repo/file-history' { $repoPath=$request.QueryString['path'];$file=$request.QueryString['file'];Write-Json $context @{history=@(Get-FileHistory $repoPath $file)} }
