@@ -148,12 +148,12 @@ Creating a new branch from the current commit always keeps your changes.
 - **Push rejected because the remote has newer commits:**
   - Git Deck offers *Merge and push*. It merges the remote branch into yours and pushes again. It uses rebase instead only when that is your pull strategy, and it stashes and restores uncommitted work.
   - When the push review already shows the branch is behind, it offers *Merge remote changes, then push*.
-  - If both sides changed the same lines, the **Conflicts** page opens. Resolve the files, commit the merge, then push.
+  - If both sides changed the same lines, the **Conflicts** page opens. Resolve the files and commit the merge (Continue); Git Deck then asks *Push now?* so the waiting push is not forgotten. Abort drops it.
   - Force push never triggers the offer, and a second rejection does not loop.
 
 ## When something fails
 
-Every error card says, in plain words, what happened and what to do next. It also has buttons that go there. Git's exact message stays under *Details*. Some examples:
+Every error card says, in plain words, what happened and what to do next. It also has buttons that go there. Git's exact message stays under *Details*. The card also lists the files involved (the first three, then "and N more"). Some examples:
 
 | Problem | Buttons |
 | --- | --- |

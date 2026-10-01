@@ -76,3 +76,12 @@ for (const [message, expected] of [
   ['Remote branch was not found. Fetch first.', 'missing-ref'],
   ['Cannot push from detached HEAD.', 'detached'],
 ]) assert.equal(id(message), expected, message);
+
+// The card names the files involved.
+const files = (message) => [...context.GitDeckErrorGuide.affectedFiles(message)];
+assert.deepEqual(files('CONFLICT (content): Merge conflict in app.txt\nCONFLICT (content): Merge conflict in src/a.js\nAutomatic merge failed'), ['app.txt', 'src/a.js']);
+assert.deepEqual(files('error: Your local changes to the following files would be overwritten by checkout:\n\tapp.txt\n\tsrc/b.js\nPlease commit'), ['app.txt', 'src/b.js']);
+assert.deepEqual(files('Pull would overwrite 1 untracked file(s) with incoming files. Move, rename or commit them first:\n• notes.md'), ['notes.md']);
+assert.deepEqual(files("error: unable to unlink old 'app.txt': Permission denied"), ['app.txt']);
+assert.deepEqual(files('fatal: Not possible to fast-forward, aborting.'), []);
+console.log('PASS: error cards name the files involved');

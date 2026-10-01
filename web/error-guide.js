@@ -108,6 +108,15 @@
 
   function guideFor(message){return guides.find(guide=>guide.test.test(String(message||'')))||null;}
 
+  // File names Git mentions, so the card can say which files are involved without opening Details.
+  function affectedFiles(message){
+    const text=String(message||'');const found=[];
+    const patterns=[/(?:Merge conflict in|CONFLICT \([^)]*\):[^\n]*? in) ([^\n]+?)\s*$/gm,/^(?:\t|\s*•\s)\s*([^\n]+?)\s*$/gm,
+      /unable to (?:unlink(?: old)?|create file) '?([^':\n]+)'?/g,/pathspec '([^']+)'/g,/\bFile (\S+) is [\d.]+ ?MB/g,/^(\S+) has uncommitted changes/gm];
+    for(const pattern of patterns)for(const match of text.matchAll(pattern)){const file=match[1].trim();if(file&&!found.includes(file))found.push(file);}
+    return found;
+  }
+
   function decorate(card,message){
     const guide=guideFor(message)||fallback;const ctx={message:String(message||''),last:lastAction()};
     card.dataset.guide=guide.id;
@@ -117,6 +126,13 @@
     const showNext=guide!==fallback||/^(fatal|error|hint|remote|warning):|\[rejected\]/im.test(ctx.message);
     const next=el('p','feedback-next');next.append(el('b','',t('What to do: ')),document.createTextNode(guide.next()));
     if(showNext)(first||title)?.after(next);
+    let files=affectedFiles(ctx.message);
+    if(!files.length&&['conflicts','unfinished'].includes(guide.id))files=[...(state.workspace?.operation?.conflicts||[])];
+    if(files.length){
+      const list=el('p','feedback-files');
+      list.append(el('b','',t('Files: ')),document.createTextNode(files.slice(0,3).join(', ')+(files.length>3?' '+t('and {count} more',{count:files.length-3}):'')));
+      list.title=files.join('\n');(first||title)?.after(list);
+    }
     const actions=card.querySelector('.feedback-actions');if(!actions)return;
     const buttons=(guide.actions(ctx)||[]).filter(Boolean);
     // The app's own Retry is replaced when the guide offers one.
@@ -140,5 +156,5 @@
     classifyPushError=function(value=''){const info=baseClassify(value);const guide=guideFor(info.technical);if(guide){info.title=guide.title();info.detail=[guide.why?.(),guide.next()].filter(Boolean).join(' ');}return info;};
   }
 
-  window.GitDeckErrorGuide={guides,guideFor,fallback};
+  window.GitDeckErrorGuide={guides,guideFor,fallback,affectedFiles};
 })();

@@ -95,6 +95,29 @@ function setup({ pushFails = 1, pullResult = { message: 'ok', conflicts: [] }, o
     await new Promise((r) => setTimeout(r, 0));
     assert.ok(calls.some((c) => c[0] === 'tab' && c[1] === 'conflicts'), 'Conflicts page opens');
     assert.equal(calls.filter((c) => c[0] === 'push').length, 1, 'No second push while conflicted');
+    // Conflicts resolved and the merge committed: the waiting push is offered.
+    context.state.workspace.operation = null;
+    await context.runWorkspaceAction('operation-continue', {}, '');
+    assert.equal(dialogs.length, 2, 'Merge finished -> Push now');
+    const pushNow = dialogs[1].actions.buttons.find((b) => b.cls === 'primary');
+    assert.equal(pushNow.textContent, 'Push now');
+    pushNow.onclick();
+    await new Promise((r) => setTimeout(r, 0));
+    assert.equal(calls.filter((c) => c[0] === 'push').length, 2, 'Pushed after the merge');
+    await context.runWorkspaceAction('operation-continue', {}, '');
+    assert.equal(dialogs.length, 2, 'Offered once');
+  }
+
+  // Aborting the merge drops the waiting push.
+  {
+    const { context, dialogs } = setup({ pullResult: null, operation: { active: true, type: 'merge' } });
+    await context.runWorkspaceAction('push', {}, '');
+    dialogs[0].actions.buttons.find((b) => b.cls === 'primary').onclick();
+    await new Promise((r) => setTimeout(r, 0));
+    context.state.workspace.operation = null;
+    await context.runWorkspaceAction('operation-abort', {}, '');
+    await context.runWorkspaceAction('commit', {}, '');
+    assert.equal(dialogs.length, 1, 'No push offer after an abort');
   }
 
   // A second rejection after merging does not loop.

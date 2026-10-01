@@ -34,13 +34,30 @@
       // app.js could not reload while it was still busy, so read the repository state again now.
       if(failure){try{await loadWorkspace();}catch{}}
       if(failure&&current()&&(state.workspace?.operation?.active||/conflict/i.test(failure.message))){
+        pending={path:repo.path,branch:state.workspace?.branch,action,payload};
         selectWorkspaceTab('conflicts');
-        showActionFeedback(t('The remote changes conflict with yours. Resolve each file, commit the merge, then push.'),{error:true,context:t('{repo} · merge',{repo:repo.name})});
+        showActionFeedback(t('The remote changes conflict with yours. Resolve each file and commit the merge; Git Deck then offers to push.'),{error:true,context:t('{repo} · merge',{repo:repo.name})});
       }
       return null;
     }
-    if(pulled.conflicts?.length)return null; // Local changes clashed on restore; File Status is already open.
+    // The merge itself is done even when restoring uncommitted work clashed (File Status shows that), so push.
     return pushAgain(action,payload);
+  }
+
+  // After conflicts: once the merge is committed, offer the push that was waiting (like Sourcetree's Push button lighting up).
+  let pending=null;
+  function askPush(){
+    const waiting=pending;pending=null;
+    const ui=releaseDialog(t('Merge finished'));ui.dialog.classList.add('push-merge-dialog');
+    ui.body.append(el('p','',t('The merge is committed. Push {branch} now so the remote gets your work?',{branch:waiting.branch||''})));
+    const go=el('button','primary',t('Push now'));go.type='button';
+    go.onclick=()=>{ui.dialog.close();pushAgain(waiting.action,waiting.payload);};
+    ui.actions.querySelector('button').textContent=t('Later');ui.actions.append(go);go.focus();
+  }
+  function afterOperation(action,result){
+    if(!pending||!result||state.workspaceRepo?.path!==pending.path)return;
+    if(action==='operation-abort'){pending=null;return;}
+    if(['operation-continue','commit'].includes(action)&&!state.workspace?.operation?.active&&state.workspace?.branch===pending.branch)askPush();
   }
 
   let retrying=false;
@@ -60,6 +77,7 @@
 
   const baseRun=runWorkspaceAction;
   runWorkspaceAction=async function(action,payload={},confirmation='',options={}){
+    if(['operation-continue','operation-abort','commit'].includes(action)){const result=await baseRun(action,payload,confirmation,options);afterOperation(action,result);return result;}
     if(!['push','push-selection'].includes(action)||payload.forceWithLease||retrying)return baseRun(action,payload,confirmation,options);
     let failure=null;
     const result=await baseRun(action,payload,confirmation,{...options,onError:error=>{failure=error;}});
