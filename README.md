@@ -151,6 +151,23 @@ Creating a new branch from the current commit always keeps your changes.
   - If both sides changed the same lines, the **Conflicts** page opens. Resolve the files, commit the merge, then push.
   - Force push never triggers the offer, and a second rejection does not loop.
 
+## When something fails
+
+Every error card says, in plain words, what happened and what to do next. It also has buttons that go there. Git's exact message stays under *Details*. Some examples:
+
+| Problem | Buttons |
+| --- | --- |
+| Conflicts, or an unfinished merge or rebase | Open Conflicts |
+| Uncommitted or new files are in the way | Stash my changes and try again · Open File Status |
+| Pull: both sides have new commits (fast-forward impossible) | Pull with merge · Pull with rebase |
+| Push: the remote has newer commits | Merge and push |
+| Branch not on the remote yet | Publish branch |
+| Sign-in failed, remote not found, network down | Try again · Open Remotes |
+| No name or email, protected branch, detached HEAD, nothing to commit | Settings, Branches or File Status |
+| Lock file, file open in another program, folder owned by another user, path too long | Try again · Copy fix command |
+
+Errors Git Deck does not recognise still get *Try again* and *Check repository health*. The Push dialog's error box uses the same wording.
+
 ## Pre-push checks
 
 The Push dialog scans the commits that the remote does not have yet: added lines that look like private keys or API tokens (AWS, GitHub, GitLab, Slack, Anthropic, Google and generic `password = "…"` assignments), files of 5 MB or more, sensitive file names such as `.env` or `*.pem`, and direct or force pushes to `main`, `master`, `develop`, `release/*` and similar branches. Blocking findings ask for confirmation before pushing. Previews are masked, and the scan runs locally only. It is a safety net, not a replacement for server-side secret scanning.

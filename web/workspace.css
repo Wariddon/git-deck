@@ -1781,3 +1781,7 @@ body.workbench-mode .improved-diff .diff-viewer-toolbar { gap: 3px; padding: 3px
 body.workbench-mode .improved-diff .diff-viewer-toolbar>strong { flex: 1 1 100%; }
 body.workbench-mode .improved-diff .diff-navigation { padding: 2px 4px; gap: 3px; }
 body.workbench-mode .diff-file-note { padding: 3px 6px; line-height: 1.3; }
+/* Error cards: what happened, then what to do next (error-guide.js). */
+.action-feedback .feedback-next{margin:6px 0 2px}.action-feedback .feedback-next b{font-weight:600}
+.action-feedback .feedback-actions{flex-wrap:wrap}
+.action-feedback .feedback-actions button.primary{background:var(--green);border-color:var(--green);color:var(--accent-contrast,#fff);font-weight:600}
