@@ -85,6 +85,14 @@ $('push-form').addEventListener('submit',async event=>{
     if($('push-force').checked)ui.body.append(el('p','','Warning: force with lease may rewrite history'));
     const confirm=el('button','primary','Confirm push');confirm.type='button';confirm.disabled=(!branches.length&&!$('push-tags').checked)||(!$('push-force').checked&&results.some(r=>r.behind>0));
     if(confirm.disabled)ui.body.append(el('p','push-review-warning','Cannot push yet. Check selected branches and commits behind the remote.'));
+    // Behind on the current branch only: merge the remote commits first, then push (like Sourcetree).
+    const behindHere=results.filter(r=>r.behind>0);
+    if(confirm.disabled&&branches.length&&!$('push-force').checked&&behindHere.length&&behindHere.every(r=>r.local===state.workspace?.branch)&&window.GitDeckPushMerge){
+      ui.body.querySelector('.push-review-warning:last-of-type').textContent=t('{remote} has {count} commit(s) you do not have yet. Merge them into your branch first, then push.',{remote:behindHere[0].remote+'/'+behindHere[0].target,count:behindHere[0].behind});
+      const merge=el('button','primary',t('Merge remote changes, then push'));merge.type='button';
+      merge.onclick=()=>{ui.close();GitDeckPushMerge.mergeThenPush('push-selection',{remote,branches,pushTags:$('push-tags').checked,forceWithLease:false},{action:'pull-ref',payload:{remote,branch:behindHere[0].target}});};
+      confirm.hidden=true;ui.actions.append(merge);
+    }
     confirm.title=confirm.disabled?'Review selected branches and incoming commits before pushing.':'';
     const context=el('small','action-target',actionContext(repo,state.workspace,{remote,branches}));ui.actions.append(context);
     confirm.onclick=()=>{if(signature!==pushSignature()){ui.body.append(el('p','','Options changed. Go back and review again.'));return;}ui.close();approvedPush=signature;$('push-form').requestSubmit();};ui.actions.append(confirm);
