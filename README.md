@@ -145,6 +145,11 @@ Creating a new branch from the current commit always keeps your changes.
   - *Keep staged changes* adds `--keep-index` when saving.
   - Apply and Pop work on top of uncommitted work. Git refuses and changes nothing if a file would be overwritten; a content conflict opens File Status and keeps the stash.
 - **Conflicts from a stash restore** (no merge or rebase in progress) can be resolved in the Conflict Center and with mine/theirs, like merge conflicts.
+- **Push rejected because the remote has newer commits:**
+  - Git Deck offers *Merge and push*. It merges the remote branch into yours and pushes again. It uses rebase instead only when that is your pull strategy, and it stashes and restores uncommitted work.
+  - When the push review already shows the branch is behind, it offers *Merge remote changes, then push*.
+  - If both sides changed the same lines, the **Conflicts** page opens. Resolve the files, commit the merge, then push.
+  - Force push never triggers the offer, and a second rejection does not loop.
 
 ## Pre-push checks
 
