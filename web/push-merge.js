@@ -75,8 +75,26 @@
     ui.actions.querySelector('button').textContent=t('Cancel');ui.actions.append(go);go.focus();
   }
 
+  // Pull with fast-forward only, but both sides have commits: ask how to combine them instead of failing.
+  function choosePull(payload,confirmation,options){
+    const sync=state.workspace?.sync||{};
+    return new Promise(resolve=>{
+      const ui=releaseDialog(t('Both sides have new commits'));ui.dialog.classList.add('push-merge-dialog');
+      ui.body.append(
+        el('p','',t('You have {ahead} commit(s) that {remote} does not, and it has {behind} that you do not.',{ahead:sync.ahead,behind:sync.behind,remote:sync.upstream||t('the remote')})),
+        el('p','',t('A fast-forward pull cannot combine them. Merge keeps both histories (like Sourcetree); rebase replays your commits on top.')));
+      let chosen=null;
+      const pick=(label,strategy,primary)=>{const button=el('button',primary?'primary':'',label);button.type='button';button.onclick=()=>{chosen=strategy;ui.dialog.close();};ui.actions.append(button);return button;};
+      ui.actions.querySelector('button').textContent=t('Cancel');
+      pick(t('Pull with rebase'),'rebase',false);const merge=pick(t('Pull with merge'),'merge',true);merge.focus();
+      ui.dialog.addEventListener('close',()=>resolve(chosen?baseRun('pull',{...payload,strategy:chosen},'',options):null),{once:true});
+    });
+  }
+
   const baseRun=runWorkspaceAction;
   runWorkspaceAction=async function(action,payload={},confirmation='',options={}){
+    const sync=state.workspace?.sync;
+    if(action==='pull'&&(payload.strategy||'ff-only')==='ff-only'&&sync?.ahead>0&&sync?.behind>0&&!state.busy)return choosePull(payload,confirmation,options);
     if(['operation-continue','operation-abort','commit'].includes(action)){const result=await baseRun(action,payload,confirmation,options);afterOperation(action,result);return result;}
     if(!['push','push-selection'].includes(action)||payload.forceWithLease||retrying)return baseRun(action,payload,confirmation,options);
     let failure=null;
@@ -84,7 +102,8 @@
     if(result||!failure)return result;
     const source=behindRejection(failure.message)?pullSource(action,payload,failure.message):null;
     const reportFailure=()=>{if(typeof options.onError==='function')options.onError(failure);};
-    if(source){offer(action,payload,source,reportFailure);return null;}
+    // The offer replaces the error card, so the same advice does not appear twice.
+    if(source){document.getElementById('action-error-feedback')?.remove();offer(action,payload,source,reportFailure);return null;}
     reportFailure();
     return null;
   };

@@ -166,6 +166,8 @@ Every error card says, in plain words, what happened and what to do next. It als
 | No name or email, protected branch, detached HEAD, nothing to commit | Settings, Branches or File Status |
 | Lock file, file open in another program, folder owned by another user, path too long | Try again · Copy fix command |
 
+Pull with *fast-forward only* on a branch that has its own commits and incoming ones no longer fails: Git Deck asks *Pull with merge* or *Pull with rebase* first. The card keeps only the repository name visible; the full repository and folder block is under *Details*.
+
 Errors Git Deck does not recognise still get *Try again* and *Check repository health*. The Push dialog's error box uses the same wording.
 
 ## Pre-push checks

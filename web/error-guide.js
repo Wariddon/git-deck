@@ -20,7 +20,7 @@
     if(!saved)return;
     if(ctx.last&&await runWorkspaceAction(ctx.last.action,ctx.last.payload,''))showActionFeedback(t('Done. Your changes are kept in Stashes; apply them when you are ready.'));
   }});
-  const pullWith=strategy=>({label:t(strategy==='merge'?'Pull with merge':'Pull with rebase'),run:()=>runWorkspaceAction('pull',{strategy},'')});
+  const pullWith=strategy=>({label:strategy==='merge'?t('Pull with merge'):t('Pull with rebase'),run:()=>runWorkspaceAction('pull',{strategy},'')});
   const copy=(label,text)=>({label,run:async()=>{try{await navigator.clipboard.writeText(text);showActionFeedback(t('Copied. Paste it into a terminal and press Enter.'));}catch{setOutput?.(text,{expand:true});}}});
   const repoPath=()=>state.workspaceRepo?.path||'';
 
@@ -133,6 +133,9 @@
       list.append(el('b','',t('Files: ')),document.createTextNode(files.slice(0,3).join(', ')+(files.length>3?' '+t('and {count} more',{count:files.length-3}):'')));
       list.title=files.join('\n');(first||title)?.after(list);
     }
+    // Keep the card short: the repository/folder block moves under Details, its first line stays.
+    const where=card.querySelector(':scope > .feedback-context');const details=card.querySelector(':scope > details');
+    if(where&&details&&where.textContent.includes('\n')){const full=el('pre','feedback-context-full',where.textContent);details.querySelector('summary')?.after(full);where.textContent=where.textContent.split('\n')[0];}
     const actions=card.querySelector('.feedback-actions');if(!actions)return;
     const buttons=(guide.actions(ctx)||[]).filter(Boolean);
     // The app's own Retry is replaced when the guide offers one.

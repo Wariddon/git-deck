@@ -466,4 +466,9 @@ GitDeckI18n.register('th',{
   "Later":"ไว้ทีหลัง",
   "Files: ":"ไฟล์: ",
   "and {count} more":"และอีก {count} ไฟล์",
+  "Both sides have new commits":"ทั้งสองฝั่งมี commit ใหม่",
+  "You have {ahead} commit(s) that {remote} does not, and it has {behind} that you do not.":"คุณมี {ahead} commit ที่ {remote} ยังไม่มี และฝั่งนั้นมี {behind} commit ที่คุณยังไม่มี",
+  "A fast-forward pull cannot combine them. Merge keeps both histories (like Sourcetree); rebase replays your commits on top.":"pull แบบ fast-forward รวมสองฝั่งไม่ได้ เลือก Merge เพื่อเก็บประวัติทั้งสองฝั่ง (แบบ Sourcetree) หรือ Rebase เพื่อเอา commit ของคุณไปต่อท้าย",
+  "Pull with rebase":"Pull แบบ rebase",
+  "Pull with merge":"Pull แบบ merge",
 });

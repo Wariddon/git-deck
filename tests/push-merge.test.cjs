@@ -16,6 +16,7 @@ function setup({ pushFails = 1, pullResult = { message: 'ok', conflicts: [] }, o
     selectWorkspaceTab: (tab) => calls.push(['tab', tab]),
     showActionFeedback: (text) => calls.push(['feedback', text]),
     hidePushDialog: () => calls.push(['hidePush']),
+    document: { getElementById: () => null },
     loadWorkspace: async () => { context.state.workspace.operation = operation; },
     releaseDialog: () => {
       const listeners = {};
@@ -134,6 +135,27 @@ function setup({ pushFails = 1, pullResult = { message: 'ok', conflicts: [] }, o
     const { context, dialogs } = setup();
     await context.runWorkspaceAction('push-selection', { forceWithLease: true, branches: [] }, '');
     assert.equal(dialogs.length, 0);
+  }
+
+  // Fast-forward-only pull on a diverged branch asks merge or rebase instead of failing.
+  {
+    const { context, calls, dialogs } = setup();
+    context.state.workspace.sync = { upstream: 'origin/main', ahead: 1, behind: 2 };
+    const pending = context.runWorkspaceAction('pull', { strategy: 'ff-only' }, 'Pull?');
+    assert.equal(dialogs.length, 1, 'Choice instead of an error');
+    assert.equal(calls.length, 0, 'Nothing runs before choosing');
+    dialogs[0].actions.buttons.find((b) => b.cls === 'primary').onclick();
+    await pending;
+    assert.equal(calls[0][0], 'pull');
+    assert.equal(calls[0][1].strategy, 'merge');
+    // Cancel runs nothing; a clean fast-forward does not ask.
+    const cancelled = context.runWorkspaceAction('pull', { strategy: 'ff-only' }, '');
+    dialogs[1].dialog.close();
+    assert.equal(await cancelled, null);
+    context.state.workspace.sync = { upstream: 'origin/main', ahead: 0, behind: 2 };
+    await context.runWorkspaceAction('pull', { strategy: 'ff-only' }, '');
+    assert.equal(dialogs.length, 2);
+    assert.equal(calls.filter((c) => c[0] === 'pull').length, 2);
   }
 
   const html = web('index.html');
