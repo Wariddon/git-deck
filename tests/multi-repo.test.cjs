@@ -24,6 +24,20 @@ assert.deepEqual(plain(m.pendingActions({ ...clean, ahead: 2 })), ['push']);
 assert.deepEqual(plain(m.pendingActions({ ...clean, operation: 'merge', conflicts: 1, ahead: 1, behind: 1 })), ['resolve'], 'No push or pull during a merge');
 assert.deepEqual(plain(m.pendingActions(null)), []);
 
+// Pending table numbers and filter chips.
+const counts = m.pendingCounts({ ...busy, unpushedBranches: [{ branch: 'a', commits: 3 }, { branch: 'b', commits: 2 }] });
+assert.deepEqual([counts.changes, counts.push, counts.pull, counts.stashes, counts.localOnly, counts.localOnlyCommits, counts.merged, counts.unpublished], [3, 0, 4, 1, 2, 5, 1, 1]);
+assert.equal(m.pendingCounts(null).score, 0);
+assert.ok(m.pendingCounts({ ...clean, operation: 'merge', conflicts: 1 }).score > m.pendingCounts(busy).score, 'Unfinished merges sort first');
+const item = (p, error = '') => ({ pending: p, counts: m.pendingCounts(p), error });
+assert.equal(m.pendingMatches(item(clean), 'any'), false, 'A tidy repository is not pending');
+assert.equal(m.pendingMatches(item(clean), 'all'), true);
+assert.equal(m.pendingMatches(item(busy), 'pull'), true);
+assert.equal(m.pendingMatches(item(busy), 'push'), false);
+assert.equal(m.pendingMatches(item(busy), 'unpublished'), true);
+assert.equal(m.pendingMatches(item(null, 'boom'), 'problems'), true, 'Errors show under Conflicts / errors');
+assert.equal(m.pendingMatches(item(null, 'boom'), 'any'), true);
+
 const found = (o) => ({ local: false, remote: '', current: 'main', dirty: false, ...o });
 assert.equal(m.switchPlan('feature/a', found({ current: 'feature/a' })).kind, 'none');
 assert.deepEqual(plain(m.switchPlan('feature/a', found({ local: true })).payload), { branch: 'feature/a', localChanges: 'stash' });

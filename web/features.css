@@ -227,3 +227,40 @@ body .backdrop:not(#workspace-backdrop) .multi-repo-link{color:var(--green,#0969
 #repo-list .repo .repo-meta{flex:0 1 auto;min-width:0;max-width:55%}
 #repo-list .repo .repo-meta>i{flex:0 0 auto}
 #repo-list .repo .repo-meta>b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Pending work table (web/multi-repo.js). */
+.pending-search{flex:1 1 200px}
+.pending-filters{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+.pending-filter{display:inline-flex;align-items:center;gap:6px;padding:3px 10px !important;border-radius:999px !important;font-size:12px;min-height:0 !important}
+.pending-filter b{font-weight:600;opacity:.75}
+body .backdrop:not(#workspace-backdrop) .pending-filter.active{background:var(--green,#0969da) !important;color:var(--accent-contrast,#fff) !important;border-color:transparent !important}
+.pending-more{position:relative}
+.pending-more>summary{list-style:none;cursor:pointer;padding:5px 10px;border:1px solid var(--line,rgba(127,127,127,.3));border-radius:6px;font-size:12px}
+.pending-more>summary::-webkit-details-marker{display:none}
+.pending-more-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:5;display:grid;gap:4px;min-width:190px;padding:6px;border:1px solid var(--line,rgba(127,127,127,.3));border-radius:8px;background:var(--surface,#fff);box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.pending-more-menu button{text-align:left}
+.pending-table td,.pending-table th{white-space:nowrap}
+.pending-table th:nth-child(n+3):not(:last-child){text-align:center}
+.pending-num{text-align:center;font-variant-numeric:tabular-nums}
+.pending-zero{color:var(--muted,#8b949e);opacity:.6}
+.pending-count{display:inline-block;min-width:26px;padding:1px 7px;border-radius:999px;font-weight:600;font-size:12px;background:rgba(127,127,127,.14)}
+button.pending-count{border:0 !important;cursor:pointer;min-height:0 !important;text-decoration:underline dotted}
+.pending-count.tone-warn{background:rgba(217,119,6,.16);color:#92400e}
+.pending-count.tone-info{background:rgba(37,99,235,.13);color:#1d4ed8}
+.pending-count.tone-muted{color:var(--muted,#6b7280)}
+body.theme-dark .pending-count.tone-warn{color:#f0b46a}
+body.theme-dark .pending-count.tone-info{color:#8ab4f8}
+.pending-repo{max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.pending-repo small,.pending-branch small{display:block;font-size:11px}
+.pending-error{color:#b42318}
+body.theme-dark .pending-error{color:#ff9b8f}
+.pending-branch{max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.pending-tag{color:#92400e}
+body.theme-dark .pending-tag{color:#f0b46a}
+.pending-actions .multi-repo-actions{flex-wrap:nowrap}
+.pending-detail td{background:rgba(127,127,127,.06);white-space:normal}
+.pending-detail-box{display:grid;gap:6px;padding:4px 2px}
+.pending-detail-list{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;max-height:160px;overflow:auto}
+.pending-detail-box button{justify-self:start}
+[data-operations-panel="pending"] .operations-toolbar>select:first-child{flex:0 1 220px;max-width:260px}
+.multi-repo-table.pending-table td.pending-num,.multi-repo-table.pending-table th:nth-child(n+3):not(:last-child){text-align:center}
