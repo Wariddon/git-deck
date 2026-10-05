@@ -826,7 +826,24 @@ function Write-JsonFile([string]$Path,$Data) {
 
 function Get-ActionJournal {
     if (-not (Test-Path -LiteralPath $script:ActionJournal -PathType Leaf)) { return @() }
-    try { return @(Get-Content -LiteralPath $script:ActionJournal -Raw -ErrorAction Stop | ConvertFrom-Json) }
+    try {
+        # Windows PowerShell 5.1 passes a JSON array down the pipeline as ONE object, so entries were
+        # never enumerated (Undo never found the last action) and saving nested them as {"value":[...]}.
+        # Flatten both shapes into plain entries.
+        $parsed = Get-Content -LiteralPath $script:ActionJournal -Raw -ErrorAction Stop | ConvertFrom-Json
+        $flat = New-Object System.Collections.ArrayList
+        $add = {
+            param($node)
+            foreach ($item in @($node)) {
+                if ($null -eq $item) { continue }
+                if ($item -is [array]) { & $add $item }
+                elseif ($item.PSObject.Properties['value'] -and -not $item.PSObject.Properties['id']) { & $add $item.value }
+                else { [void]$flat.Add($item) }
+            }
+        }
+        & $add $parsed
+        return $flat.ToArray()
+    }
     catch { return @() }
 }
 

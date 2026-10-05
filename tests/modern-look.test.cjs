@@ -196,3 +196,7 @@ assert.match(modernCss, /--modern-mono: Consolas,/);
 assert.match(modernCss, /\.commit-row :is\(\.commit-author, time, \.commit-hash\) \{ font-size: var\(--ui-text-size\) !important; color: var\(--text-secondary\) !important;/);
 assert.match(web('appearance.js'), /const sizes=\[11,12,13,14,16\];const defaultSize=13;/);
 console.log('PASS: Sourcetree-like typography (13px Segoe UI, Consolas diffs)');
+// Undo sits on the action bar and follows the server's undo preview.
+assert.match(modernJs, /undo:actionButton\('undo','undo',t\('Undo'\)/);
+assert.match(web('workspace-extras.js'), /document\.dispatchEvent\(new CustomEvent\('gitdeck:undo'/);
+console.log('PASS: Undo on the action bar');

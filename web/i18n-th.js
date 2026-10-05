@@ -554,4 +554,6 @@ GitDeckI18n.register('th',{
   "Every {count} minutes":"ทุก {count} นาที",
   "{count} new commit(s) on {upstream}":"มี commit ใหม่ {count} ตัวบน {upstream}",
   "Someone pushed to this branch. Pull now so your next push goes through.":"มีคน push เข้า branch นี้ pull ตอนนี้เลย จะได้ push ครั้งต่อไปผ่าน",
+  "Undo":"Undo",
+  "Nothing to undo yet":"ยังไม่มีอะไรให้ย้อน",
 });

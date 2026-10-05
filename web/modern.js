@@ -197,6 +197,7 @@
     const repoRun=(action)=>()=>{if(state.workspaceRepo&&typeof run==='function')run(action,state.workspaceRepo);};
     actionButtons={
       commit:actionButton('commit','commit',t('Commit'),t('Stage files and write a commit (Ctrl+1)'),()=>runAction('commit')),
+      undo:actionButton('undo','undo',t('Undo'),t('Nothing to undo yet'),()=>typeof undoLastAction==='function'&&undoLastAction()),
       pull:actionButton('pull','pull',t('Pull'),t('Bring remote commits into this branch'),()=>legacyClick('pull')),
       push:actionButton('push','push',t('Push'),t('Publish your commits'),()=>legacyClick('push')),
       fetch:actionButton('fetch','fetch',t('Fetch'),t('Download new commits without changing your files'),()=>legacyClick('fetch')),
@@ -207,7 +208,10 @@
       terminal:actionButton('terminal','terminal',t('Terminal'),t('Open a terminal in this repository'),repoRun('open-terminal')),
       explorer:actionButton('explorer','explorer',t('Explorer'),t('Open this repository folder in Explorer'),repoRun('open-folder')),
     };
-    group().append(actionButtons.commit);
+    group().append(actionButtons.commit,actionButtons.undo);
+    // Undo, like GitHub Desktop: one click takes back the last commit, merge, reset or pull Git Deck made.
+    actionButtons.undo.disabled=true;
+    document.addEventListener('gitdeck:undo',(event)=>{const info=event.detail||{};actionButtons.undo.disabled=!info.available;actionButtons.undo.title=info.available?info.title:t('Nothing to undo yet');});
     const syncGroup=group();syncGroup.append(actionButtons.pull,actionButtons.push,actionButtons.fetch);
     group().append(actionButtons.branch,actionButtons.merge,actionButtons.stash,actionButtons.tag);
     const end=group();end.classList.add('modern-act-end');end.append(actionButtons.terminal,actionButtons.explorer);

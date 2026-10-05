@@ -17,6 +17,8 @@ async function refreshUndoState(){
   try{const result=await api(`/api/repo/undo-preview?path=${encodeURIComponent(repo.path)}`);if(version!==undoVersion)return;undoState=result.undo||{available:false};}
   catch{if(version!==undoVersion)return;undoState={available:false};}
   button.classList.toggle('hidden',!undoState.available);
+  // The Modern action bar has its own Undo button; it listens for this.
+  document.dispatchEvent(new CustomEvent('gitdeck:undo',{detail:{...undoState,title:undoState.available?describeUndo(undoState):''}}));
   if(undoState.available){button.title=describeUndo(undoState);button.querySelector('small').textContent=undoState.action==='commit'?t('Last commit'):t('Last {action}',{action:undoState.action});}
 }
 async function undoLastAction(){if(!undoState.available||state.busy)return;await runWorkspaceAction('undo-last',{id:undoState.id},describeUndo(undoState));void refreshUndoState();}
