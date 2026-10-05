@@ -49,6 +49,9 @@ assert.deepEqual(plain(later.news.map((n) => n.text)), ['Pipeline #2 failed on f
 assert.ok(web('index.html').includes('/multi-repo.js'));
 // Easy to find: All repos and Report sit on the left rail under Repos.
 assert.match(web('modern.js'), /railButton\(\['all-repos','repos',\(\)=>t\('All repos'\)\]\),railButton\(\['report','report',\(\)=>t\('Report'\)\]\)/);
+assert.match(web('modern.js'), /'all-repos':\(state\.repos\|\|\[\]\)\.filter\(/, 'All repos shows how many repositories need attention');
+// Primary buttons keep white text in every theme, even inside dialogs.
+assert.match(web('modern.css'), /:is\(button\.primary, \.btn\.primary, #push-submit\):not\(#gd-none\) \{ color: var\(--accent-contrast, #fff\); \}/);
 // Windows opened from the drawer sit above it, and the drawer closes; Midnight has no light leftovers.
 assert.match(web('modern.css'), /\.backdrop:not\(#push-backdrop\)[^{]*\{ z-index: 150; \}/);
 assert.match(web('modern.js'), /backdrop'\)&&!change\.target\.classList\.contains\('hidden'\)\)\)closeDrawer\(\)/);

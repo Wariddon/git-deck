@@ -336,7 +336,9 @@
   }
   function renderRail(){
     if(!rail)return;const data=state.workspace||{};
-    const counts={changes:(data.files||[]).length,stashes:(data.stashes||[]).length,conflicts:conflictCount(data)};
+    const counts={changes:(data.files||[]).length,stashes:(data.stashes||[]).length,conflicts:conflictCount(data),
+      // Repositories with uncommitted files or commits to push / pull, from the repository list cache.
+      'all-repos':(state.repos||[]).filter(repo=>repo.valid!==false&&(Number(repo.changes)>0||Number(repo.ahead)>0||Number(repo.behind)>0)).length};
     for(const button of rail.querySelectorAll('.modern-rail-item')){
       const tab=button.dataset.tab;
       const active=tab==='repos'?libraryOpen():tab==='focus'?document.body.classList.contains('focus-workbench'):tab===state.workspaceTab;button.classList.toggle('active',active);
@@ -606,6 +608,8 @@
     const baseSelect=selectWorkspaceTab;
     selectWorkspaceTab=function(...args){const result=baseSelect.apply(this,args);try{if(isModern()){renderRail();renderHeader();}}catch{}return result;};
   }
+  // The repository list re-renders after every status refresh: keep the All repos badge current.
+  if(typeof window.render==='function'){const baseRender=window.render;window.render=function(...args){const result=baseRender.apply(this,args);try{if(isModern())renderRail();}catch{}return result;};}
   const content=$id('workspace-content');let pending=false;
   // setTimeout, not requestAnimationFrame: rAF is paused while the window is hidden.
   if(content)new MutationObserver(()=>{if(pending||!isModern())return;pending=true;setTimeout(()=>{pending=false;decorateHistory(content);decorateBranches(content);renderRail();try{autoOpenFirst(content);}catch{}},0);}).observe(content,{childList:true,subtree:true});

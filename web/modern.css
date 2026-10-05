@@ -1036,3 +1036,6 @@ html.ui-modern body.theme-dark :is(.scan-locations, .gitlab-search, .modal-actio
 html.ui-modern body.theme-dark .scan-locations summary b { background: var(--surface-muted, var(--surface)); color: var(--text-secondary); }
 html.ui-modern body.theme-dark .gitlab-search input { background: transparent; color: var(--text-primary); }
 html.ui-modern body.theme-dark .scan-locations summary span, html.ui-modern body.theme-dark .scan-locations code { color: var(--text-secondary); }
+/* Primary buttons always use the accent's text colour; theme-wide button and dialog rules must not
+   override it (the :not(#gd-none) only raises specificity above those rules). */
+html.ui-modern body :is(button.primary, .btn.primary, #push-submit):not(#gd-none) { color: var(--accent-contrast, #fff); }
