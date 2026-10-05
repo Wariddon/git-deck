@@ -825,8 +825,20 @@ function repositoryTabContextItems(repo,close){return [
   {label:'Repository details…',run:()=>showRepositoryDetails(repo)},
   {separator:true},
   {label:isFavorite(repo)?'Unpin repository':'Pin repository',run:()=>{const key=repoKey(repo);if(isFavorite(repo))delete state.meta.favorites[key];else state.meta.favorites[key]=true;saveMeta();renderRepoTabs();}},
-  {label:'Close tab',run:close}
+  {label:'Close tab',run:close},
+  {label:'Close other tabs',disabled:(state.meta.openRepos||[]).length<2,run:()=>closeRepositoryTabs(repo,'others')},
+  {label:'Close tabs to the right',disabled:(state.meta.openRepos||[]).indexOf(repoKey(repo))>=(state.meta.openRepos||[]).length-1,run:()=>closeRepositoryTabs(repo,'right')},
+  {label:'Close all tabs',run:()=>closeRepositoryTabs(repo,'all')}
 ];}
+function closeRepositoryTabs(repo,mode){
+  const key=repoKey(repo),open=state.meta.openRepos||[],at=open.indexOf(key);
+  state.meta.openRepos=mode==='all'?[]:mode==='right'?open.slice(0,at+1):[key];
+  saveMeta();
+  const active=state.workspaceRepo?repoKey(state.workspaceRepo):'';
+  if(!state.meta.openRepos.length){state.meta.lastRepo='';clearLastView();saveMeta();closeWorkspace();return;}
+  if(state.meta.openRepos.includes(active)){renderRepoTabs();saveLastView(state.workspaceRepo,state.workspaceTab||'history');return;}
+  openWorkspace(repo,state.workspaceTab||'history',null);
+}
 function branchContextItems(data,branch,kind){return [...branchCopyContextItems(branch,kind),{separator:true},...branchOperationContextItems(data,branch,kind)];}
 function branchCopyContextItems(branch,kind){
   const name=kind==='remote'?branch.name.slice(branch.name.indexOf('/')+1):branch.name;
