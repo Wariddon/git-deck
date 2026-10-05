@@ -164,3 +164,12 @@ body.workbench-mode #tree-content .ref-filter-tabs button { flex: 1 0 auto; min-
 .work-report-time{font-family:var(--modern-mono,Consolas,monospace);color:var(--muted,#6b7280)}
 .work-report-empty{padding:16px;text-align:center;color:var(--muted,#6b7280)}
 @media (max-width:640px){.work-report-day li{grid-template-columns:44px 1fr}.work-report-day li span:last-child{grid-column:1/-1}}
+.work-report-pending{color:#b45309;font-weight:600}
+.work-report-done{color:#15803d}
+.work-report-day code{font-family:var(--modern-mono,Consolas,monospace);font-size:12px;overflow-wrap:anywhere}
+.work-report-ai{display:grid;gap:6px;margin-bottom:10px;padding:10px;border:1px solid var(--line,rgba(127,127,127,.25));border-radius:8px}
+.work-report-ai textarea{width:100%;font-size:12px;resize:vertical}
+.work-report-ai button{justify-self:end}
+body.theme-dark .work-report-pending{color:#f0b46a}
+body.theme-dark .work-report-done{color:#7fd29a}
+.work-report-table td:nth-child(3),.work-report-table td:nth-child(4),.work-report-table td:nth-child(6){white-space:nowrap}

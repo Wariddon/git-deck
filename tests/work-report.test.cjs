@@ -39,6 +39,24 @@ assert.match(md, /\| 1 \| web \| 2026-10-01 08:00 \|/);
 assert.match(md, /\| 2 \| api \| .* \| \+6 \/ -1 \|/);
 assert.match(md, /- 2026-10-03 10:00 `a2000000` fix \| pipe AP2365-3320 _\(feature\/AP2365-3319\)_/);
 
+// Status, tickets, files and CSV.
+const status = [{ repo: a, mainline: 'origin/main', commits: [
+  { hash: 'c1'.padEnd(40, '0'), date: '2026-10-02T09:00:00+07:00', subject: 'AP-1 part one', ref: 'main', paths: ['src/a.js', 'src/b.js'], pushed: true, merged: true },
+  { hash: 'c2'.padEnd(40, '0'), date: '2026-10-03T09:00:00+07:00', subject: 'tidy, "quoted"', ref: 'feature/AP-2', paths: ['src/a.js'], pushed: false, merged: false }] }];
+const [srow] = report.summarize(status);
+assert.equal(srow.unpushed, 1); assert.equal(srow.unmerged, 1);
+assert.deepEqual(plain(srow.hotFiles), [{ file: 'src/a.js', count: 2 }, { file: 'src/b.js', count: 1 }]);
+assert.deepEqual(plain(report.byTicket([srow]).map((g) => [g.ticket, g.commits.length])), [['AP-1', 1], ['AP-2', 1]]);
+assert.deepEqual(plain(report.byTicket(rows).map((g) => g.ticket)).slice(-1), [''], 'Commits without a ticket come last');
+const smd = report.toMarkdown({ since: 's', until: 'u', author: '', rows: [srow] });
+assert.match(smd, /1 not pushed, 1 not in origin\/main/);
+assert.match(smd, /## By ticket\n\n- \*\*AP-1\*\* \(api\): AP-1 part one/);
+assert.match(smd, /Most changed files: `src\/a\.js` \(2\)/);
+assert.match(smd, /tidy, "quoted" _\(feature\/AP-2\)_ — not pushed/);
+const csv = report.toCsv({ rows: [srow] });
+assert.ok(csv.startsWith('﻿date,repository,'), 'BOM so Excel reads Thai');
+assert.match(csv, /2026-10-03 09:00,api,feature\/AP-2,c20000000000,"tidy, ""quoted""",AP-2,,,,no,no,/);
+
 assert.ok(web('index.html').includes('/work-report.js'));
 assert.match(fs.readFileSync(path.join(__dirname, '../git-dashboard-server.ps1'), 'utf8'), /'\/api\/repo\/activity'/);
 console.log('PASS: Work report presets, ordering, timeline and Markdown');

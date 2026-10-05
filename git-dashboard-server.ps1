@@ -1139,6 +1139,8 @@ function Invoke-Action($Body) {
         }
         # The custom actions list belongs to Git Deck, not to one repository.
         'custom-actions-save' { return Save-GitDeckCustomActions $Body.actions }
+        # A work report spans many repositories; each one's AI policy is checked inside.
+        'ai-work-summary' { return Get-GitDeckAiWorkSummary @($Body.paths) ([string]$Body.report) }
         default { Assert-Registered $path }
     }
     switch ($action) {
@@ -1593,7 +1595,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/job' { Write-Json $context (Get-GitJob $request.QueryString['id']) }
         '/api/repos' { Write-Json $context (Get-RepositoryCache) }
         '/api/activity/me' { Write-Json $context @{identity=(Get-GitDeckIdentity)} }
-        '/api/repo/activity' { Write-Json $context @{commits=@(Get-GitDeckActivity $request.QueryString['path'] $request.QueryString['since'] $request.QueryString['until'] $request.QueryString['author'] ($request.QueryString['merges'] -eq 'true'))} }
+        '/api/repo/activity' { $activityPath=$request.QueryString['path'];$activity=@(Get-GitDeckActivity $activityPath $request.QueryString['since'] $request.QueryString['until'] $request.QueryString['author'] ($request.QueryString['merges'] -eq 'true'));Write-Json $context @{commits=$activity;mainline=$(if($activity.Count){Get-GitDeckMainline $activityPath}else{''})} }
         '/api/repo/details' { $repoPath=$request.QueryString['path']; Write-Json $context @{details=(Get-RepositoryDetails $repoPath)} }
         '/api/repo/workspace' { $repoPath=$request.QueryString['path']; Write-Json $context @{workspace=(Get-WorkspaceDetails $repoPath ($request.QueryString['extras'] -eq 'true'))} }
         '/api/repo/history' { $repoPath=$request.QueryString['path'];$scope=$request.QueryString['scope'];$ref=$request.QueryString['ref'];$includeRemote=($request.QueryString['includeRemote'] -ne 'false');$order=$request.QueryString['order'];$skip=0;if($request.QueryString['skip'] -and -not [int]::TryParse($request.QueryString['skip'],[ref]$skip)){throw 'Invalid history offset.'};$items=@(Get-CommitHistory $repoPath $scope $ref $includeRemote $order $skip $request.QueryString['q']);Write-Json $context @{history=@($items | Select-Object -First 250);hasMore=($items.Count -gt 250);nextSkip=($skip+[Math]::Min(250,$items.Count))} }
