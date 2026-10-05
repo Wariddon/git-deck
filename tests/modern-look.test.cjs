@@ -170,3 +170,9 @@ assert.match(modernJs, /autoOpened\.add\(empty\);root\.querySelector\(first\)\?\
 const appJs = fs.readFileSync(path.join(__dirname, '../web/app.js'), 'utf8');
 assert.match(appJs, /includes\(saved\.filter\)\?saved\.filter:'all';/, 'Sidebar starts on the Branches / Remotes / Tags / Stashes tree');
 console.log('PASS: Sourcetree density on Branches, Tags, Remotes, Compare, Stashes and the sidebar');
+// Narrow windows: the action bar never slides under More; History's description column shrinks instead of scrolling.
+assert.match(modernCss, /\.modern-actions \{ overflow: hidden; \}/);
+assert.match(modernCss, /@media \(max-width: 980px\) \{\s*html\.ui-modern body \.modern-act-group:nth-child\(3\) \{ display: none; \}/);
+assert.match(appJs, /const defaults=\{subject:220,author:120,date:92\};/, 'Subject column minimum lets the list fit narrower windows');
+assert.match(modernCss, /#workspace-content \.recovery-row \.recovery-info \{ display: grid !important; grid-template-columns: 64px minmax\(0, 1fr\) minmax\(0, 320px\) !important;/);
+console.log('PASS: narrow-window toolbar and history, one-line reflog');

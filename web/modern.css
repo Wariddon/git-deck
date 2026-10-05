@@ -922,3 +922,38 @@ html.ui-modern body .commit-composer .commit-assist > .commit-meter { margin-lef
 html.ui-modern body .commit-composer textarea { min-height: 64px !important; height: 72px; }
 html.ui-modern body .commit-composer .commit-options { gap: 2px 12px !important; }
 html.ui-modern body .commit-composer .commit-submit { height: 30px !important; min-height: 30px !important; }
+
+/* History on narrower windows: the description column shrinks (ellipsis) instead of scrolling sideways,
+   and the header stays one row. */
+html.ui-modern body .commit-list { --commit-subject-width: 200px; --commit-author-width: 130px; --commit-date-width: 84px; }
+html.ui-modern body.workbench-mode .commit-list { --commit-subject-width: 200px; }
+html.ui-modern body .modern-history-head .history-controls { display: flex; flex: 1 1 auto; flex-wrap: nowrap !important; align-items: center; gap: 6px; min-width: 0; }
+html.ui-modern body .modern-history-head .history-controls input:is([type="search"], [type="text"]) { flex: 1 1 160px; min-width: 90px; }
+@media (max-width: 1400px) { html.ui-modern body .modern-viewing { display: none; } }
+@media (max-width: 1200px) { html.ui-modern body .commit-list { --commit-author-width: 100px; } }
+html.ui-modern body .modern-history-head .history-controls > :is(select, details) { flex: none; }
+html.ui-modern body .modern-history-head .history-controls > div { display: flex; flex: 1 1 auto; align-items: center; gap: 6px; min-width: 0; }
+html.ui-modern body .modern-history-head .history-controls > div > select { flex: none; }
+html.ui-modern body .modern-history-head .history-controls > div > input { flex: 1 1 140px; min-width: 70px; width: auto; }
+html.ui-modern body .modern-history-head select { width: auto !important; max-width: 140px; }
+html.ui-modern body .modern-history-head .history-controls input { min-width: 70px !important; }
+
+/* Narrow windows: the action bar never slides under More / View & tools. */
+html.ui-modern body .modern-actions { overflow: hidden; }
+@media (max-width: 980px) {
+  html.ui-modern body .modern-act-group:nth-child(3) { display: none; }
+  html.ui-modern body .modern-tb-repo { width: 150px; }
+  html.ui-modern body .modern-tb-branch { max-width: 170px; }
+  html.ui-modern body .modern-history-head,
+  html.ui-modern body .modern-history-head .history-controls,
+  html.ui-modern body .modern-history-head .history-controls > div { flex-wrap: wrap !important; }
+}
+/* Recovery: one line per reflog entry (hash · what happened · where/when), actions on hover. */
+html.ui-modern body #workspace-content .recovery-row { min-height: 28px; padding: 2px 10px !important; align-items: center; }
+html.ui-modern body #workspace-content .recovery-row .recovery-info { display: grid !important; grid-template-columns: 64px minmax(0, 1fr) minmax(0, 320px) !important; align-items: center; gap: 10px; min-width: 0; }
+html.ui-modern body .recovery-row .recovery-info > * { min-width: 0; margin: 0 !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.ui-modern body #workspace-content .recovery-row .recovery-info > * { grid-column: auto !important; grid-row: auto !important; }
+html.ui-modern body .recovery-row .recovery-info small { color: var(--text-tertiary); text-align: right; }
+html.ui-modern body .recovery-row .workspace-row-actions { opacity: 0; transition: opacity .15s; }
+html.ui-modern body .recovery-row:is(:hover, :focus-within) .workspace-row-actions { opacity: 1; }
+html.ui-modern body .recovery-row .workspace-row-actions button { height: 22px; min-height: 22px; padding: 0 8px; }
