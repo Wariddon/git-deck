@@ -993,3 +993,13 @@ html.ui-modern body .swatch-midnight { background: linear-gradient(135deg, #2a31
 html.ui-modern body .swatch-system { background: linear-gradient(135deg, #f4f4f5 50%, #22272e 50%) !important; }
 /* Push dialog blocks that kept near-black legacy colours. */
 html.ui-modern body.theme-dark :is(.push-preview, #push-remote-url) { background: var(--code-bg) !important; color: var(--text-primary) !important; border-color: var(--border-default) !important; }
+/* File status letters: muted greens, ambers and reds instead of neon on the dimmed dark themes. */
+html.ui-modern body.theme-dark:not(.theme-midnight) :is(.commit-file-status.status-a, .file-status-a, .file-status-\?) { color: #6bc46d !important; }
+html.ui-modern body.theme-dark:not(.theme-midnight) :is(.commit-file-status.status-m, .file-status-m) { color: #daaa3f !important; }
+html.ui-modern body.theme-dark:not(.theme-midnight) :is(.commit-file-status.status-d, .file-status-d) { color: #e5736c !important; }
+html.ui-modern body.theme-midnight :is(.commit-file-status.status-a, .file-status-a, .file-status-\?) { color: #a3be8c !important; }
+html.ui-modern body.theme-midnight :is(.commit-file-status.status-m, .file-status-m) { color: #ebcb8b !important; }
+html.ui-modern body.theme-midnight :is(.commit-file-status.status-d, .file-status-d) { color: #e0898f !important; }
+/* Tag and stash chips: lighter, calmer text on the dark themes (the saturated mix read poorly there). */
+html.ui-modern body.theme-dark .commit-refs i[data-ref="tag"] { color: color-mix(in srgb, #e3a34a 60%, var(--text-primary)) !important; }
+html.ui-modern body.theme-dark .commit-refs i[data-ref="stash"] { color: color-mix(in srgb, #b7a2f0 60%, var(--text-primary)) !important; }

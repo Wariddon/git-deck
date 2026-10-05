@@ -562,6 +562,10 @@
   function syncAccent(){
     const body=document.body;if(!body)return;
     body.style.removeProperty('--green');body.style.removeProperty('--accent-contrast');
+    // Dark themes get a softer default accent (GitHub dimmed blue / Nord blue) unless the user picked one.
+    const custom=String(state.meta?.accentColor||'').toLowerCase();
+    const preset=custom&&custom!=='#0969da'?null:body.classList.contains('theme-midnight')?'#5e81ac':body.classList.contains('theme-dark')?'#4184e4':null;
+    if(preset){body.style.setProperty('--green',preset);body.style.setProperty('--accent-contrast','#ffffff');}
     const style=getComputedStyle(body);
     const accent=toRgb(style.getPropertyValue('--green').trim()||'#0969da');const surface=toRgb(style.getPropertyValue('--surface').trim()||'#ffffff');
     const fixed=readableAccent(accent,surface);if(fixed===accent)return;
