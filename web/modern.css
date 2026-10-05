@@ -874,3 +874,18 @@ html.ui-modern body :is(.history-context, .workspace-section-head, .commit-detai
 html.ui-modern body .commit-detail-actions details > summary,
 html.ui-modern body .history-controls :is(select, input, details > summary) { height: 24px; min-height: 24px; padding: 0 8px; }
 html.ui-modern body .workspace-section-head .workspace-form :is(select, input, button.primary) { height: 28px; }
+
+/* History: one header row (Sourcetree's filter bar); the "Viewing" bar folds into it. */
+html.ui-modern body .history-context.modern-folded { display: none !important; }
+html.ui-modern body .modern-history-head { flex-wrap: nowrap !important; gap: 6px; }
+html.ui-modern body .modern-history-head h3 { display: none; }
+html.ui-modern body .modern-viewing { flex: none; max-width: 220px; overflow: hidden; color: var(--text-secondary); text-overflow: ellipsis; white-space: nowrap; }
+html.ui-modern body .modern-history-head > .modern-moved { flex: none; }
+
+/* Stash and Merge dialogs from the action bar. */
+html.ui-modern body .modern-dialog-form { display: grid; gap: 10px; min-width: min(440px, 80vw); }
+html.ui-modern body .modern-dialog-form p { margin: 0; color: var(--text-secondary); }
+html.ui-modern body .modern-dialog-check { display: flex; align-items: center; gap: 8px; }
+html.ui-modern body .modern-merge-list { width: 100%; min-height: 220px; padding: 4px; border: 1px solid var(--border-default); border-radius: 6px; background: var(--surface); color: var(--text-primary); }
+html.ui-modern body .modern-merge-list option { padding: 3px 6px; border-radius: 4px; }
+html.ui-modern body .modern-dialog-note { padding: 8px 10px; border-radius: 6px; background: var(--surface-subtle); }

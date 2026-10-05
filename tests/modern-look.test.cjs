@@ -152,3 +152,12 @@ assert.match(modernJs, /railButton\(\['repos','folder',\(\)=>t\('Repos'\)\]\)/);
 // Rail items carry a visible label, not only an icon.
 assert.match(modernJs, /el\('span','modern-rail-label',label\(\)\)/);
 console.log('PASS: modern look primary action, relative time, initials, ref kinds, icons and wiring');
+// Stash and Merge open small dialogs (like Sourcetree) instead of switching pages.
+assert.match(modernJs, /stash:actionButton\('stash','stash',t\('Stash'\),[^\n]*openStash\)/);
+assert.match(modernJs, /merge:actionButton\('merge','merge',t\('Merge'\),[^\n]*openMerge\)/);
+assert.match(modernJs, /runWorkspaceAction\('stash-save',\{message:message\.value\.trim\(\),keepIndex:keep\.checked\},''\)/);
+assert.match(modernJs, /runWorkspaceAction\('merge',\{branch:list\.value,mode:mode\.value\},''\)/);
+// History: the "Viewing" bar folds into the controls row without piling up copies when it re-renders.
+assert.match(modernJs, /head\.querySelectorAll\('\.modern-viewing, :scope > \.modern-moved'\)\.forEach\(node=>node\.remove\(\)\)/);
+assert.match(modernCss, /\.history-context\.modern-folded \{ display: none !important; \}/);
+console.log('PASS: Stash/Merge dialogs and one-row history header');

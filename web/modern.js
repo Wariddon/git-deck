@@ -133,10 +133,63 @@
     button.append(glyph,el('span','modern-act-label',label),badge);
     button.addEventListener('click',run);return button;
   }
+  // Small dialogs like Sourcetree's Stash and Merge windows, instead of sending you to another page.
+  function actionDialog(title,submitLabel,build,submit){
+    if(typeof releaseDialog!=='function')return null;
+    const ui=releaseDialog(title);ui.dialog.classList.add('modern-action-dialog');
+    const form=el('form','modern-dialog-form');form.id='modern-dialog-'+Math.random().toString(36).slice(2);
+    build(form,ui);ui.body.append(form);
+    const go=el('button','primary',submitLabel);go.type='submit';go.setAttribute('form',form.id);
+    ui.actions.querySelector('button').textContent=t('Cancel');ui.actions.append(go);
+    form.addEventListener('submit',(event)=>{event.preventDefault();if(go.disabled)return;const payload=submit();if(payload===null)return;ui.dialog.close();});
+    return {ui,form,go};
+  }
   function openStash(){
-    selectWorkspaceTab('stashes');
-    const focus=(tries)=>{const box=document.querySelector('#workspace-content .workspace-section-head .workspace-form input');if(box){box.focus();return;}if(tries)setTimeout(()=>focus(tries-1),50);};
-    setTimeout(()=>focus(20),0);
+    const data=state.workspace;if(!state.workspaceRepo||!data||state.busy)return;
+    const count=(data.files||[]).length;let message,keep;
+    actionDialog(t('Stash changes'),t('Stash'),(form)=>{
+      form.append(el('p','',t('{count} changed file(s) are set aside, new files included. Apply them again from Stashes.',{count})));
+      message=el('input','workflow-input');message.type='text';message.placeholder=t('Message (optional)');message.setAttribute('aria-label',t('Stash message'));
+      const keepLabel=el('label','modern-dialog-check');keep=document.createElement('input');keep.type='checkbox';
+      keepLabel.append(keep,el('span','',t('Keep staged changes')));keepLabel.title=t('Staged changes stay staged in your working tree as well as going into the stash');
+      form.append(message,keepLabel);setTimeout(()=>message.focus(),0);
+    },()=>{runWorkspaceAction('stash-save',{message:message.value.trim(),keepIndex:keep.checked},'');});
+  }
+  function openMerge(){
+    const data=state.workspace;if(!state.workspaceRepo||!data||state.busy)return;
+    const current=data.branch;
+    const local=(data.branches||[]).map(b=>b.name).filter(name=>name!==current);
+    const remote=(data.remoteBranches||[]).map(b=>b.name||b).filter(name=>name&&!/\/HEAD$/.test(name));
+    let list,mode,search;
+    const dialog=actionDialog(t('Merge'),t('Merge'),(form)=>{
+      form.append(el('p','',t('Choose what to merge into {branch}:',{branch:current||t('Detached HEAD')})));
+      search=el('input','workflow-input');search.type='search';search.placeholder=t('Filter branches');search.setAttribute('aria-label',t('Filter branches'));
+      list=document.createElement('select');list.size=10;list.className='modern-merge-list';list.setAttribute('aria-label',t('Branch to merge'));
+      const fill=()=>{
+        const term=search.value.trim().toLowerCase();const keep=list.value;list.replaceChildren();
+        for(const [label,names] of [[t('Local branches'),local],[t('Remote branches'),remote]]){
+          const shown=names.filter(name=>!term||name.toLowerCase().includes(term));if(!shown.length)continue;
+          const group=document.createElement('optgroup');group.label=label;
+          shown.forEach(name=>{const option=document.createElement('option');option.value=name;option.textContent=name;group.append(option);});list.append(group);
+        }
+        list.value=keep;if(!list.value&&list.options.length)list.selectedIndex=0;
+        dialog&&(dialog.go.disabled=!list.value||!!(data.files||[]).length);
+      };
+      search.addEventListener('input',fill);list.addEventListener('dblclick',()=>form.requestSubmit());
+      mode=document.createElement('select');mode.className='workflow-input';mode.setAttribute('aria-label',t('Merge option'));
+      [['default',t('Merge (fast-forward when possible)')],['no-ff',t('Always create a merge commit')],['squash',t('Squash into one change, commit it yourself')]].forEach(([value,label])=>{const option=document.createElement('option');option.value=value;option.textContent=label;mode.append(option);});
+      form.append(search,list,mode);
+      if((data.files||[]).length){
+        const note=el('p','modern-dialog-note',t('You have uncommitted changes. Commit or stash them before merging.'));
+        const stash=el('button','',t('Stash my changes'));stash.type='button';stash.onclick=()=>{form.closest('dialog')?.close();openStash();};
+        note.append(' ',stash);form.append(note);
+      }
+      form._fill=fill;setTimeout(()=>search.focus(),0);
+    },()=>{
+      if(!list.value)return null;
+      runWorkspaceAction('merge',{branch:list.value,mode:mode.value},'');
+    });
+    dialog?.form._fill();
   }
   function buildActions(){
     const strip=el('div','modern-actions');
@@ -148,7 +201,7 @@
       push:actionButton('push','push',t('Push'),t('Publish your commits'),()=>legacyClick('push')),
       fetch:actionButton('fetch','fetch',t('Fetch'),t('Download new commits without changing your files'),()=>legacyClick('fetch')),
       branch:actionButton('branch','branch',t('Branch'),t('Create a new branch from here'),()=>typeof showBranchCreator==='function'&&showBranchCreator()),
-      merge:actionButton('merge','merge',t('Merge'),t('Merge another branch into this one (opens Branches)'),()=>selectWorkspaceTab('branches')),
+      merge:actionButton('merge','merge',t('Merge'),t('Merge another branch into this one'),openMerge),
       stash:actionButton('stash','stash',t('Stash'),t('Set your changes aside without committing'),openStash),
       tag:actionButton('tag','tag',t('Tag'),t('Name this point in history, for example a release'),()=>typeof openTagCreator==='function'&&openTagCreator()),
       terminal:actionButton('terminal','terminal',t('Terminal'),t('Open a terminal in this repository'),repoRun('open-terminal')),
@@ -352,7 +405,19 @@
     if(ref.includes('/')&&(state.workspace?.remotes||[]).some(remote=>ref.startsWith((remote.name||remote)+'/')))return 'remote';
     if(ref==='refs/stash')return 'stash';return 'local';
   }
+  // History: fold the "Viewing…" bar into the controls row, so the list starts one row higher.
+  function foldHistoryHead(root){
+    const bar=root.querySelector(':scope > .history-context:not(.modern-folded)');const head=bar?.nextElementSibling;
+    if(!bar||!head?.classList.contains('workspace-section-head'))return;
+    bar.classList.add('modern-folded');head.classList.add('modern-history-head');
+    // The bar re-renders on its own; drop what an earlier one moved here.
+    head.querySelectorAll('.modern-viewing, :scope > .modern-moved').forEach(node=>node.remove());
+    const viewing=bar.querySelector('.viewing-context');
+    if(viewing){const chip=el('span','modern-viewing modern-made',viewing.textContent);chip.title=viewing.parentElement?.title||'';head.querySelector('h3')?.after(chip);}
+    for(const button of bar.querySelectorAll(':scope > button')){button.classList.add('modern-moved');head.append(button);}
+  }
   function decorateHistory(root){
+    try{foldHistoryHead(root);}catch(error){console.warn('History header unavailable',error);}
     for(const row of root.querySelectorAll('.commit-row:not([data-modern])')){
       row.dataset.modern='1';
       const author=row.querySelector('.commit-author');
@@ -504,7 +569,7 @@
 
   // ---- Lifecycle -------------------------------------------------------------------------------
   function refresh(){if(!isModern())return;syncAccent();syncDrawer();buildHeader();buildToolsPanel();decorateMoreMenu();buildRail();decorateToolbar();renderHeader();renderRail();}
-  function teardown(){closePopover();restoreToolbar();restoreToolsPanel();document.querySelectorAll('.modern-made').forEach(node=>node.remove());document.querySelectorAll('[data-modern]').forEach(node=>delete node.dataset.modern);document.querySelector('.modern-no-changes')?.classList.remove('modern-no-changes');document.body?.classList.remove('modern-library-drawer');document.body?.style.removeProperty('--green');document.body?.style.removeProperty('--accent-contrast');bar=rail=primary=null;}
+  function teardown(){closePopover();restoreToolbar();restoreToolsPanel();if(document.querySelector('.modern-folded'))setTimeout(()=>selectWorkspaceTab(state.workspaceTab,false),0);document.querySelectorAll('.modern-made').forEach(node=>node.remove());document.querySelectorAll('[data-modern]').forEach(node=>delete node.dataset.modern);document.querySelector('.modern-no-changes')?.classList.remove('modern-no-changes');document.body?.classList.remove('modern-library-drawer');document.body?.style.removeProperty('--green');document.body?.style.removeProperty('--accent-contrast');bar=rail=primary=null;}
   if(typeof renderWorkspaceStatus==='function'){
     const baseStatus=renderWorkspaceStatus;
     renderWorkspaceStatus=function(...args){const result=baseStatus.apply(this,args);try{refresh();}catch(error){console.warn('Modern header unavailable',error);}return result;};
