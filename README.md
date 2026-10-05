@@ -151,6 +151,20 @@ Creating a new branch from the current commit always keeps your changes.
   - If both sides changed the same lines, the **Conflicts** page opens. Resolve the files and commit the merge (Continue); Git Deck then asks *Push now?* so the waiting push is not forgotten. Abort drops it.
   - Force push never triggers the offer, and a second rejection does not loop.
 
+## Right-click menus (Sourcetree set)
+
+| Where | Actions |
+| --- | --- |
+| Commit (History) | Checkout, Create branch, Add tag, **Merge into current**, **Rebase current onto this commit**, Cherry-pick, Revert, Reset (soft / mixed / hard), **Create patch**, **Archive as ZIP**, Copy SHA / **full SHA** / **message** |
+| Local branch | **View history**, Copy name, Compare, Checkout, Merge into current, Rebase onto, **Pull** (current branch), Fetch, Push, **Track / Stop tracking** a remote branch, Rename, Delete, **Force delete**, Create MR, **New branch / tag from here**, **Archive as ZIP** |
+| Remote branch | **View history**, Checkout (track), Pull into current, **Merge / Rebase into current**, Diff, Fetch, Create MR, Delete, **Prune the remote**, **New branch / tag**, **ZIP** |
+| Tag | **View history**, Checkout, Details, Diff, Push, Delete local / remote, Copy name, **New branch from tag**, **ZIP**, **Copy commit SHA** |
+| Stash (page and sidebar) | **Apply, Pop, Show changes, Copy name / message, Delete** |
+| Remote (page and sidebar group) | **Fetch, Prune, Open in browser, Copy URL, Edit URL, Remove** |
+| Files | File Status and History file menus as described above |
+
+Bold items are new. Risky actions still ask first. Menus use compact rows and are measured before they are placed, so a long menu stays inside the window.
+
 ## When something fails
 
 Every error card says, in plain words, what happened and what to do next. It also has buttons that go there. Git's exact message stays under *Details*. The card also lists the files involved (the first three, then "and N more"). Some examples:

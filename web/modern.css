@@ -957,3 +957,9 @@ html.ui-modern body .recovery-row .recovery-info small { color: var(--text-terti
 html.ui-modern body .recovery-row .workspace-row-actions { opacity: 0; transition: opacity .15s; }
 html.ui-modern body .recovery-row:is(:hover, :focus-within) .workspace-row-actions { opacity: 1; }
 html.ui-modern body .recovery-row .workspace-row-actions button { height: 22px; min-height: 22px; padding: 0 8px; }
+
+/* Right-click menus: compact rows like Sourcetree's, tall enough to show a full menu without scrolling. */
+html.ui-modern body .context-menu { width: min(340px, calc(100vw - 16px)) !important; max-height: calc(100vh - 16px) !important; padding: 4px !important; }
+html.ui-modern body .context-menu button { min-height: 26px !important; padding: 3px 10px !important; font-size: var(--ui-text-size) !important; }
+html.ui-modern body .context-menu button small { font-size: var(--fs-xs) !important; }
+html.ui-modern body .context-menu hr { margin: 3px 6px !important; }
