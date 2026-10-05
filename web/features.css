@@ -173,3 +173,10 @@ body.workbench-mode #tree-content .ref-filter-tabs button { flex: 1 0 auto; min-
 body.theme-dark .work-report-pending{color:#f0b46a}
 body.theme-dark .work-report-done{color:#7fd29a}
 .work-report-table td:nth-child(3),.work-report-table td:nth-child(4),.work-report-table td:nth-child(6){white-space:nowrap}
+
+/* Word-level diff highlight (web/word-diff.js). */
+.diff-word{color:inherit;border-radius:2px;padding:0}
+.diff-add .diff-word{background:rgba(46,160,67,.38)}
+.diff-remove .diff-word{background:rgba(248,81,73,.38)}
+body.theme-dark .diff-add .diff-word{background:rgba(63,185,80,.42)}
+body.theme-dark .diff-remove .diff-word{background:rgba(248,81,73,.45)}
