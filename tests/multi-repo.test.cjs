@@ -38,6 +38,13 @@ assert.equal(m.pendingMatches(item(busy), 'unpublished'), true);
 assert.equal(m.pendingMatches(item(null, 'boom'), 'problems'), true, 'Errors show under Conflicts / errors');
 assert.equal(m.pendingMatches(item(null, 'boom'), 'any'), true);
 
+// What to do, most urgent first, in plain words.
+assert.deepEqual(plain(m.nextSteps(item(clean))), []);
+const steps = m.nextSteps(item(busy)).map((s) => s.text);
+assert.deepEqual(plain(steps), ['Commit or stash 3 changed file(s)', 'Publish this branch to the remote', 'Pull 4 new commit(s)', '1 branch(es) exist only on this computer: push or delete them', 'Review 1 stash(es)', 'Delete 1 merged branch(es)']);
+assert.equal(m.nextSteps(item({ ...clean, operation: 'rebase', conflicts: 2 }))[0].text, 'Resolve 2 conflict(s), then finish the rebase');
+assert.match(m.nextSteps(item(null, 'not a git repository'))[0].text, /^Could not check: not a git repository/);
+
 const found = (o) => ({ local: false, remote: '', current: 'main', dirty: false, ...o });
 assert.equal(m.switchPlan('feature/a', found({ current: 'feature/a' })).kind, 'none');
 assert.deepEqual(plain(m.switchPlan('feature/a', found({ local: true })).payload), { branch: 'feature/a', localChanges: 'stash' });
