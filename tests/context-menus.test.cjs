@@ -50,3 +50,11 @@ assert.deepEqual(labels(context.GitDeckContextMenus.remoteItems('origin')), ['Fe
 assert.match(web('app.js'), /const width=menu\.offsetWidth\|\|285;const height=menu\.offsetHeight\|\|/);
 assert.ok(web('index.html').indexOf('/context-menus.js') > web('index.html').indexOf('/file-actions.js'));
 console.log('PASS: Sourcetree-style right-click menus for commits, branches, tags, stashes and remotes');
+// Custom actions join the commit, file, branch and repository-tab menus, with a way to manage them.
+const custom = web('custom-actions.js');
+for (const [fn, target] of [['commitContextItems', 'commit'], ['workingFileContextItems', 'file'], ['branchOperationContextItems', 'branch'], ['repositoryTabContextItems', 'repo']]) {
+  const line = custom.split('\n').find((text) => text.includes(`${fn}=function`)) || '';
+  assert.ok(line.includes(`items('${target}'`), fn);
+}
+assert.ok(web('index.html').indexOf('/custom-actions.js') > web('index.html').indexOf('/context-menus.js'));
+console.log('PASS: custom actions in every right-click menu');

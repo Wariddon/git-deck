@@ -12,6 +12,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Switch.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Parity.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Export.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
 $script:RepoList = Join-Path $PSScriptRoot 'git-repositories.txt'
@@ -1134,6 +1135,8 @@ function Invoke-Action($Body) {
             foreach($key in @('HKCU:\Software\Classes\Directory\shell\GitDeck','HKCU:\Software\Classes\Directory\Background\shell\GitDeck')){if(Test-Path $key){Remove-Item -LiteralPath $key -Recurse -Force}}
             return @{message='Explorer context menu removed.';output='Git Deck application files were not removed.'}
         }
+        # The custom actions list belongs to Git Deck, not to one repository.
+        'custom-actions-save' { return Save-GitDeckCustomActions $Body.actions }
         default { Assert-Registered $path }
     }
     switch ($action) {
@@ -1559,6 +1562,8 @@ function Invoke-Action($Body) {
             if ($null -ne $parity) { return $parity }
             $ai = Invoke-GitDeckAiAction $Body
             if ($null -ne $ai) { return $ai }
+            $custom = Invoke-GitDeckCustomActionRequest $Body
+            if ($null -ne $custom) { return $custom }
             throw 'Action is not allowed.'
         }
     }
@@ -1575,6 +1580,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/status-snapshot' { Write-Json $context (Get-WorkflowStatus $request.QueryString['path']) }
         '/api/repo/checkout-review' { Write-Json $context (Get-CheckoutReview $request.QueryString['path'] $request.QueryString['target']) }
         '/api/readiness' { Write-Json $context (Get-SetupReadiness) }
+        '/api/custom-actions' { Write-Json $context @{ actions = @(Get-GitDeckCustomActions) } }
         '/api/repo/push-preview' { Write-Json $context (Get-PushPreview $request.QueryString['path'] $request.QueryString['remote'] $request.QueryString['local'] $request.QueryString['target']) }
         '/api/ui-state' { $ui=[ordered]@{schemaVersion=2;path='';tab='history';openRepos=@()};if(Test-Path -LiteralPath $script:UiState -PathType Leaf){try{$saved=Get-Content -LiteralPath $script:UiState -Raw|ConvertFrom-Json;$savedPath=if($saved.path){[string]$saved.path}else{''};$savedTab=if($saved.tab){[string]$saved.tab}else{'history'};[string[]]$savedOpenRepos=if($null-ne $saved.openRepos){@($saved.openRepos|ForEach-Object{[string]$_})}elseif($savedPath){@($savedPath)}else{@()};$savedSchemaVersion=if($saved.schemaVersion){[int]$saved.schemaVersion}else{1};$ui=[ordered]@{schemaVersion=$savedSchemaVersion;path=$savedPath;tab=$savedTab;openRepos=$savedOpenRepos}}catch{}};Write-Json $context @{view=$ui} }
         '/api/jobs' { Write-Json $context @{jobs=@(Get-GitJobs)} }

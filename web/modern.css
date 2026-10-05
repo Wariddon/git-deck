@@ -1015,3 +1015,10 @@ html.ui-modern body #tree-content :is(button, summary, .ref-branch-row) { color:
 html.ui-modern body :is(.diff-code, .diff-lines, .diff-split-code, .blame-output) { font-size: var(--ui-text-size) !important; }
 html.ui-modern body #tree-content .ref-filter-tabs { display: flex !important; flex-wrap: nowrap !important; gap: 2px; }
 html.ui-modern body #tree-content .ref-filter-tabs > button { flex: 1 1 auto; min-width: 0; padding: 0 4px !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Custom actions dialog. */
+html.ui-modern body .custom-action-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-muted); }
+html.ui-modern body .custom-action-row small { display: block; overflow: hidden; color: var(--text-tertiary); font-family: var(--modern-mono); text-overflow: ellipsis; white-space: nowrap; }
+html.ui-modern body .custom-action-field { display: grid; gap: 4px; }
+html.ui-modern body .custom-action-targets { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 8px 10px; border: 1px solid var(--border-default); border-radius: 6px; }
+html.ui-modern body .custom-action-help { color: var(--text-tertiary) !important; }
