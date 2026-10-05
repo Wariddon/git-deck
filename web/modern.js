@@ -205,6 +205,7 @@
       merge:actionButton('merge','merge',t('Merge'),t('Merge another branch into this one'),openMerge),
       stash:actionButton('stash','stash',t('Stash'),t('Set your changes aside without committing'),openStash),
       tag:actionButton('tag','tag',t('Tag'),t('Name this point in history, for example a release'),()=>typeof openTagCreator==='function'&&openTagCreator()),
+      gitflow:actionButton('gitflow','flow',t('Git-flow'),t('Start or finish a feature, release or hotfix'),()=>window.GitDeckGitFlow?.openGitFlow()),
       terminal:actionButton('terminal','terminal',t('Terminal'),t('Open a terminal in this repository'),repoRun('open-terminal')),
       explorer:actionButton('explorer','explorer',t('Explorer'),t('Open this repository folder in Explorer'),repoRun('open-folder')),
     };
@@ -214,7 +215,7 @@
     document.addEventListener('gitdeck:undo',(event)=>{const info=event.detail||{};actionButtons.undo.disabled=!info.available;actionButtons.undo.title=info.available?info.title:t('Nothing to undo yet');});
     const syncGroup=group();syncGroup.append(actionButtons.pull,actionButtons.push,actionButtons.fetch);
     group().append(actionButtons.branch,actionButtons.merge,actionButtons.stash,actionButtons.tag);
-    const end=group();end.classList.add('modern-act-end');end.append(actionButtons.terminal,actionButtons.explorer);
+    const end=group();end.classList.add('modern-act-end');end.append(actionButtons.gitflow,actionButtons.terminal,actionButtons.explorer);
     return {strip,syncGroup};
   }
   function renderActions(data){

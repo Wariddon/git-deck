@@ -1022,3 +1022,6 @@ html.ui-modern body .custom-action-row small { display: block; overflow: hidden;
 html.ui-modern body .custom-action-field { display: grid; gap: 4px; }
 html.ui-modern body .custom-action-targets { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 8px 10px; border: 1px solid var(--border-default); border-radius: 6px; }
 html.ui-modern body .custom-action-help { color: var(--text-tertiary) !important; }
+/* Git-flow dialog. */
+html.ui-modern body .git-flow-steps { margin: 0; padding-left: 20px; color: var(--text-secondary); }
+html.ui-modern body .git-flow-start { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px; }

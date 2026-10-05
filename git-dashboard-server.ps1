@@ -1336,7 +1336,10 @@ function Invoke-Action($Body) {
             return @{message="Pushed $branchName to $remote.";output=$(if($output){$output}else{"Pushed $remote/$branchName"})}
         }
         'branch-create-at' {
-            $branchName=([string]$Body.branch).Trim();$commit=([string]$Body.commit).Trim();Assert-BranchName $path $branchName;Assert-CommitHash $path $commit
+            $branchName=([string]$Body.branch).Trim();$commit=([string]$Body.commit).Trim();Assert-BranchName $path $branchName
+            # A branch or tag name (menus, Git-flow) is resolved to its commit first.
+            if($commit -and $commit -notmatch '^[0-9a-fA-F]{4,40}$'){$commit=Resolve-GitRef $path $commit}
+            Assert-CommitHash $path $commit
             $exists=Invoke-GitCapture $path @('show-ref','--verify','--quiet',('refs/heads/'+$branchName));if($exists.Code -eq 0){throw "Local branch $branchName already exists."}
             $output=Invoke-GitOrThrow $path @('branch',$branchName,$commit)
             return @{message="Recovery branch $branchName created at $commit. Current branch was not changed.";output=$(if($output){$output}else{"Created $branchName at $commit"})}
