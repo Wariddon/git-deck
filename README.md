@@ -28,7 +28,7 @@ cd git-deck
 
 Git Deck opens in its own app window (Microsoft Edge `--app` mode: no tabs or address bar) when Edge is installed, otherwise in your default browser. Open **http://127.0.0.1:8765/** if nothing opens automatically. Keep the server running while using the UI.
 
-Like Sourcetree there is one window: starting Git Deck again brings the open window to the front instead of opening another. When `GitDeck.exe` has been built, `git-dashboard.bat` simply starts it (hidden server, no console window); run `git-dashboard.bat --console` to see the server output while troubleshooting. While loading, Git Deck shows a green card with its logo and name, like Sourcetree's splash. `GitDeck.exe` shows the card the moment you start it, and keeps it until the app window appears, where the page shows the same card.
+Like Sourcetree there is one window: starting Git Deck again brings the open window to the front instead of opening another. When `GitDeck.exe` has been built, `git-dashboard.bat` simply starts it (hidden server, no console window); run `git-dashboard.bat --console` to see the server output while troubleshooting. While loading, Git Deck shows only its logo and name on brand green, like Sourcetree's splash. `GitDeck.exe` shows a green card the moment you start it and keeps it until the app window appears; the window is then green from edge to edge with the logo in the same place, until the workspace is ready.
 
 Use **Clone**, **Add** or **Scan** to register your own repositories. Scan can discover repositories nested inside the chosen folder. Start with a disposable repository to learn the workflow.
 

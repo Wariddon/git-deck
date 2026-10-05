@@ -21,6 +21,11 @@ console.log('PASS: startup logo, status, completion, slow-load recovery, Escape 
 const splashCss=fs.readFileSync(path.join(root,'web/startup.css'),'utf8');
 assert.match(html,/<div class="startup-card" aria-hidden="true"><img [^>]*><span class="startup-wordmark">Git Deck<\/span><\/div>/);
 assert.match(splashCss,/\.startup-card \{[^}]*background:var\(--brand\)/);
+// The whole window is brand green: no light page around the logo (user screenshot), and no white flash first.
+assert.match(splashCss,/#startup-splash \{ --brand:#0b6e47;[^}]*background:var\(--brand\);/);
+assert(!/box-shadow/.test(splashCss),'No card edge or shadow: only the logo and the name');
+assert.match(html,/<html lang="en" style="background:#0b6e47">/);
+assert.match(script,/document\.documentElement\.style\.background=''/,'The app gets its own background back after loading');
 assert(!html.includes('startup-spinner'),'No spinner: the card alone, like Sourcetree');
 // GitDeck.exe paints the same card natively until the app window appears.
 const launcher=fs.readFileSync(path.join(root,'launcher/GitDeckLauncher.cs'),'utf8');

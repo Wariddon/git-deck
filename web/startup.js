@@ -9,7 +9,8 @@
       }catch{}
       let finished=false;
       const timer=setTimeout(()=>{if(!finished)document.getElementById('startup-actions').hidden=false;},12000);
-      const finish=()=>{if(finished)return;finished=true;clearTimeout(timer);splash.close();};
+      // index.html starts the page green (no white flash before the splash); the app takes over after.
+      const finish=()=>{if(finished)return;finished=true;clearTimeout(timer);splash.close();if(document.documentElement)document.documentElement.style.background='';};
       window.GitDeckStartup={update(message){if(!finished)status.textContent=message;},finish};
       document.getElementById('startup-reload').onclick=()=>location.reload();
       document.getElementById('startup-continue').onclick=finish;
