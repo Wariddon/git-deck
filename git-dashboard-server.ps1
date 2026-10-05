@@ -13,6 +13,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Parity.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Export.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Activity.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.MultiRepo.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
@@ -31,7 +32,7 @@ $script:BaseUrl = "http://127.0.0.1:$Port/"
 [void](New-Item -ItemType Directory -Path $script:JobsRoot -Force)
 [void](New-Item -ItemType Directory -Path $script:ExportsRoot -Force)
 # Script variables copied into each parallel request runspace.
-$script:SharedVariableNames = @('Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','SecretRules')
+$script:SharedVariableNames = @('Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide')
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }
@@ -1594,6 +1595,10 @@ function Invoke-GitDeckRequest($context) {
         '/api/integration' { Write-Json $context @{integration=(Get-WindowsIntegrationState)} }
         '/api/job' { Write-Json $context (Get-GitJob $request.QueryString['id']) }
         '/api/repos' { Write-Json $context (Get-RepositoryCache) }
+        '/api/repo/pending' { Write-Json $context @{pending=(Get-GitDeckPendingWork $request.QueryString['path'])} }
+        '/api/repo/branch-cleanup' { Write-Json $context @{cleanup=(Get-GitDeckBranchCleanup $request.QueryString['path'])} }
+        '/api/repo/search' { Write-Json $context (Search-GitDeckRepository $request.QueryString['path'] $request.QueryString['q'] $request.QueryString['mode']) }
+        '/api/repo/find-branch' { Write-Json $context @{branch=(Find-GitDeckBranch $request.QueryString['path'] $request.QueryString['name'])} }
         '/api/activity/me' { Write-Json $context @{identity=(Get-GitDeckIdentity)} }
         '/api/repo/activity' { $activityPath=$request.QueryString['path'];$activity=@(Get-GitDeckActivity $activityPath $request.QueryString['since'] $request.QueryString['until'] $request.QueryString['author'] ($request.QueryString['merges'] -eq 'true'));Write-Json $context @{commits=$activity;mainline=$(if($activity.Count){Get-GitDeckMainline $activityPath}else{''})} }
         '/api/repo/details' { $repoPath=$request.QueryString['path']; Write-Json $context @{details=(Get-RepositoryDetails $repoPath)} }

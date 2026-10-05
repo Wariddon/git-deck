@@ -180,3 +180,39 @@ body.theme-dark .work-report-done{color:#7fd29a}
 .diff-remove .diff-word{background:rgba(248,81,73,.38)}
 body.theme-dark .diff-add .diff-word{background:rgba(63,185,80,.42)}
 body.theme-dark .diff-remove .diff-word{background:rgba(248,81,73,.45)}
+
+/* Multi-repository panels in the Operations Center (web/multi-repo.js). */
+.multi-repo-panel .operations-toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.multi-repo-panel .operations-toolbar .workflow-input{width:auto;min-width:0}
+.multi-repo-panel .operations-toolbar input.workflow-input{flex:1 1 220px}
+.multi-repo-status{display:block;margin:6px 0;color:var(--muted,#6b7280)}
+.multi-repo-note{margin:4px 0;font-size:12px;color:var(--muted,#6b7280)}
+.multi-repo-body{max-height:58vh;overflow:auto}
+.multi-repo-table{width:100%;border-collapse:collapse;font-size:12px}
+.multi-repo-table th,.multi-repo-table td{padding:5px 6px;border-bottom:1px solid var(--line,rgba(127,127,127,.2));text-align:left;vertical-align:top}
+.multi-repo-table th{position:sticky;top:0;background:var(--surface,#fff);z-index:1}
+.multi-repo-link{background:none !important;border:0 !important;box-shadow:none !important;min-height:0 !important;padding:0 !important;color:var(--accent,#0969da);cursor:pointer;font-weight:600;text-align:left}
+.multi-repo-chips{display:flex;flex-wrap:wrap;gap:4px}
+.multi-repo-chip{padding:1px 7px;border-radius:999px;font-size:11px;background:rgba(127,127,127,.14)}
+.multi-repo-chip.tone-bad,.multi-repo-result.tone-bad{color:#b42318}
+.multi-repo-chip.tone-bad{background:rgba(220,38,38,.12)}
+.multi-repo-chip.tone-warn{background:rgba(217,119,6,.15);color:#92400e}
+.multi-repo-chip.tone-info{background:rgba(37,99,235,.12);color:#1d4ed8}
+.multi-repo-chip.tone-muted,.multi-repo-result.tone-muted{color:var(--muted,#6b7280)}
+.multi-repo-result.tone-ok{color:#15803d}
+.multi-repo-result.tone-info{color:#1d4ed8}
+body.theme-dark .multi-repo-chip.tone-bad,body.theme-dark .multi-repo-result.tone-bad{color:#ff9b8f}
+body.theme-dark .multi-repo-chip.tone-warn{color:#f0b46a}
+body.theme-dark .multi-repo-chip.tone-info,body.theme-dark .multi-repo-result.tone-info{color:#8ab4f8}
+body.theme-dark .multi-repo-result.tone-ok{color:#7fd29a}
+.multi-repo-empty{padding:16px;text-align:center;color:var(--muted,#6b7280)}
+.multi-repo-hit h3{font-size:13px;margin:10px 0 4px}
+.multi-repo-hit ul{list-style:none;margin:0;padding:0}
+.multi-repo-hit li{padding:2px 0;font-size:12px;cursor:pointer}
+.multi-repo-hit li:hover{background:rgba(127,127,127,.1)}
+.multi-repo-hit code{font-family:var(--modern-mono,Consolas,monospace)}
+.multi-repo-branches{font-size:12px;margin:0 0 4px;color:var(--muted,#6b7280)}
+.branch-cleanup-dialog{width:min(880px,94vw)}
+.gitlab-news p{margin:2px 0}
+body .backdrop:not(#workspace-backdrop) .multi-repo-panel button.primary{color:var(--accent-contrast,#fff)}
+body .backdrop:not(#workspace-backdrop) .multi-repo-link{color:var(--green,#0969da)}

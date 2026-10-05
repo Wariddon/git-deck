@@ -1,0 +1,108 @@
+# Git Deck multi-repository views: pending work, branch cleanup, search and branch lookup.
+# Dot-sourced by git-dashboard-server.ps1 after GitDeck.Activity.ps1 (uses Get-GitDeckMainline).
+# Read-only and local (no network); Windows PowerShell 5.1 compatible.
+
+$script:ProtectedBranches = @('main', 'master', 'develop', 'dev', 'release', 'staging', 'production')
+
+function Get-GitDeckLines($Result) {
+    if ($Result.Code -ne 0) { return @() }
+    return @(([string]$Result.Output) -split "`r?`n" | Where-Object { $_ })
+}
+
+# Everything still open in one repository: uncommitted files, unpushed commits, stashes,
+# merged branches nobody deleted, and an unfinished merge/rebase.
+function Get-GitDeckPendingWork([string]$Path) {
+    Assert-Registered $Path
+    $status = @(Get-GitDeckLines (Invoke-GitCapture $Path @('status', '--porcelain=v1', '--branch')))
+    $head = if ($status.Count -and $status[0].StartsWith('## ')) { $status[0].Substring(3) } else { '' }
+    $files = @($status | Where-Object { -not $_.StartsWith('## ') })
+    $conflicts = @($files | Where-Object { $_ -match '^(UU|AA|DD|AU|UA|DU|UD) ' }).Count
+    $untracked = @($files | Where-Object { $_.StartsWith('?? ') }).Count
+    $branch = (Invoke-GitCapture $Path @('branch', '--show-current')).Output
+    $branch = ([string]$branch).Trim()
+    $ahead = 0; $behind = 0; $upstream = ''
+    if ($head -match '\.\.\.(\S+)') { $upstream = $Matches[1] }
+    if ($head -match 'ahead (\d+)') { $ahead = [int]$Matches[1] }
+    if ($head -match 'behind (\d+)') { $behind = [int]$Matches[1] }
+    # Other local branches with commits that are on no remote.
+    $unpushed = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--format=%(refname:short)%09%(upstream:short)%09%(upstream:track)', 'refs/heads'))) {
+        $f = $line -split "`t"
+        if ($f[0] -eq $branch) { continue }
+        if ($f.Count -gt 1 -and $f[1]) {
+            if ($f.Count -gt 2 -and $f[2] -match 'ahead (\d+)') { $unpushed.Add(@{ branch = $f[0]; commits = [int]$Matches[1]; upstream = $f[1] }) }
+        } else {
+            $count = (Invoke-GitCapture $Path @('rev-list', '--count', $f[0], '--not', '--remotes')).Output
+            $n = 0; if ([int]::TryParse(([string]$count).Trim(), [ref]$n) -and $n -gt 0) { $unpushed.Add(@{ branch = $f[0]; commits = $n; upstream = '' }) }
+        }
+    }
+    $stashes = @(Get-GitDeckLines (Invoke-GitCapture $Path @('stash', 'list', '--format=%gd%x09%s'))) | ForEach-Object { $p = $_ -split "`t", 2; @{ ref = $p[0]; message = $(if ($p.Count -gt 1) { $p[1] } else { '' }) } }
+    $mainline = Get-GitDeckMainline $Path
+    $merged = @()
+    if ($mainline) {
+        $merged = @(Get-GitDeckLines (Invoke-GitCapture $Path @('branch', '--format=%(refname:short)', '--merged', $mainline)) |
+            Where-Object { $_ -ne $branch -and $script:ProtectedBranches -notcontains $_ -and "origin/$_" -ne $mainline })
+    }
+    $operation = Get-GitOperationState $Path
+    return [ordered]@{
+        branch = $branch; upstream = $upstream; ahead = $ahead; behind = $behind
+        changed = $files.Count - $untracked; untracked = $untracked; conflicts = $conflicts
+        operation = $(if ($operation.active) { [string]$operation.type } else { '' })
+        unpushedBranches = $unpushed.ToArray(); stashes = @($stashes); mergedBranches = $merged; mainline = $mainline
+    }
+}
+
+# Branch hygiene: local and remote branches with merged state, age and a gone upstream.
+function Get-GitDeckBranchCleanup([string]$Path) {
+    Assert-Registered $Path
+    $mainline = Get-GitDeckMainline $Path
+    $current = ([string](Invoke-GitCapture $Path @('branch', '--show-current')).Output).Trim()
+    $mergedLocal = @{}; $mergedRemote = @{}
+    if ($mainline) {
+        foreach ($name in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--format=%(refname:short)', '--merged', $mainline, 'refs/heads'))) { $mergedLocal[$name] = $true }
+        foreach ($name in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--format=%(refname:short)', '--merged', $mainline, 'refs/remotes'))) { $mergedRemote[$name] = $true }
+    }
+    $items = New-Object 'System.Collections.Generic.List[object]'
+    $format = '--format=%(refname)%09%(refname:short)%09%(committerdate:iso-strict)%09%(upstream:short)%09%(upstream:track)%09%(subject)'
+    foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', $format, 'refs/heads', 'refs/remotes'))) {
+        $f = $line -split "`t", 6
+        if ($f.Count -lt 6 -or $f[0] -match '/HEAD$') { continue }
+        $remote = $f[0].StartsWith('refs/remotes/')
+        $short = $f[1]
+        $base = if ($remote) { $short.Substring($short.IndexOf('/') + 1) } else { $short }
+        $protected = $script:ProtectedBranches -contains $base -or $short -eq $mainline -or (-not $remote -and $short -eq $current)
+        $items.Add([ordered]@{
+            name = $short; remote = $remote; date = $f[2]; upstream = $f[3]; gone = ($f[4] -eq '[gone]'); subject = $f[5]
+            merged = $(if ($remote) { [bool]$mergedRemote[$short] } else { [bool]$mergedLocal[$short] }); protected = $protected; current = (-not $remote -and $short -eq $current)
+        })
+    }
+    return [ordered]@{ mainline = $mainline; current = $current; branches = $items.ToArray() }
+}
+
+# Search one repository: commit messages (and ticket keys), branch names, or changed content.
+function Search-GitDeckRepository([string]$Path, [string]$Query, [string]$Mode) {
+    Assert-Registered $Path
+    $Query = ([string]$Query).Trim()
+    if (-not $Query -or $Query.Length -gt 200 -or $Query -match "[`r`n]" -or $Query.StartsWith('-')) { throw 'Search text is required, under 200 characters and must not start with "-".' }
+    if ($Mode -eq 'content') { $found = @(Search-HistoryContent $Path $Query 'literal'); return @{ commits = $found; branches = @() } }
+    $branches = @(Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--format=%(refname:short)', 'refs/heads', 'refs/remotes')) |
+        Where-Object { $_ -notmatch '/HEAD$' -and $_.IndexOf($Query, [StringComparison]::OrdinalIgnoreCase) -ge 0 } | Select-Object -First 30)
+    $result = Invoke-GitCapture $Path @('log', '--exclude=refs/stash', '--all', '--date=short', '--regexp-ignore-case', '--fixed-strings', "--grep=$Query",
+        '--format=%h%x1f%H%x1f%ad%x1f%an%x1f%s%x1f%D', '-60')
+    $commits = if ($result.Code -eq 0) { @(Convert-LogLines $result.Output) } else { @() }
+    return @{ commits = @($commits); branches = @($branches) }
+}
+
+# Where a branch name exists in a repository, so a multi-repository switch can pick switch,
+# track or create for each one.
+function Find-GitDeckBranch([string]$Path, [string]$Name) {
+    Assert-Registered $Path
+    $Name = ([string]$Name).Trim()
+    Assert-BranchName $Path $Name
+    $local = (Invoke-GitCapture $Path @('show-ref', '--verify', '--quiet', "refs/heads/$Name")).Code -eq 0
+    $remote = ''
+    foreach ($ref in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--format=%(refname:short)', "refs/remotes/*/$Name"))) { $remote = $ref; break }
+    $current = ([string](Invoke-GitCapture $Path @('branch', '--show-current')).Output).Trim()
+    $dirty = @(Get-GitDeckLines (Invoke-GitCapture $Path @('status', '--porcelain'))).Count -gt 0
+    return [ordered]@{ local = $local; remote = $remote; current = $current; dirty = $dirty }
+}
