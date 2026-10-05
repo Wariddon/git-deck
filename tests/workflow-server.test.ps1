@@ -3,7 +3,7 @@ $root=Split-Path $PSScriptRoot -Parent
 $tokens=$null;$errors=$null
 $ast=[System.Management.Automation.Language.Parser]::ParseFile((Join-Path $root 'git-dashboard-server.ps1'),[ref]$tokens,[ref]$errors)
 if($errors.Count){throw 'Server parse failed'}
-foreach($name in @('Invoke-GitCapture','Invoke-GitOrThrow','Resolve-GitRef','Get-GitOperationState','Get-GitDeckVisibleStatusLines','Test-GitDeckProtectedStatusLine','Test-GitDeckProtectedPath')){
+foreach($name in @('Invoke-GitCapture','Invoke-GitOrThrow','Resolve-GitRef','Get-GitOperationState','Get-GitDeckVisibleStatusLines','Test-GitDeckProtectedStatusLine','ConvertFrom-GitQuotedPath','Get-GitDeckStatusPath','Test-GitDeckProtectedPath')){
     $fn=$ast.FindAll({param($n)$n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$false)[0]
     $definition=$fn.Extent.Text
     if($name -eq 'Invoke-GitCapture'){$definition=$definition.Replace('$items =',("`$ErrorActionPreference='Continue'`n    `$items ="))}

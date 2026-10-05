@@ -7,10 +7,10 @@ function Get-WorkflowStatus([string]$Path) {
     $files=New-Object 'System.Collections.Generic.List[object]'
     $protected=New-Object 'System.Collections.Generic.List[string]'
     foreach($line in @($result.Output -split "`r?`n" | Where-Object {$_})){
-        if(Test-GitDeckProtectedStatusLine $line){$protected.Add($line.Substring(3));continue}
+        if(Test-GitDeckProtectedStatusLine $line){$protected.Add((Get-GitDeckStatusPath $line));continue}
         if($line.Length -lt 4){continue}
         $index=$line.Substring(0,1);$work=$line.Substring(1,1)
-        $files.Add(@{status=$line.Substring(0,2);path=$line.Substring(3);indexStatus=$index;worktreeStatus=$work;staged=($index -ne ' ' -and $index -ne '?');unstaged=($work -ne ' ' -or $line.StartsWith('??'))})
+        $files.Add(@{status=$line.Substring(0,2);path=(Get-GitDeckStatusPath $line);indexStatus=$index;worktreeStatus=$work;staged=($index -ne ' ' -and $index -ne '?');unstaged=($work -ne ' ' -or $line.StartsWith('??'))})
     }
     $branch=(Invoke-GitOrThrow $Path @('branch','--show-current')).Trim()
     $head=Invoke-GitCapture $Path @('rev-parse','--verify','HEAD')

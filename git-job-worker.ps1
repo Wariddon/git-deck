@@ -42,7 +42,7 @@ function Invoke-Git([string]$WorkingPath,[string[]]$Arguments) {
     $previousPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $items = if ($WorkingPath) { @(& git -C $WorkingPath @Arguments 2>&1) } else { @(& git @Arguments 2>&1) }
+        $items = if ($WorkingPath) { @(& git -c core.quotepath=false -C $WorkingPath @Arguments 2>&1) } else { @(& git -c core.quotepath=false @Arguments 2>&1) }
         $code = $LASTEXITCODE
         $text = ($items | ForEach-Object { if ($_ -is [Management.Automation.ErrorRecord]) { $_.Exception.Message } else { [string]$_ } } | Out-String).TrimEnd()
     } finally { $ErrorActionPreference = $previousPreference }

@@ -8,6 +8,7 @@ $definition=$ast.FindAll({param($n) $n -is [System.Management.Automation.Languag
 function Assert-Registered($Path) {}
 function Get-WorkspaceDetails {throw 'Diff must not read the full workspace'}
 function Test-GitDeckProtectedStatusLine($line){return $line -like '?? .idea*'}
+foreach($name in @('ConvertFrom-GitQuotedPath','Get-GitDeckStatusPath')){. ([scriptblock]::Create($ast.FindAll({param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$false)[0].Extent.Text))}
 $script:commands=@()
 function Invoke-GitCapture($Path,$Arguments){
     $script:commands+=,$Arguments

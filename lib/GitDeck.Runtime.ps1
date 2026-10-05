@@ -146,7 +146,7 @@ function Write-GitDeckEvent($Client, [string]$Text) {
 }
 
 function Add-GitDeckEventClient($Context) {
-    $path = [string]$Context.Request.QueryString['path']
+    $path = [string](Get-GitDeckQuery $Context.Request)['path']
     if ($path) { Assert-Registered $path }
     $response = $Context.Response
     $response.StatusCode = 200

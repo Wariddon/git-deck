@@ -14,6 +14,11 @@ for (const file of files) {
     for (const call of line.match(/Get-Content\b[^|;}]*/g) || []) assert.match(call, /-Encoding\s+UTF8/i, `${file}:${index + 1} reads without -Encoding UTF8: ${call.trim()}`);
   });
 }
+// Requests: JSON bodies and query strings are decoded as UTF-8, never with HttpListener's ANSI default.
+const server = fs.readFileSync(path.join(root, 'git-dashboard-server.ps1'), 'utf8');
+assert.ok(!/QueryString\[/.test(server + fs.readFileSync(path.join(root, 'lib/GitDeck.Runtime.ps1'), 'utf8')), 'Use Get-GitDeckQuery, not Request.QueryString');
+assert.match(server, /StreamReader\(\$Request\.InputStream,\[Text\.Encoding\]::UTF8\)/);
+assert.match(server, /& git -c core\.quotepath=false -C \$Path @Arguments/, 'Non-ASCII paths come back unescaped');
 // The repository row keeps its status visible when the message or path is long.
 assert.match(fs.readFileSync(path.join(root, 'web/features.css'), 'utf8'), /#repo-list \.repo \.repo-meta>i\{flex:0 0 auto\}/);
 console.log('PASS: server files are read as UTF-8; repository status is never clipped');

@@ -7,9 +7,9 @@ function Get-GitDeckStatusPaths([string]$Text) {
     # porcelain v1 lines: "XY path" or "XY old -> new"; returns @{path;untracked}.
     foreach ($line in @(Get-GitDeckVisibleStatusLines $Text)) {
         if ($line.Length -lt 4) { continue }
-        $file = $line.Substring(3)
+        $file = Get-GitDeckStatusPath $line
         if ($file.Contains(' -> ')) { $file = $file.Substring($file.LastIndexOf(' -> ') + 4) }
-        [pscustomobject]@{ path = $file.Trim('"'); untracked = $line.StartsWith('??') }
+        [pscustomobject]@{ path = $file; untracked = $line.StartsWith('??') }
     }
 }
 

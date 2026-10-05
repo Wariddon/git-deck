@@ -3,7 +3,7 @@ $gitDeck=Split-Path $PSScriptRoot -Parent
 $tokens=$null;$errors=$null
 $ast=[System.Management.Automation.Language.Parser]::ParseFile((Join-Path $gitDeck 'git-dashboard-server.ps1'),[ref]$tokens,[ref]$errors)
 if($errors.Count){throw 'Server parse failed'}
-foreach($name in @('Invoke-GitCapture','Invoke-GitOrThrow','Get-GitOperationState','Get-GitDeckVisibleStatusLines','Test-GitDeckProtectedStatusLine','Test-GitDeckProtectedPath','Assert-RemoteName','Assert-BranchName','Invoke-GitPatch','Get-ConflictDetails','Get-ReflogEntries')){
+foreach($name in @('Invoke-GitCapture','Invoke-GitOrThrow','Get-GitOperationState','Get-GitDeckVisibleStatusLines','Test-GitDeckProtectedStatusLine','ConvertFrom-GitQuotedPath','Get-GitDeckStatusPath','Test-GitDeckProtectedPath','Assert-RemoteName','Assert-BranchName','Invoke-GitPatch','Get-ConflictDetails','Get-ReflogEntries')){
     $fn=$ast.FindAll({param($n)$n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$false)[0]
     if(-not $fn){throw "Missing server function $name"}
     $definition=$fn.Extent.Text
