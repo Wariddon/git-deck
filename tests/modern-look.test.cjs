@@ -161,3 +161,12 @@ assert.match(modernJs, /runWorkspaceAction\('merge',\{branch:list\.value,mode:mo
 assert.match(modernJs, /head\.querySelectorAll\('\.modern-viewing, :scope > \.modern-moved'\)\.forEach\(node=>node\.remove\(\)\)/);
 assert.match(modernCss, /\.history-context\.modern-folded \{ display: none !important; \}/);
 console.log('PASS: Stash/Merge dialogs and one-row history header');
+// Other pages, Sourcetree density: one-line branches and tags, Remote editor only on Edit, first item opens.
+assert.match(modernCss, /#workspace-content \.branch-card > \.workspace-row \{ min-height: 28px !important; padding: 2px 10px 2px 36px !important; \}/, 'Branch icon keeps its own space (the id-level row padding would cover it)');
+assert.match(modernCss, /\.tag-row \.tag-info \{ display: grid;/);
+assert.match(modernCss, /\.remote-card:not\(\.expanded\) > \.remote-edit \{ display: none !important; \}/);
+assert.match(modernJs, /\['\.compare-diff > \.workspace-empty','\.compare-file-list \.compare-file-row'\]/);
+assert.match(modernJs, /autoOpened\.add\(empty\);root\.querySelector\(first\)\?\.click\(\);/, 'Each empty panel is opened once (no click loop)');
+const appJs = fs.readFileSync(path.join(__dirname, '../web/app.js'), 'utf8');
+assert.match(appJs, /includes\(saved\.filter\)\?saved\.filter:'all';/, 'Sidebar starts on the Branches / Remotes / Tags / Stashes tree');
+console.log('PASS: Sourcetree density on Branches, Tags, Remotes, Compare, Stashes and the sidebar');

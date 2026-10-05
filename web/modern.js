@@ -416,6 +416,14 @@
     if(viewing){const chip=el('span','modern-viewing modern-made',viewing.textContent);chip.title=viewing.parentElement?.title||'';head.querySelector('h3')?.after(chip);}
     for(const button of bar.querySelectorAll(':scope > button')){button.classList.add('modern-moved');head.append(button);}
   }
+  // Compare and Stashes open their first item instead of an empty "Select a file" panel, like Sourcetree.
+  const autoOpened=new WeakSet();
+  function autoOpenFirst(root){
+    for(const [placeholder,first] of [['.compare-diff > .workspace-empty','.compare-file-list .compare-file-row'],['.stash-preview > .workspace-empty','.stash-layout .stash-label']]){
+      const empty=root.querySelector(placeholder);if(!empty||autoOpened.has(empty))continue;
+      autoOpened.add(empty);root.querySelector(first)?.click();
+    }
+  }
   function decorateHistory(root){
     try{foldHistoryHead(root);}catch(error){console.warn('History header unavailable',error);}
     for(const row of root.querySelectorAll('.commit-row:not([data-modern])')){
@@ -580,7 +588,7 @@
   }
   const content=$id('workspace-content');let pending=false;
   // setTimeout, not requestAnimationFrame: rAF is paused while the window is hidden.
-  if(content)new MutationObserver(()=>{if(pending||!isModern())return;pending=true;setTimeout(()=>{pending=false;decorateHistory(content);decorateBranches(content);renderRail();},0);}).observe(content,{childList:true,subtree:true});
+  if(content)new MutationObserver(()=>{if(pending||!isModern())return;pending=true;setTimeout(()=>{pending=false;decorateHistory(content);decorateBranches(content);renderRail();try{autoOpenFirst(content);}catch{}},0);}).observe(content,{childList:true,subtree:true});
   // The "Last fetched" caption ages; refresh it every minute.
   setInterval(()=>{if(isModern())try{renderHeader();}catch{}},60000);
   const applyLook=()=>{if(isModern())refresh();else teardown();};

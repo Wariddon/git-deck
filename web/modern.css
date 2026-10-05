@@ -889,3 +889,36 @@ html.ui-modern body .modern-dialog-check { display: flex; align-items: center; g
 html.ui-modern body .modern-merge-list { width: 100%; min-height: 220px; padding: 4px; border: 1px solid var(--border-default); border-radius: 6px; background: var(--surface); color: var(--text-primary); }
 html.ui-modern body .modern-merge-list option { padding: 3px 6px; border-radius: 4px; }
 html.ui-modern body .modern-dialog-note { padding: 8px 10px; border-radius: 6px; background: var(--surface-subtle); }
+
+/* ---- Other pages, Sourcetree density ------------------------------------------------------------------ */
+/* Branches: one line per branch (icon · name · tracking), actions on hover. */
+html.ui-modern body #workspace-content .branch-card > .workspace-row { min-height: 28px !important; padding: 2px 10px 2px 36px !important; }
+html.ui-modern body .branch-card > .workspace-row > div:first-child { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+html.ui-modern body .branch-card > .workspace-row > div:first-child > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.ui-modern body .branch-card > .workspace-row > div:first-child > strong { flex: none; max-width: 60%; }
+html.ui-modern body .branch-card .workspace-row-actions button { height: 22px; min-height: 22px; padding: 0 8px; }
+html.ui-modern body .branch-card { border-radius: 4px !important; }
+/* Tags: name · commit · message on one line. */
+html.ui-modern body .tag-row { padding: 3px 10px !important; min-height: 28px; align-items: center; }
+html.ui-modern body .tag-row .tag-info { display: grid; grid-template-columns: minmax(120px, 220px) minmax(140px, 180px) minmax(0, 1fr); align-items: center; gap: 12px; min-width: 0; }
+html.ui-modern body .tag-row .tag-info > * { min-width: 0; margin: 0 !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.ui-modern body .tag-row .tag-actions button { height: 22px; min-height: 22px; padding: 0 8px; }
+/* Remotes: the URL editor only opens with Edit. */
+html.ui-modern body #workspace-content .remote-card:not(.expanded) > .remote-edit { display: none !important; }
+html.ui-modern body #workspace-content .remote-card.expanded > .remote-edit > input { flex: 1 1 220px; }
+html.ui-modern body .remote-row > div:first-child { display: grid; gap: 1px; }
+/* Compare: the numbers become one slim row of chips. */
+html.ui-modern body .compare-stat { padding: 5px 12px !important; border-radius: 6px !important; white-space: normal !important; font-weight: 500; }
+html.ui-modern body .compare-stat::first-line { font-size: inherit !important; }
+html.ui-modern body .readiness-row { padding: 5px 10px !important; }
+/* Stashes: the preview fills the height. */
+html.ui-modern body .stash-layout { min-height: calc(100vh - 220px) !important; }
+/* File Status commit box: about 60px shorter. */
+html.ui-modern body .commit-composer .commit-assist { gap: 4px !important; }
+html.ui-modern body .commit-composer .commit-assist > :is(select, button) { height: 24px !important; min-height: 24px !important; padding: 0 6px !important; }
+html.ui-modern body .commit-composer .commit-assist > select:first-child { width: 72px; }
+html.ui-modern body .commit-composer .commit-assist > .recent-messages { flex: 1 1 100%; }
+html.ui-modern body .commit-composer .commit-assist > .commit-meter { margin-left: auto; }
+html.ui-modern body .commit-composer textarea { min-height: 64px !important; height: 72px; }
+html.ui-modern body .commit-composer .commit-options { gap: 2px 12px !important; }
+html.ui-modern body .commit-composer .commit-submit { height: 30px !important; min-height: 30px !important; }

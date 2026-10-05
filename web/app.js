@@ -198,7 +198,7 @@ function renderWorkbenchTree(data){
   };
   const top=el('div','ref-tree-options'),emptyLabel=el('label'),empty=document.createElement('input');empty.type='checkbox';empty.checked=saved.showEmpty===true;
   emptyLabel.append(empty,document.createTextNode('Show empty groups'));empty.onchange=()=>{saved.showEmpty=empty.checked;save();renderWorkbenchTree(data);};top.append(emptyLabel);content.append(top);
-  const filter=['home','all','pinned','recent'].includes(saved.filter)?saved.filter:'home';
+  const filter=['home','all','pinned','recent'].includes(saved.filter)?saved.filter:'all'; // Branches / Remotes / Tags / Stashes tree first, like Sourcetree's sidebar
   const recent=Array.isArray(saved.recent)?saved.recent.filter(id=>typeof id==='string').slice(0,20):[];
   const filters=el('div','ref-filter-tabs');filters.setAttribute('aria-label','Branch filters');
   for(const [id,label] of [['home','Overview'],['all','All'],['pinned','Pinned'],['recent','Recent']]){const button=el('button','',label);button.type='button';button.setAttribute('aria-pressed',String(filter===id));button.onclick=()=>{saved.filter=id;save();renderWorkbenchTree(data);};filters.append(button);}content.prepend(filters);
