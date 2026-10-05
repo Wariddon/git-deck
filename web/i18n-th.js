@@ -551,4 +551,7 @@ GitDeckI18n.register('th',{
   "Edit URL…":"แก้ URL…",
   "Remove {remote}…":"ลบ {remote}…",
   "Remove remote {remote} from config?\nThe repository on the server is not deleted.":"ลบ remote {remote} ออกจาก config ไหม?\nrepository บนเซิร์ฟเวอร์จะไม่ถูกลบ",
+  "Every {count} minutes":"ทุก {count} นาที",
+  "{count} new commit(s) on {upstream}":"มี commit ใหม่ {count} ตัวบน {upstream}",
+  "Someone pushed to this branch. Pull now so your next push goes through.":"มีคน push เข้า branch นี้ pull ตอนนี้เลย จะได้ push ครั้งต่อไปผ่าน",
 });
