@@ -36,7 +36,7 @@ $script:SharedVariableNames = @('Root','WebRoot','RepoList','ScanList','RepoCach
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }
-    return @(Get-Content -LiteralPath $script:RepoList | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique)
+    return @(Get-Content -Encoding UTF8 -LiteralPath $script:RepoList | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique)
 }
 
 function Save-Repositories([string[]]$Repositories) {
@@ -46,7 +46,7 @@ function Save-Repositories([string[]]$Repositories) {
 
 function Get-ScanLocations {
     if (-not (Test-Path -LiteralPath $script:ScanList -PathType Leaf)) { return @() }
-    return @(Get-Content -LiteralPath $script:ScanList | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique)
+    return @(Get-Content -Encoding UTF8 -LiteralPath $script:ScanList | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique)
 }
 
 function Save-ScanLocations([string[]]$Locations) {
@@ -263,7 +263,7 @@ function Get-RepositoryCache {
     $cachedAt = $null
     if (Test-Path -LiteralPath $script:RepoCache -PathType Leaf) {
         try {
-            $cache = Get-Content -LiteralPath $script:RepoCache -Raw -ErrorAction Stop | ConvertFrom-Json
+            $cache = Get-Content -Encoding UTF8 -LiteralPath $script:RepoCache -Raw -ErrorAction Stop | ConvertFrom-Json
             $cachedItems = @($cache.repos)
             $cachedAt = [string]$cache.cachedAt
         } catch { $cachedItems = @(); $cachedAt = $null }
@@ -524,7 +524,7 @@ function Get-WorkingDiff([string]$Path,[string]$File,[bool]$Staged) {
         if(-not (Test-Path -LiteralPath $full -PathType Leaf)){throw 'Untracked file was not found.'}
         $info=Get-Item -LiteralPath $full
         if($info.Length -gt 300000){return [ordered]@{diff='Untracked file is larger than 300 KB. Open it in VS Code to inspect.';binary=$true}}
-        try{$lines=@(Get-Content -LiteralPath $full -ErrorAction Stop | Select-Object -First 4000);$text=($lines | ForEach-Object {'+ '+$_}) -join "`r`n";return [ordered]@{diff=("--- /dev/null`r`n+++ "+$File+"`r`n"+$text);binary=$false}}catch{return [ordered]@{diff='Binary or unreadable untracked file.';binary=$true}}
+        try{$lines=@(Get-Content -Encoding UTF8 -LiteralPath $full -ErrorAction Stop | Select-Object -First 4000);$text=($lines | ForEach-Object {'+ '+$_}) -join "`r`n";return [ordered]@{diff=("--- /dev/null`r`n+++ "+$File+"`r`n"+$text);binary=$false}}catch{return [ordered]@{diff='Binary or unreadable untracked file.';binary=$true}}
     }
     $args=if($Staged){@('diff','--cached','--no-ext-diff','--unified=4','--',$File)}else{@('diff','--no-ext-diff','--unified=4','--',$File)}
     $result=Invoke-GitCapture $Path $args
@@ -613,7 +613,7 @@ function Get-GitToolsState([string]$Path) {
     $objects=Invoke-GitCapture $Path @('count-objects','-vH')
     $bisect=Invoke-GitCapture $Path @('bisect','log')
     $lfs=Invoke-GitCapture $Path @('lfs','track')
-    $attributes=Join-Path $Path '.gitattributes';$attributeText='';if(Test-Path -LiteralPath $attributes -PathType Leaf){$attributeText=Get-Content -LiteralPath $attributes -Raw -ErrorAction SilentlyContinue}
+    $attributes=Join-Path $Path '.gitattributes';$attributeText='';if(Test-Path -LiteralPath $attributes -PathType Leaf){$attributeText=Get-Content -Encoding UTF8 -LiteralPath $attributes -Raw -ErrorAction SilentlyContinue}
     $patterns=New-Object 'System.Collections.Generic.List[string]';foreach($line in @($attributeText -split "`r?`n"|Where-Object{$_ -and $_ -notmatch '^\s*#' -and $_ -match 'filter=lfs'})){if($line -match '^\s*(\S+)\s+'){$patterns.Add($Matches[1])}}
     return [ordered]@{objects=$(if($objects.Code -eq 0){$objects.Output}else{'Repository statistics unavailable.'});bisectActive=($bisect.Code -eq 0);bisectLog=$(if($bisect.Code -eq 0){$bisect.Output}else{''});lfsAvailable=($lfs.Code -eq 0);lfsPatterns=$patterns.ToArray()}
 }
@@ -834,7 +834,7 @@ function Get-ActionJournal {
         # Windows PowerShell 5.1 passes a JSON array down the pipeline as ONE object, so entries were
         # never enumerated (Undo never found the last action) and saving nested them as {"value":[...]}.
         # Flatten both shapes into plain entries.
-        $parsed = Get-Content -LiteralPath $script:ActionJournal -Raw -ErrorAction Stop | ConvertFrom-Json
+        $parsed = Get-Content -Encoding UTF8 -LiteralPath $script:ActionJournal -Raw -ErrorAction Stop | ConvertFrom-Json
         $flat = New-Object System.Collections.ArrayList
         $add = {
             param($node)
@@ -891,7 +891,7 @@ function Get-GitJob([string]$JobId) {
     $statusPath = Join-Path $script:JobsRoot ($JobId + '.status.json')
     if (-not (Test-Path -LiteralPath $statusPath -PathType Leaf)) { throw 'Git job was not found.' }
     for ($attempt=0; $attempt -lt 3; $attempt++) {
-        try { return (Get-Content -LiteralPath $statusPath -Raw -ErrorAction Stop | ConvertFrom-Json) }
+        try { return (Get-Content -Encoding UTF8 -LiteralPath $statusPath -Raw -ErrorAction Stop | ConvertFrom-Json) }
         catch { if ($attempt -eq 2) { throw 'Git job status is temporarily unavailable.' }; Start-Sleep -Milliseconds 30 }
     }
 }
@@ -900,7 +900,7 @@ function Get-GitJobs {
     $items=New-Object 'System.Collections.Generic.List[object]'
     foreach($file in @(Get-ChildItem -LiteralPath $script:JobsRoot -Filter '*.status.json' -File -ErrorAction SilentlyContinue|Sort-Object LastWriteTime -Descending|Select-Object -First 40)){
         try{
-            $job=Get-Content -LiteralPath $file.FullName -Raw|ConvertFrom-Json
+            $job=Get-Content -Encoding UTF8 -LiteralPath $file.FullName -Raw|ConvertFrom-Json
             $items.Add([ordered]@{id=[string]$job.id;action=[string]$job.action;path=[string]$job.path;state=[string]$job.state;progress=[int]$job.progress;message=[string]$job.message;startedAt=[string]$job.startedAt;updatedAt=[string]$job.updatedAt;finishedAt=[string]$job.finishedAt})
         }catch{}
     }
@@ -938,7 +938,7 @@ function Start-GitJob([hashtable]$Spec,[string]$InitialMessage) {
 function Get-ActiveGitJob([string]$Action) {
     foreach ($file in @(Get-ChildItem -LiteralPath $script:JobsRoot -Filter '*.status.json' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)) {
         try {
-            $job = Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json
+            $job = Get-Content -Encoding UTF8 -LiteralPath $file.FullName -Raw | ConvertFrom-Json
             if ($job.action -eq $Action -and $job.state -in @('queued','running')) { return $job }
         } catch {}
     }
@@ -1590,7 +1590,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/readiness' { Write-Json $context (Get-SetupReadiness) }
         '/api/custom-actions' { Write-Json $context @{ actions = @(Get-GitDeckCustomActions) } }
         '/api/repo/push-preview' { Write-Json $context (Get-PushPreview $request.QueryString['path'] $request.QueryString['remote'] $request.QueryString['local'] $request.QueryString['target']) }
-        '/api/ui-state' { $ui=[ordered]@{schemaVersion=2;path='';tab='history';openRepos=@()};if(Test-Path -LiteralPath $script:UiState -PathType Leaf){try{$saved=Get-Content -LiteralPath $script:UiState -Raw|ConvertFrom-Json;$savedPath=if($saved.path){[string]$saved.path}else{''};$savedTab=if($saved.tab){[string]$saved.tab}else{'history'};[string[]]$savedOpenRepos=if($null-ne $saved.openRepos){@($saved.openRepos|ForEach-Object{[string]$_})}elseif($savedPath){@($savedPath)}else{@()};$savedSchemaVersion=if($saved.schemaVersion){[int]$saved.schemaVersion}else{1};$ui=[ordered]@{schemaVersion=$savedSchemaVersion;path=$savedPath;tab=$savedTab;openRepos=$savedOpenRepos}}catch{}};Write-Json $context @{view=$ui} }
+        '/api/ui-state' { $ui=[ordered]@{schemaVersion=2;path='';tab='history';openRepos=@()};if(Test-Path -LiteralPath $script:UiState -PathType Leaf){try{$saved=Get-Content -Encoding UTF8 -LiteralPath $script:UiState -Raw|ConvertFrom-Json;$savedPath=if($saved.path){[string]$saved.path}else{''};$savedTab=if($saved.tab){[string]$saved.tab}else{'history'};[string[]]$savedOpenRepos=if($null-ne $saved.openRepos){@($saved.openRepos|ForEach-Object{[string]$_})}elseif($savedPath){@($savedPath)}else{@()};$savedSchemaVersion=if($saved.schemaVersion){[int]$saved.schemaVersion}else{1};$ui=[ordered]@{schemaVersion=$savedSchemaVersion;path=$savedPath;tab=$savedTab;openRepos=$savedOpenRepos}}catch{}};Write-Json $context @{view=$ui} }
         '/api/jobs' { Write-Json $context @{jobs=@(Get-GitJobs)} }
         '/api/integration' { Write-Json $context @{integration=(Get-WindowsIntegrationState)} }
         '/api/job' { Write-Json $context (Get-GitJob $request.QueryString['id']) }

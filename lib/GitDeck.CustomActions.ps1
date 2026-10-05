@@ -8,7 +8,7 @@ $script:CustomActionsFile = Join-Path (Split-Path $PSScriptRoot -Parent) 'git-de
 
 function Get-GitDeckCustomActions {
     if (-not (Test-Path -LiteralPath $script:CustomActionsFile -PathType Leaf)) { return @() }
-    try { $parsed = Get-Content -LiteralPath $script:CustomActionsFile -Raw -ErrorAction Stop | ConvertFrom-Json } catch { return @() }
+    try { $parsed = Get-Content -Encoding UTF8 -LiteralPath $script:CustomActionsFile -Raw -ErrorAction Stop | ConvertFrom-Json } catch { return @() }
     $list = New-Object System.Collections.ArrayList
     # Windows PowerShell 5.1 hands a JSON array over as one object; enumerate both levels.
     foreach ($item in @($parsed)) { foreach ($entry in @($item)) { if ($entry -and $entry.id -and $entry.name -and $entry.command) { [void]$list.Add($entry) } } }

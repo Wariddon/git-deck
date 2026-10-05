@@ -219,3 +219,11 @@ body .backdrop:not(#workspace-backdrop) .multi-repo-link{color:var(--green,#0969
 .multi-repo-actions{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
 .multi-repo-actions button{padding:2px 8px;font-size:12px;min-height:0}
 .toolbar-dashboard{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+
+/* Repository rows: the status ("Clean", "3 changed") never gets clipped; long names, paths,
+   commit messages and branch names shorten with an ellipsis instead. */
+#repo-list .repo .repo-main{flex:1 1 0;min-width:0}
+#repo-list .repo .repo-main *{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#repo-list .repo .repo-meta{flex:0 1 auto;min-width:0;max-width:55%}
+#repo-list .repo .repo-meta>i{flex:0 0 auto}
+#repo-list .repo .repo-meta>b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

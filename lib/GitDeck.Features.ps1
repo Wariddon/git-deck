@@ -143,7 +143,7 @@ function Get-AiSettings {
     $file = Join-Path $script:Root 'git-deck-ai.json'
     if (Test-Path -LiteralPath $file -PathType Leaf) {
         try {
-            $saved = Get-Content -LiteralPath $file -Raw | ConvertFrom-Json
+            $saved = Get-Content -Encoding UTF8 -LiteralPath $file -Raw | ConvertFrom-Json
             foreach ($name in @('provider','model','ollamaUrl','ollamaModel','language')) { if ($saved.$name) { $settings[$name] = [string]$saved.$name } }
         } catch {}
     }

@@ -66,7 +66,7 @@ function Add-SavedRepository([string]$Path,[string]$RepoList) {
     $mutex = New-Object Threading.Mutex($false,'Local\GitDeckRepoList')
     try {
         if (-not $mutex.WaitOne(10000)) { throw 'Timed out while updating the saved repository list.' }
-        $repos = if (Test-Path -LiteralPath $RepoList -PathType Leaf) { @(Get-Content -LiteralPath $RepoList | ForEach-Object { $_.Trim() } | Where-Object { $_ }) } else { @() }
+        $repos = if (Test-Path -LiteralPath $RepoList -PathType Leaf) { @(Get-Content -Encoding UTF8 -LiteralPath $RepoList | ForEach-Object { $_.Trim() } | Where-Object { $_ }) } else { @() }
         if (-not ($repos | Where-Object { [string]::Equals($_,$resolved,[StringComparison]::OrdinalIgnoreCase) })) {
             [IO.File]::WriteAllLines($RepoList,@($repos)+$resolved,$utf8)
         }
@@ -102,7 +102,7 @@ function Get-RepositoryInfo([string]$Path) {
 
 try {
     if (-not (Test-Path -LiteralPath $specPath -PathType Leaf)) { throw 'Job specification was not found.' }
-    $script:Spec = Get-Content -LiteralPath $specPath -Raw | ConvertFrom-Json
+    $script:Spec = Get-Content -Encoding UTF8 -LiteralPath $specPath -Raw | ConvertFrom-Json
     $script:StartedAt = [DateTime]::UtcNow.ToString('o')
     Write-JobStatus 'running' 2 'Starting Git job...'
     Assert-NotCancelled
