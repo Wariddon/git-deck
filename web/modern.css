@@ -939,7 +939,10 @@ html.ui-modern body .modern-history-head select { width: auto !important; max-wi
 html.ui-modern body .modern-history-head .history-controls input { min-width: 70px !important; }
 
 /* Narrow windows: the action bar never slides under More / View & tools. */
-html.ui-modern body .modern-actions { overflow: hidden; }
+html.ui-modern body .modern-actions { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: var(--border-default) transparent; }
+html.ui-modern body .modern-actions::-webkit-scrollbar { height: 4px; }
+html.ui-modern body .modern-actions::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 4px; }
+html.ui-modern body .modern-act-group { flex: none; }
 @media (max-width: 980px) {
   html.ui-modern body .modern-act-group:nth-child(3) { display: none; }
   html.ui-modern body .modern-tb-repo { width: 150px; }

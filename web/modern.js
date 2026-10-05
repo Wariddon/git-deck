@@ -256,6 +256,7 @@
     // The old single sync button stays for keyboard users of syncAction, hidden by modern.css; its menu sits after Fetch.
     syncGroup.append(syncButton);actions.syncGroup.append(syncMore);
     bar.append(repoButton,branchButton,syncGroup,actions.strip);head.prepend(bar);
+    actions.strip.addEventListener('wheel',(event)=>{if(event.deltaY&&!event.deltaX&&actions.strip.scrollWidth>actions.strip.clientWidth){actions.strip.scrollLeft+=event.deltaY;event.preventDefault();}},{passive:false});
     primary=el('button','modern-primary modern-made');primary.type='button';primary.addEventListener('click',()=>runAction(primary.dataset.kind));
     document.querySelector('.sync-actions')?.prepend(primary);
   }
