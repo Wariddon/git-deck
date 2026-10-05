@@ -302,3 +302,13 @@ body .backdrop:not(#workspace-backdrop) .pending-view-switch button.active{backg
 body.theme-dark .pending-tidy{color:#7fd29a}
 .pending-filters[hidden]{display:none !important}
 [data-operations-panel="pending"] .multi-repo-body{max-height:none;overflow:visible}
+
+/* Plain-words explanation at the top of each Dashboard panel. */
+.multi-repo-explain{margin:8px 0 4px;padding:8px 12px;border-left:3px solid var(--green,#0969da);border-radius:4px;background:rgba(127,127,127,.07);font-size:12px}
+.multi-repo-explain p{margin:2px 0}
+/* Pending, By task: tiles that count each group and jump to it. */
+.pending-overview{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px}
+.pending-tile{display:flex;align-items:center;gap:8px;padding:8px 12px !important;border-radius:10px !important;min-height:0 !important;font-size:12px;text-align:left}
+.pending-tile b{font-size:18px;line-height:1}
+.pending-tile-icon{font-size:16px}
+.pending-tile-problems{border-color:rgba(220,38,38,.5) !important}

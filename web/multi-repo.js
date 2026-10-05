@@ -294,10 +294,15 @@
       const pool=results.filter(item=>!term||`${item.repo.name} ${item.pending?.branch||''}`.toLowerCase().includes(term));
       if(!pool.length){out.append(el('div','multi-repo-empty',results.length?t('No repository matches this filter.'):t('Checking…')));return;}
       let shownAny=false;
+      // At a glance: one tile per group with its count; a click jumps to the group.
+      const overview=el('div','pending-overview');out.append(overview);
       for(const group of taskGroups){
         const items=pool.filter(item=>pendingMatches(item,group.id)).sort((a,b)=>a.repo.name.localeCompare(b.repo.name));
         if(!items.length)continue;shownAny=true;
-        const section=el('section',`pending-group pending-group-${group.id}`);
+        const tile=el('button',`pending-tile pending-tile-${group.id}`);tile.type='button';tile.append(el('span','pending-tile-icon',group.icon),el('b','',String(items.length)),el('span','',group.title()));
+        tile.onclick=()=>{collapsed.delete(group.id);if(!out.querySelector('#pending-group-'+group.id+' .pending-group-list'))drawTasks();out.querySelector('#pending-group-'+group.id)?.scrollIntoView({behavior:'smooth',block:'start'});};
+        overview.append(tile);
+        const section=el('section',`pending-group pending-group-${group.id}`);section.id='pending-group-'+group.id;
         const head=el('div','pending-group-head');
         const toggle=el('button','pending-group-toggle');toggle.type='button';toggle.setAttribute('aria-expanded',String(!collapsed.has(group.id)));
         toggle.append(el('span','pending-group-icon',group.icon),el('strong','',group.title()),el('b','pending-group-count',String(items.length)));
@@ -428,25 +433,40 @@
     const fetch=el('button','',t('Fetch all'));fetch.type='button';
     const pull=el('button','primary',t('Pull all'));pull.type='button';pull.title=t('Pull the current branch of each repository; uncommitted changes are stashed and restored');
     const status=el('small','multi-repo-status');const out=el('div','multi-repo-body');
-    bar.append(folder,fetch,pull);panel.append(bar,el('p','multi-repo-note',t('Pull uses your pull strategy ({strategy}) with uncommitted changes stashed and restored. Repositories without a remote or in the middle of a merge are skipped.',{strategy:state.meta?.pullStrategy||'ff-only'})),status,out);
+    const explain=el('div','multi-repo-explain');
+    explain.append(el('p','',t('Fetch only asks the remote what is new. It changes none of your files: safe any time.')),
+      el('p','',t('Pull brings the new commits into the branch you are on. Uncommitted changes are put aside and put back. Uses your pull setting ({strategy}).',{strategy:state.meta?.pullStrategy||'ff-only'})));
+    bar.append(folder,fetch,pull);panel.append(bar,explain,status,out);
     const go=async(mode)=>{
       const repos=reposIn(folder.value).filter(repo=>repo.remote!==''&&repo.remote!==null);
       if(!repos.length){status.textContent=t('No repositories with a remote in this folder.');return;}
       if(mode==='pull'&&!confirm(t('Pull {count} repositories now?',{count:repos.length})))return;
-      fetch.disabled=pull.disabled=true;out.replaceChildren();const grid=table([t('Repository'),t('Result')]);out.append(grid);let done=0;
-      const rows=new Map(repos.map(repo=>{const cell=el('span','multi-repo-result',t('Waiting…'));grid.append(row([repoLink(repo),cell]));return [repo.path,cell];}));
+      fetch.disabled=pull.disabled=true;out.replaceChildren();const grid=table([t('Repository'),t('Result'),'']);out.append(grid);let done=0;
+      const rows=new Map(repos.map(repo=>{const cell=el('span','multi-repo-result',t('Waiting…'));const tools=el('span');const tr=row([repoLink(repo),cell,tools]);grid.append(tr);return [repo.path,{cell,tools,tr}];}));
       const outcome=await mapLimit(repos,mode==='pull'?2:4,async repo=>{
-        const cell=rows.get(repo.path);cell.textContent=t('Working…');
+        const {cell,tools,tr}=rows.get(repo.path);cell.textContent=t('Working…');
         try{
           const result=mode==='pull'?await runQuiet('pull',repo,{strategy:state.meta?.pullStrategy||'ff-only',autostash:true}):await runQuiet('fetch',repo);
           const text=firstLine(result?.message||result?.output)||t('Done');
           const conflict=/conflict/i.test(text)||(result?.conflicts||[]).length;
-          cell.textContent=text;cell.className='multi-repo-result '+(conflict?'tone-bad':/up to date|already/i.test(text)?'tone-muted':'tone-ok');return conflict?'conflict':'ok';
-        }catch(error){cell.textContent=firstLine(error.message);cell.className='multi-repo-result tone-bad';return 'error';}
+          const same=/up to date|already/i.test(text);
+          cell.textContent=conflict?t('Conflicts: open the repository to resolve them'):same?t('Already up to date'):text;
+          cell.className='multi-repo-result '+(conflict?'tone-bad':same?'tone-muted':'tone-ok');
+          if(conflict){const open=el('button','',t('Open'));open.type='button';open.onclick=()=>{document.getElementById('operations-close')?.click();openWorkspace(repo,'conflicts',null);};tools.append(open);}
+          tr.dataset.outcome=conflict?'problem':same?'same':'updated';return conflict?'problem':same?'same':'updated';
+        }catch(error){
+          cell.textContent=explainError(error.message);cell.title=String(error.message||'');cell.className='multi-repo-result tone-bad';
+          const open=el('button','',t('Open'));open.type='button';open.onclick=()=>{document.getElementById('operations-close')?.click();openWorkspace(repo,'history',null);};tools.append(open);
+          tr.dataset.outcome='problem';return 'problem';
+        }
         finally{status.textContent=t('{done} of {total} done',{done:++done,total:repos.length});}
       });
-      const failed=outcome.filter(x=>x!=='ok').length;
-      status.textContent=failed?t('{ok} done · {failed} need attention',{ok:outcome.length-failed,failed}):t('All {count} repositories updated',{count:outcome.length});
+      const count=(kind)=>outcome.filter(x=>x===kind).length;
+      status.textContent=mode==='fetch'
+        ?t('{done} fetched · {problems} need attention. Pending work shows what to pull.',{done:count('updated')+count('same'),problems:count('problem')})
+        :t('{updated} updated · {same} already up to date · {problems} need attention',{updated:count('updated'),same:count('same'),problems:count('problem')});
+      // Problems first, so they are not lost in a long list.
+      [...grid.querySelectorAll('tr[data-outcome="problem"]')].reverse().forEach(tr=>grid.querySelector('tr').after(tr));
       fetch.disabled=pull.disabled=false;await refreshAfter();
     };
     fetch.onclick=()=>go('fetch');pull.onclick=()=>go('pull');
@@ -462,7 +482,10 @@
     const createLabel=el('label','modern-dialog-check');createLabel.append(create,el('span','',t('Create it where it does not exist')));
     const preview=el('button','',t('Preview'));preview.type='button';const run=el('button','primary',t('Switch'));run.type='button';run.disabled=true;
     const status=el('small','multi-repo-status');const out=el('div','multi-repo-body');
-    bar.append(folder,name,mode,createLabel,preview,run);panel.append(bar,status,out);
+    const explain=el('div','multi-repo-explain');
+    explain.append(el('p','',t('For work that touches several repositories (one ticket, several services): put them all on the same branch.')),
+      el('p','',t('1. Type the branch name.  2. Press Preview to see what will happen in each repository.  3. Press Switch.')));
+    bar.append(folder,name,mode,createLabel,preview,run);panel.append(bar,explain,status,out);
     let plans=[];
     if(state.workspace?.branch&&state.workspace.branch!=='main'&&state.workspace.branch!=='master')name.value=state.workspace.branch;
     preview.onclick=async()=>{
@@ -497,12 +520,16 @@
     [['message',t('Commit messages and branches')],['content',t('Changed code (slower)')]].forEach(([value,label])=>mode.append(new Option(label,value)));
     const run=el('button','primary',t('Search'));run.type='submit';
     const form=el('form','operations-toolbar');form.append(folder,text,mode,run);
-    const status=el('small','multi-repo-status');const out=el('div','multi-repo-body');panel.append(form,status,out);
+    const status=el('small','multi-repo-status');const out=el('div','multi-repo-body');
+    const explain=el('div','multi-repo-explain');
+    explain.append(el('p','',t('Find which repositories have a ticket or a change. Examples: AP2365-3319, timeout, feature/login.')),
+      el('p','',t('Click a result to open that repository at the commit.')));
+    panel.append(form,explain,status,out);
     form.onsubmit=async(event)=>{
       event.preventDefault();const q=text.value.trim();if(!q)return;
       run.disabled=true;out.replaceChildren();const repos=reposIn(folder.value);let done=0;
       const list=(value)=>Array.isArray(value)?value:value?[value]:[];
-      const results=await mapLimit(repos,4,async repo=>{let answer={commits:[],branches:[]};try{const raw=await api('/api/repo/search?'+query({path:repo.path,q,mode:mode.value}));answer={commits:list(raw.commits),branches:list(raw.branches)};}catch(error){answer.error=firstLine(error.message);}status.textContent=t('Searched {done} of {total}',{done:++done,total:repos.length});return {repo,...answer};});
+      const results=await mapLimit(repos,4,async repo=>{let answer={commits:[],branches:[]};try{const raw=await api('/api/repo/search?'+query({path:repo.path,q,mode:mode.value}));answer={commits:list(raw.commits),branches:list(raw.branches)};}catch(error){answer.error=explainError(error.message);}status.textContent=t('Searched {done} of {total}',{done:++done,total:repos.length});return {repo,...answer};});
       const hits=results.filter(item=>(item.commits||[]).length||(item.branches||[]).length);
       status.textContent=t('{count} repositories match',{count:hits.length});run.disabled=false;
       if(!hits.length){out.append(el('p','multi-repo-empty',t('No matches.')));return;}
@@ -642,6 +669,11 @@
     addPanel('update-all',t('Update all'),buildUpdate);
     addPanel('switch-all',t('Switch branch'),buildSwitch);
     addPanel('search-all',t('Search all'),buildSearch);
+    // The everyday views come first, and the window is called what the toolbar button says: Dashboard.
+    const nav=document.querySelector('.operations-tabs');
+    if(nav){for(const id of ['search-all','switch-all','update-all','pending']){const tab=nav.querySelector(`[data-operations-view="${id}"]`);if(tab)nav.prepend(tab);}}
+    const heading=document.getElementById('operations-title');
+    if(heading){heading.textContent=t('Dashboard');const eyebrow=heading.parentElement?.querySelector('.eyebrow');if(eyebrow)eyebrow.textContent=t('ALL REPOSITORIES');const line=heading.nextElementSibling;if(line?.tagName==='P')line.textContent=t('What is pending everywhere, update or switch many repositories at once, search them all. Background jobs and automation are here too.');}
     const openView=(view)=>{if(typeof showOperationsCenter==='function')showOperationsCenter(view);};
     // Always-visible way in: a Dashboard button in the top toolbar, next to View & tools.
     const head=document.querySelector('.workspace-modal-head');
