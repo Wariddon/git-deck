@@ -163,7 +163,7 @@ Creating a new branch from the current commit always keeps your changes.
 | Remote (page and sidebar group) | **Fetch, Prune, Open in browser, Copy URL, Edit URL, Remove** |
 | Files | File Status and History file menus as described above |
 
-Bold items are new. Risky actions still ask first. Menus use compact rows and are measured before they are placed, so a long menu stays inside the window.
+**Create patch**, **Archive as ZIP** and the Tools page exports (patch, ZIP, bundle) open a Windows **Save as** dialog like Sourcetree: a suggested file name, the last folder you used (Documents the first time), and an overwrite warning. Cancel simply stops the export. Bold items are new. Risky actions still ask first. Menus use compact rows and are measured before they are placed, so a long menu stays inside the window.
 
 ## When something fails
 

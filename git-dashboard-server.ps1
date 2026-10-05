@@ -11,6 +11,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Pull.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Switch.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Parity.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Export.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
 $script:RepoList = Join-Path $PSScriptRoot 'git-repositories.txt'
@@ -1190,8 +1191,9 @@ function Invoke-Action($Body) {
             $check=Invoke-GitCapture $path @('apply','--check',$selected);return @{message=$(if($check.Code -eq 0){'Patch is ready to apply.'}else{'Patch cannot be applied cleanly.'});output=$check.Output;path=$selected;valid=($check.Code -eq 0)}
         }
         'patch-export' {
-            $commit=([string]$Body.commit).Trim();Assert-CommitHash $path $commit;$short=(Invoke-GitOrThrow $path @('rev-parse','--short',$commit)).Trim();$repoName=(Split-Path $path -Leaf) -replace '[^A-Za-z0-9._-]','-';$outputPath=Join-Path $script:ExportsRoot ($repoName+'-'+$short+'.patch')
-            $patchText=Invoke-GitOrThrow $path @('format-patch','-1','--stdout',$commit);[IO.File]::WriteAllText($outputPath,$patchText,(New-Object Text.UTF8Encoding($false)));return @{message='Patch exported.';output=$outputPath;path=$outputPath}
+            $commit=([string]$Body.commit).Trim();Assert-CommitHash $path $commit;$short=(Invoke-GitOrThrow $path @('rev-parse','--short',$commit)).Trim();$repoName=(Split-Path $path -Leaf) -replace '[^A-Za-z0-9._-]','-';$outputPath=Resolve-ExportPath $Body 'Save patch' 'Git patch (*.patch)|*.patch|All files (*.*)|*.*' ($repoName+'-'+$short+'.patch')
+            if(-not $outputPath){return @{message='Export cancelled.';cancelled=$true}}
+            $patchText=Invoke-GitOrThrow $path @('format-patch','-1','--stdout',$commit);[IO.File]::WriteAllText($outputPath,$patchText,(New-Object Text.UTF8Encoding($false)));return @{message="Patch saved to $outputPath";output=$outputPath;path=$outputPath}
         }
         'patch-apply-file' {
             $selected=([string]$Body.patchPath).Trim();if(-not $selected -or -not [string]::Equals($selected,$script:SelectedPatch,[StringComparison]::OrdinalIgnoreCase)){throw 'Choose the patch file from Git Deck again.'};if(-not (Test-Path -LiteralPath $selected -PathType Leaf)){throw 'Patch file was not found.'};if((Get-Item -LiteralPath $selected).Length -gt 5000000){throw 'Patch file is larger than 5 MB.'}
@@ -1472,10 +1474,11 @@ function Invoke-Action($Body) {
         'bisect-bad' { $active=Invoke-GitCapture $path @('bisect','log');if($active.Code -ne 0){throw 'No Bisect session is active.'};$output=Invoke-GitOrThrow $path @('bisect','bad');return @{message='Marked current commit bad. Bisect moved to the next candidate.';output=$output} }
         'bisect-reset' { $active=Invoke-GitCapture $path @('bisect','log');if($active.Code -ne 0){throw 'No Bisect session is active.'};$output=Invoke-GitOrThrow $path @('bisect','reset');return @{message='Bisect ended and the previous branch was restored.';output=$output} }
         'archive-export' {
-            $ref=([string]$Body.ref).Trim();if(-not $ref){$ref='HEAD'};$hash=Resolve-GitRef $path $ref;$short=$hash.Substring(0,8);$repoName=(Split-Path $path -Leaf)-replace '[^A-Za-z0-9._-]','-';$outputPath=Join-Path $script:ExportsRoot ($repoName+'-'+$short+'.zip');$output=Invoke-GitOrThrow $path @('archive','--format=zip',('--output='+$outputPath),$hash);return @{message='Repository archive exported.';output=$outputPath;path=$outputPath}
+            $ref=([string]$Body.ref).Trim();if(-not $ref){$ref='HEAD'};$hash=Resolve-GitRef $path $ref;$short=$hash.Substring(0,8);$repoName=(Split-Path $path -Leaf)-replace '[^A-Za-z0-9._-]','-';$outputPath=Resolve-ExportPath $Body 'Save archive' 'ZIP archive (*.zip)|*.zip|All files (*.*)|*.*' ($repoName+'-'+$short+'.zip');if(-not $outputPath){return @{message='Export cancelled.';cancelled=$true}}
+            $output=Invoke-GitOrThrow $path @('archive','--format=zip',('--output='+$outputPath),$hash);return @{message="Archive saved to $outputPath";output=$outputPath;path=$outputPath}
         }
         'bundle-export' {
-            $repoName=(Split-Path $path -Leaf)-replace '[^A-Za-z0-9._-]','-';$outputPath=Join-Path $script:ExportsRoot ($repoName+'-'+(Get-Date -Format 'yyyyMMdd-HHmmss')+'.bundle');return Start-GitJob @{action='bundle-export';path=$path;outputPath=$outputPath} 'Full repository bundle export queued.'
+            $repoName=(Split-Path $path -Leaf)-replace '[^A-Za-z0-9._-]','-';$outputPath=Resolve-ExportPath $Body 'Save bundle' 'Git bundle (*.bundle)|*.bundle|All files (*.*)|*.*' ($repoName+'-'+(Get-Date -Format 'yyyyMMdd-HHmmss')+'.bundle');if(-not $outputPath){return @{message='Export cancelled.';cancelled=$true}};return Start-GitJob @{action='bundle-export';path=$path;outputPath=$outputPath} 'Full repository bundle export queued.'
         }
         'tag-create' {
             $tagName = ([string]$Body.tag).Trim(); $message = ([string]$Body.message).Trim();$target=([string]$Body.commit).Trim();$lightweight=[bool]$Body.lightweight;$move=[bool]$Body.move;$pushTag=[bool]$Body.push;$remoteName=([string]$Body.remote).Trim()
