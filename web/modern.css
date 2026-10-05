@@ -1028,3 +1028,11 @@ html.ui-modern body .custom-action-help { color: var(--text-tertiary) !important
 /* Git-flow dialog. */
 html.ui-modern body .git-flow-steps { margin: 0; padding-left: 20px; color: var(--text-secondary); }
 html.ui-modern body .git-flow-start { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px; }
+
+/* Windows opened from the library (GitLab, Clone, Add, Create, Scan) sit above the drawer and toolbar. */
+html.ui-modern body .backdrop:not(#push-backdrop):not(#tag-backdrop):not(#about-backdrop):not(#repo-detail-backdrop):not(#operations-backdrop) { z-index: 150; }
+/* Dark and Midnight: surfaces that kept their light background. */
+html.ui-modern body.theme-dark :is(.scan-locations, .gitlab-search, .modal-actions) { background: var(--surface); border-color: var(--border-default); color: var(--text-primary); }
+html.ui-modern body.theme-dark .scan-locations summary b { background: var(--surface-muted, var(--surface)); color: var(--text-secondary); }
+html.ui-modern body.theme-dark .gitlab-search input { background: transparent; color: var(--text-primary); }
+html.ui-modern body.theme-dark .scan-locations summary span, html.ui-modern body.theme-dark .scan-locations code { color: var(--text-secondary); }

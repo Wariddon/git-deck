@@ -47,5 +47,11 @@ const later = m.gitlabNews(first.next, { pipelines: [{ id: 1, status: 'failed' }
 assert.deepEqual(plain(later.news.map((n) => n.text)), ['Pipeline #2 failed on feature/x', 'New comment on !7 Login']);
 
 assert.ok(web('index.html').includes('/multi-repo.js'));
+// Easy to find: All repos and Report sit on the left rail under Repos.
+assert.match(web('modern.js'), /railButton\(\['all-repos','repos',\(\)=>t\('All repos'\)\]\),railButton\(\['report','report',\(\)=>t\('Report'\)\]\)/);
+// Windows opened from the drawer sit above it, and the drawer closes; Midnight has no light leftovers.
+assert.match(web('modern.css'), /\.backdrop:not\(#push-backdrop\)[^{]*\{ z-index: 150; \}/);
+assert.match(web('modern.js'), /backdrop'\)&&!change\.target\.classList\.contains\('hidden'\)\)\)closeDrawer\(\)/);
+assert.match(web('modern.css'), /body\.theme-dark :is\(\.scan-locations, \.gitlab-search, \.modal-actions\)/);
 for (const route of ['/api/repo/pending', '/api/repo/branch-cleanup', '/api/repo/search', '/api/repo/find-branch']) assert.ok(fs.readFileSync(path.join(__dirname, '../git-dashboard-server.ps1'), 'utf8').includes(`'${route}'`), route);
 console.log('PASS: multi-repository pending labels, switch plans, cleanup, ticket prefix and GitLab news');

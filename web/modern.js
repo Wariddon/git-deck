@@ -309,17 +309,27 @@
   const closeDrawer=()=>{if(drawerOpen()){$id('library-collapse')?.click();setTimeout(renderRail,0);}};
   document.addEventListener('mousedown',(event)=>{if(isModern()&&drawerOpen()&&!event.target.closest('.repos, .modern-rail-item[data-tab="repos"], .repo-switcher, dialog, .modal'))closeDrawer();});
   document.addEventListener('keydown',(event)=>{if(event.key==='Escape'&&isModern()&&drawerOpen()&&!popover&&!document.querySelector('dialog[open]'))closeDrawer();});
+  // A window opened from the drawer (GitLab, Clone, Add, Operations Center…) takes over: close the drawer.
+  if(typeof MutationObserver==='function')new MutationObserver((changes)=>{if(isModern()&&drawerOpen()&&changes.some(change=>change.target.classList?.contains('backdrop')&&!change.target.classList.contains('hidden')))closeDrawer();})
+    .observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
   document.addEventListener('click',(event)=>{if(event.target.closest('#library-pin'))setTimeout(()=>{if(isModern()){syncDrawer();renderRail();}},0);});
   function toggleLibrary(){(libraryOpen()?$id('library-collapse'):$id('library-open'))?.click();setTimeout(renderRail,0);}
   function railButton([tab,name,label]){
     const button=el('button','modern-rail-item');button.type='button';button.dataset.tab=tab;
     button.title=label()+(railHelp[tab]?' — '+railHelp[tab]():'');button.append(icon(name,18),el('span','modern-rail-label',label()),el('b','modern-rail-badge'));
-    button.addEventListener('click',()=>tab==='repos'?toggleLibrary():tab==='focus'?toggleFocus():selectWorkspaceTab(tab));return button;
+    button.addEventListener('click',()=>tab==='repos'?toggleLibrary():tab==='focus'?toggleFocus():globalViews[tab]?globalViews[tab]():selectWorkspaceTab(tab));return button;
   }
+  // Views over every repository, not the open one: Pending work (Operations Center) and Work report.
+  const globalViews={
+    'all-repos':()=>{if(typeof showOperationsCenter==='function')showOperationsCenter('pending');},
+    report:()=>window.GitDeckWorkReport?.openWorkReport(),
+  };
+  railHelp['all-repos']=()=>t('Pending work, update, switch branch and search in every repository');
+  railHelp.report=()=>t('What changed across repositories in a date range');
   function buildRail(){
     const body=document.querySelector('.workbench-body');if(!body||body.querySelector('.modern-rail'))return;
     rail=el('nav','modern-rail modern-made');rail.setAttribute('aria-label',t('Views'));
-    rail.append(railButton(['repos','folder',()=>t('Repos')]),el('span','modern-rail-sep'));
+    rail.append(railButton(['repos','folder',()=>t('Repos')]),railButton(['all-repos','repos',()=>t('All repos')]),railButton(['report','report',()=>t('Report')]),el('span','modern-rail-sep'));
     railItems.forEach(item=>rail.append(railButton(item)));
     const bottom=el('div','modern-rail-bottom');railBottom.forEach(item=>bottom.append(railButton(item)));rail.append(bottom);
     body.prepend(rail);

@@ -227,8 +227,6 @@
   }
 
   if(typeof document!=='undefined'&&typeof el==='function'){
-    const buttons=document.querySelector('.panel-buttons');
-    if(buttons&&!buttons.querySelector('#work-report')){const button=el('button','btn soft',t('Work report'));button.id='work-report';button.type='button';button.title=t('What changed across repositories in a date range');button.onclick=openWorkReport;buttons.insertBefore(button,buttons.querySelector('#gitlab'));}
     const more=document.querySelector('.sync-more > div');
     if(more&&!more.querySelector('[data-work-report]')){const button=el('button','');button.type='button';button.dataset.workReport='1';button.append(el('strong','',t('🗓 Work report')),el('small','',t('What changed across repositories in a date range')));button.onclick=()=>{more.parentElement?.removeAttribute('open');openWorkReport();};more.append(button);}
     if(typeof commandPaletteEntries==='function'){const base=commandPaletteEntries;commandPaletteEntries=function(){const label=t('Work report…'),group=t('Tools');return [...base(),{label,group,shortcut:'',run:openWorkReport,search:`${label} ${group} activity report`}];};}

@@ -790,4 +790,7 @@ GitDeckI18n.register('th',{
   "Push {count} repositories now?":"Push {count} repository ตอนนี้เลยไหม?",
   "Pushing {name}…":"กำลัง push {name}…",
   "{count} could not push":"push ไม่ได้ {count}",
+  "Pending work, update, switch branch and search in every repository":"งานค้าง, อัปเดต, สลับ branch และค้นหาในทุก repository",
+  "All repos":"ทุก repo",
+  "Report":"รายงาน",
 });

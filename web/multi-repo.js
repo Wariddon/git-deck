@@ -399,8 +399,6 @@
       for(const [view,label,hint] of entries){const button=el('button','');button.type='button';button.dataset.multiRepo=view;button.append(el('strong','',label),el('small','',hint));button.onclick=()=>{more.parentElement?.removeAttribute('open');openView(view);};more.append(button);}
       const clean=el('button','');clean.type='button';clean.dataset.multiRepo='cleanup';clean.append(el('strong','',t('🧹 Clean up branches')),el('small','',t('Delete merged, gone or old branches of this repository')));clean.onclick=()=>{more.parentElement?.removeAttribute('open');openBranchCleanup();};more.append(clean);
     }
-    const buttons=document.querySelector('.panel-buttons');
-    if(buttons&&!buttons.querySelector('#pending-work')){const button=el('button','btn soft',t('Pending'));button.id='pending-work';button.type='button';button.title=t('What is still uncommitted, unpushed or stashed in every repository');button.onclick=()=>openView('pending');buttons.insertBefore(button,buttons.querySelector('#work-report')||buttons.querySelector('#gitlab'));}
     if(typeof commandPaletteEntries==='function'){
       const base=commandPaletteEntries;const group=t('Repositories');
       const extra=[[t('Pending work in all repositories'),()=>openView('pending')],[t('Fetch or pull all repositories'),()=>openView('update-all')],[t('Switch branch in all repositories'),()=>openView('switch-all')],[t('Search all repositories'),()=>openView('search-all')],[t('Clean up branches…'),openBranchCleanup]];
