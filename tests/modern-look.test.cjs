@@ -135,7 +135,16 @@ assert.match(modernCss, /\.workspace-section-head h3[^{]*\{\s*font-size: var\(--
 const token = (block, name) => (modernCss.slice(modernCss.indexOf(block)).match(new RegExp(`${name}: (#[0-9a-f]{6})`)) || [])[1];
 const hexLum = (hex) => { const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
 const ratio = (a, b) => { const x = hexLum(a), y = hexLum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
-for (const block of ['html.ui-modern body.theme-dark:not(.theme-midnight) {\n  --canvas: #141416', 'html.ui-modern body:not(.theme-dark):not([data-theme="paper"]) {', 'html.ui-modern body[data-theme="paper"] {']) {
+// Dark and Midnight: dimmed, about 10:1 (they were 15-18:1 on near-black and felt heavy).
+for (const block of ['html.ui-modern body.theme-dark:not(.theme-midnight) {\n  --canvas: #1c2128', 'html.ui-modern body.theme-midnight {\n  --canvas: #242a35']) {
+  const text = token(block, '--text-primary'), surface = token(block, '--surface'), tertiary = token(block, '--text-tertiary');
+  const r = ratio(text, surface);
+  assert(r >= 8 && r <= 12, `${block.slice(0, 50)}: text contrast ${r.toFixed(1)} should be 8-12:1`);
+  assert(ratio(tertiary, surface) >= 4.5, `${block.slice(0, 50)}: captions stay readable (4.5:1)`);
+  assert(hexLum(surface) > 0.015, `${block.slice(0, 50)}: surface is a dimmed grey, not near-black`);
+}
+assert.match(modernCss, /html\.ui-modern body\.theme-dark :is\(\.workspace, \.workspace-modal,/, 'Midnight uses the theme tokens too, not the old hard-coded navy');
+for (const block of ['html.ui-modern body:not(.theme-dark):not([data-theme="paper"]) {', 'html.ui-modern body[data-theme="paper"] {']) {
   const text = token(block, '--text-primary'), surface = token(block, '--surface');
   const r = ratio(text, surface);
   assert(r >= 7 && r <= 16, `${block.slice(0, 60)}: text contrast ${r.toFixed(1)} should be readable but not glaring (7-16:1)`);

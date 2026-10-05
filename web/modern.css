@@ -51,21 +51,21 @@ html.ui-modern body.theme-dark:not(.theme-midnight) {
   --line: var(--border-default);
   --paper: var(--canvas);
 }
-html.ui-modern body.theme-dark:not(.theme-midnight) :is(.workspace, .workspace-modal, .workspace-modal-head, .workbench-tree, .workspace-content, .panel, .repos, .details, .workspace-heading, .change-group, .working-diff, .commit-list, .commit-detail, .commit-detail-meta, .commit-files, .commit-diff, .settings-card, .gitlab-inbox-card, .patch-card, .worktree-list, .conflict-file-list, .recovery-list, .journal-box, .pagination, .modal, .gitlab-modal, .repo-switcher, .mr-readiness, .push-modal, #push-form > .modal-actions, .action-feedback, .tag-modal, .about-modal) {
+html.ui-modern body.theme-dark :is(.workspace, .workspace-modal, .workspace-modal-head, .workbench-tree, .workspace-content, .panel, .repos, .details, .workspace-heading, .change-group, .working-diff, .commit-list, .commit-detail, .commit-detail-meta, .commit-files, .commit-diff, .settings-card, .gitlab-inbox-card, .patch-card, .worktree-list, .conflict-file-list, .recovery-list, .journal-box, .pagination, .modal, .gitlab-modal, .repo-switcher, .mr-readiness, .push-modal, #push-form > .modal-actions, .action-feedback, .tag-modal, .about-modal) {
   background: var(--surface);
   color: var(--text-primary);
 }
-html.ui-modern body.theme-dark:not(.theme-midnight) :is(button, input, select, textarea, .repo, .tree-item, .commit-row, .workspace-row, .journal-row, .inbox-item, .pipeline-item, .worktree-row, .push-branch-row) {
+html.ui-modern body.theme-dark :is(button, input, select, textarea, .repo, .tree-item, .commit-row, .workspace-row, .journal-row, .inbox-item, .pipeline-item, .worktree-row, .push-branch-row) {
   border-color: var(--border-default);
   background: var(--surface-subtle);
   color: var(--text-primary);
 }
-html.ui-modern body.theme-dark:not(.theme-midnight) :is(.sync-actions, .repo-tabs, .commit-list-header, .journal-box > h4, .gitlab-inbox-card > h4, .rebase-footer, .push-table > header) {
+html.ui-modern body.theme-dark :is(.sync-actions, .repo-tabs, .commit-list-header, .journal-box > h4, .gitlab-inbox-card > h4, .rebase-footer, .push-table > header) {
   background: var(--surface-subtle);
   color: var(--text-secondary);
 }
-html.ui-modern body.theme-dark:not(.theme-midnight) :is(.commit-row, .tree-item, .change-file-main, .repo):hover { background: var(--surface-hover); }
-html.ui-modern body.theme-dark:not(.theme-midnight) .commit-row { background: transparent; }
+html.ui-modern body.theme-dark :is(.commit-row, .tree-item, .change-file-main, .repo):hover { background: var(--surface-hover); }
+html.ui-modern body.theme-dark .commit-row { background: transparent; }
 
 /* ---- Type and shape ---------------------------------------------------------------------- */
 html.ui-modern body :is(h2, h3, h4, strong, b, th) { font-weight: 600; }
@@ -963,3 +963,33 @@ html.ui-modern body .context-menu { width: min(340px, calc(100vw - 16px)) !impor
 html.ui-modern body .context-menu button { min-height: 26px !important; padding: 3px 10px !important; font-size: var(--ui-text-size) !important; }
 html.ui-modern body .context-menu button small { font-size: var(--fs-xs) !important; }
 html.ui-modern body .context-menu hr { margin: 3px 6px !important; }
+
+/* ---- Easy dark themes: dimmed grey and soft slate instead of near-black (about 10:1, not 15-18:1) ----------
+   Dark follows GitHub's "Dark dimmed"; Midnight is a soft blue slate in the spirit of Nord. */
+html.ui-modern body.theme-dark:not(.theme-midnight) {
+  --canvas: #1c2128; --surface: #22272e; --surface-subtle: #272d35; --surface-muted: #333a44; --surface-hover: #2b313a;
+  --text-primary: #cdd5de; --text-secondary: #a2adb9; --text-tertiary: #8f9aa6;
+  --border-default: #373e47; --border-muted: #2d333b; --code-bg: #1f242b;
+  --diff-add-bg: rgb(87 171 90 / 15%); --diff-add-text: #b5d9b4; --diff-remove-bg: rgb(229 83 75 / 15%); --diff-remove-text: #f0bdb8;
+  --diff-hunk-bg: rgb(83 155 245 / 12%); --diff-hunk-text: #b3cdf0;
+  --selection-bg: #2f4258; --selection-ink: #e6edf3; --selection-edge: #6ea8e8;
+  --modern-shadow-pop: 0 0 0 1px rgb(255 255 255 / 5%), 0 12px 32px rgb(0 0 0 / 35%);
+  --ink: var(--text-primary); --muted: var(--text-secondary); --line: var(--border-default); --paper: var(--canvas);
+}
+html.ui-modern body.theme-midnight {
+  --canvas: #242a35; --surface: #2a313d; --surface-subtle: #2f3744; --surface-muted: #3a4352; --surface-hover: #343c4a;
+  --text-primary: #d8dee9; --text-secondary: #aab4c4; --text-tertiary: #98a3b5;
+  --border-default: #3e4756; --border-muted: #343c49; --code-bg: #272e3a; --code-text: #d8dee9;
+  --diff-add-bg: rgb(163 190 140 / 16%); --diff-add-text: #c9dfb6; --diff-remove-bg: rgb(191 97 106 / 20%); --diff-remove-text: #efc4c8;
+  --diff-hunk-bg: rgb(129 161 193 / 18%); --diff-hunk-text: #bdd0e5;
+  --selection-bg: #3b4c63; --selection-ink: #eceff4; --selection-edge: #88c0d0;
+  --modern-shadow-pop: 0 0 0 1px rgb(255 255 255 / 5%), 0 12px 32px rgb(0 0 0 / 30%);
+  --ink: var(--text-primary); --muted: var(--text-secondary); --line: var(--border-default); --paper: var(--canvas);
+  background: var(--canvas); color: var(--text-primary);
+}
+/* The theme menu previews the new colours. */
+html.ui-modern body .swatch-dark { background: linear-gradient(135deg, #22272e 58%, #6ea8e8 58%) !important; }
+html.ui-modern body .swatch-midnight { background: linear-gradient(135deg, #2a313d 58%, #88c0d0 58%) !important; }
+html.ui-modern body .swatch-system { background: linear-gradient(135deg, #f4f4f5 50%, #22272e 50%) !important; }
+/* Push dialog blocks that kept near-black legacy colours. */
+html.ui-modern body.theme-dark :is(.push-preview, #push-remote-url) { background: var(--code-bg) !important; color: var(--text-primary) !important; border-color: var(--border-default) !important; }
