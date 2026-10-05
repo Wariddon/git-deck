@@ -8,7 +8,8 @@
 //   Classic is the original stylesheet stack. A saved 'clean' from older
 //   builds is read as Modern.
 (function(){
-  const sizes=[8,10,12,14];const defaultSize=12;
+  // 13px Segoe UI is what Sourcetree uses on Windows; 8 and 10 were too small to read comfortably.
+  const sizes=[11,12,13,14,16];const defaultSize=13;
   const looks=['modern','classic'];const defaultLook='modern';
   const keys={size:'gitdeck.textSize',look:'gitdeck.look'};
   const read=(key)=>{try{return localStorage.getItem(key);}catch{return null;}};

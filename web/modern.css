@@ -1003,3 +1003,15 @@ html.ui-modern body.theme-midnight :is(.commit-file-status.status-d, .file-statu
 /* Tag and stash chips: lighter, calmer text on the dark themes (the saturated mix read poorly there). */
 html.ui-modern body.theme-dark .commit-refs i[data-ref="tag"] { color: color-mix(in srgb, #e3a34a 60%, var(--text-primary)) !important; }
 html.ui-modern body.theme-dark .commit-refs i[data-ref="stash"] { color: color-mix(in srgb, #b7a2f0 60%, var(--text-primary)) !important; }
+
+/* ---- Type like Sourcetree: Segoe UI at the text size (13px by default), regular weight, dark text in
+   every History column (author, date and hash were 11px greys), Consolas in diffs. ----------------------- */
+html.ui-modern body { --modern-font: "Segoe UI", "Segoe UI Variable Text", system-ui, sans-serif; --modern-mono: Consolas, "Cascadia Mono", "Cascadia Code", ui-monospace, monospace; }
+html.ui-modern body .commit-row :is(.commit-author, time, .commit-hash) { font-size: var(--ui-text-size) !important; color: var(--text-secondary) !important; font-weight: 400 !important; }
+html.ui-modern body .commit-row:not(.selected) .commit-description strong { font-weight: 400 !important; color: var(--text-primary); }
+html.ui-modern body .commit-row.selected .commit-description strong { font-weight: 600 !important; }
+html.ui-modern body .commit-list-header { color: var(--text-secondary) !important; }
+html.ui-modern body #tree-content :is(button, summary, .ref-branch-row) { color: var(--text-primary); font-weight: 400; }
+html.ui-modern body :is(.diff-code, .diff-lines, .diff-split-code, .blame-output) { font-size: var(--ui-text-size) !important; }
+html.ui-modern body #tree-content .ref-filter-tabs { display: flex !important; flex-wrap: nowrap !important; gap: 2px; }
+html.ui-modern body #tree-content .ref-filter-tabs > button { flex: 1 1 auto; min-width: 0; padding: 0 4px !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

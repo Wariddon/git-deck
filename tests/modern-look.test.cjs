@@ -190,3 +190,9 @@ assert.match(modernJs, /const preset=custom&&custom!=='#0969da'\?null:body\.clas
 assert.match(modernCss, /body\.theme-midnight :is\(\.commit-file-status\.status-m, \.file-status-m\) \{ color: #ebcb8b !important; \}/);
 assert.match(modernCss, /body\.theme-dark \.commit-refs i\[data-ref="stash"\] \{ color: color-mix\(in srgb, #b7a2f0 60%, var\(--text-primary\)\) !important; \}/);
 console.log('PASS: softer accents, status letters and chips on the dark themes');
+// Type like Sourcetree: Segoe UI first, Consolas in diffs, History meta columns at the text size (not 11px greys).
+assert.match(modernCss, /--modern-font: "Segoe UI", "Segoe UI Variable Text"/);
+assert.match(modernCss, /--modern-mono: Consolas,/);
+assert.match(modernCss, /\.commit-row :is\(\.commit-author, time, \.commit-hash\) \{ font-size: var\(--ui-text-size\) !important; color: var\(--text-secondary\) !important;/);
+assert.match(web('appearance.js'), /const sizes=\[11,12,13,14,16\];const defaultSize=13;/);
+console.log('PASS: Sourcetree-like typography (13px Segoe UI, Consolas diffs)');
