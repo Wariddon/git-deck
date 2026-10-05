@@ -12,6 +12,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Switch.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Parity.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Export.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Activity.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
@@ -1591,6 +1592,8 @@ function Invoke-GitDeckRequest($context) {
         '/api/integration' { Write-Json $context @{integration=(Get-WindowsIntegrationState)} }
         '/api/job' { Write-Json $context (Get-GitJob $request.QueryString['id']) }
         '/api/repos' { Write-Json $context (Get-RepositoryCache) }
+        '/api/activity/me' { Write-Json $context @{identity=(Get-GitDeckIdentity)} }
+        '/api/repo/activity' { Write-Json $context @{commits=@(Get-GitDeckActivity $request.QueryString['path'] $request.QueryString['since'] $request.QueryString['until'] $request.QueryString['author'] ($request.QueryString['merges'] -eq 'true'))} }
         '/api/repo/details' { $repoPath=$request.QueryString['path']; Write-Json $context @{details=(Get-RepositoryDetails $repoPath)} }
         '/api/repo/workspace' { $repoPath=$request.QueryString['path']; Write-Json $context @{workspace=(Get-WorkspaceDetails $repoPath ($request.QueryString['extras'] -eq 'true'))} }
         '/api/repo/history' { $repoPath=$request.QueryString['path'];$scope=$request.QueryString['scope'];$ref=$request.QueryString['ref'];$includeRemote=($request.QueryString['includeRemote'] -ne 'false');$order=$request.QueryString['order'];$skip=0;if($request.QueryString['skip'] -and -not [int]::TryParse($request.QueryString['skip'],[ref]$skip)){throw 'Invalid history offset.'};$items=@(Get-CommitHistory $repoPath $scope $ref $includeRemote $order $skip $request.QueryString['q']);Write-Json $context @{history=@($items | Select-Object -First 250);hasMore=($items.Count -gt 250);nextSkip=($skip+[Math]::Min(250,$items.Count))} }

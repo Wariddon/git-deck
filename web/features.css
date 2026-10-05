@@ -142,3 +142,25 @@ body.workbench-mode #tree-content .ref-filter-tabs button { flex: 1 0 auto; min-
 .workflow-ok { padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--success, #1a7f37) 35%, var(--line)); border-left: 3px solid var(--success, #1a7f37); border-radius: 6px; background: color-mix(in srgb, var(--success, #1a7f37) 7%, transparent); }
 .checkout-files > summary { cursor: pointer; font-weight: 600; margin: 6px 0; }
 .swatch-paper { background: linear-gradient(135deg,#f9f5ec 58%,#c4a468 58%); }
+
+/* Work report: activity across repositories in a date range. */
+.work-report-dialog{width:min(980px,94vw);max-height:88vh}
+.work-report-filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.work-report-filters .workflow-input{width:auto;min-width:0}
+.work-report-filters input[type=text]{flex:1 1 180px}
+.work-report-status{margin:8px 0 4px;color:var(--muted,#6b7280);font-size:12px}
+.work-report-tabs{display:flex;gap:4px;margin-bottom:6px}
+.work-report-tabs button{padding:3px 10px;border-radius:6px}
+.work-report-tabs button.active{background:var(--accent,#0969da);color:#fff;border-color:transparent}
+.work-report-body{max-height:56vh;overflow:auto}
+.work-report-table{width:100%;border-collapse:collapse;font-size:12px}
+.work-report-table th,.work-report-table td{padding:4px 6px;border-bottom:1px solid var(--line,rgba(127,127,127,.2));text-align:left;vertical-align:top}
+.work-report-table th{position:sticky;top:0;background:var(--surface,#fff)}
+.work-report-table ul{margin:4px 0 0;padding-left:16px}
+.work-report-dialog .work-report-repo{background:none !important;border:0 !important;box-shadow:none !important;min-height:0 !important;padding:0 !important;color:var(--accent,#0969da);cursor:pointer;font-weight:600;text-align:left}
+.work-report-day h3{font-size:13px;margin:10px 0 4px}
+.work-report-day ul{list-style:none;margin:0;padding:0}
+.work-report-day li{display:grid;grid-template-columns:44px 160px 1fr;gap:8px;padding:2px 0;font-size:12px}
+.work-report-time{font-family:var(--modern-mono,Consolas,monospace);color:var(--muted,#6b7280)}
+.work-report-empty{padding:16px;text-align:center;color:var(--muted,#6b7280)}
+@media (max-width:640px){.work-report-day li{grid-template-columns:44px 1fr}.work-report-day li span:last-child{grid-column:1/-1}}
