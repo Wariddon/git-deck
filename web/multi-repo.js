@@ -393,6 +393,16 @@
     addPanel('switch-all',t('Switch branch'),buildSwitch);
     addPanel('search-all',t('Search all'),buildSearch);
     const openView=(view)=>{if(typeof showOperationsCenter==='function')showOperationsCenter(view);};
+    // Always-visible way in: a Dashboard button in the top toolbar, next to View & tools.
+    const head=document.querySelector('.workspace-modal-head');
+    if(head&&!head.querySelector('#dashboard-button')){
+      const dash=el('button','toolbar-dashboard');dash.id='dashboard-button';dash.type='button';dash.title=t('Pending work, update, switch branch and search in every repository');
+      dash.append(el('span','',t('Dashboard')));
+      // icons.js loads after this file, so the icon may only be ready at load.
+      const addIcon=()=>{if(window.GitDeckIcons?.svg&&!dash.querySelector('svg'))dash.prepend(window.GitDeckIcons.svg('repos',18));};
+      if(window.GitDeckIcons)addIcon();else window.addEventListener('load',addIcon,{once:true});dash.onclick=()=>openView('pending');
+      const secondary=head.querySelector('.workbench-secondary');if(secondary)secondary.before(dash);else head.append(dash);
+    }
     const more=document.querySelector('.sync-more > div');
     if(more&&!more.querySelector('[data-multi-repo]')){
       const entries=[['pending',t('📋 Pending work'),t('What is still uncommitted, unpushed or stashed in every repository')],['switch-all',t('🔀 Switch branch everywhere'),t('Put every repository of a ticket on the same branch')],['search-all',t('🔎 Search all repositories'),t('Find a ticket, message or branch in every repository')]];

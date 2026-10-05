@@ -793,4 +793,5 @@ GitDeckI18n.register('th',{
   "Pending work, update, switch branch and search in every repository":"งานค้าง, อัปเดต, สลับ branch และค้นหาในทุก repository",
   "All repos":"ทุก repo",
   "Report":"รายงาน",
+  "Dashboard":"Dashboard",
 });

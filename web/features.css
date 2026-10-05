@@ -218,3 +218,4 @@ body .backdrop:not(#workspace-backdrop) .multi-repo-panel button.primary{color:v
 body .backdrop:not(#workspace-backdrop) .multi-repo-link{color:var(--green,#0969da)}
 .multi-repo-actions{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
 .multi-repo-actions button{padding:2px 8px;font-size:12px;min-height:0}
+.toolbar-dashboard{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}

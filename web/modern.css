@@ -1039,3 +1039,10 @@ html.ui-modern body.theme-dark .scan-locations summary span, html.ui-modern body
 /* Primary buttons always use the accent's text colour; theme-wide button and dialog rules must not
    override it (the :not(#gd-none) only raises specificity above those rules). */
 html.ui-modern body :is(button.primary, .btn.primary, #push-submit):not(#gd-none) { color: var(--accent-contrast, #fff); }
+/* Dashboard (every repository) next to View & tools, styled like it but in the accent so it is found. */
+html.ui-modern body .workspace-modal-head .toolbar-dashboard {
+  display: inline-flex !important; align-items: center; gap: 6px; width: auto !important; height: 32px !important; padding: 0 10px !important; flex: 0 0 auto;
+  border: 0 !important; border-radius: 6px !important; background: transparent !important; box-shadow: none !important;
+  color: var(--green) !important; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+html.ui-modern body .workspace-modal-head .toolbar-dashboard:hover { background: var(--surface-hover) !important; }
