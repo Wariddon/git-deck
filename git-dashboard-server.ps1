@@ -667,7 +667,8 @@ function Get-ConflictDetails([string]$Path,[string]$File) {
     Assert-Registered $Path;$operation=Get-GitOperationState $Path
     if(-not $operation.active -or -not ($operation.conflicts -contains $File)){throw 'File is not an active merge conflict.'}
     $readStage={param($stage)$result=Invoke-GitCapture $Path @('show',(":"+$stage+":"+$File));if($result.Code -eq 0){return $result.Output};return ''}
-    return [ordered]@{file=$File;operation=$operation.type;base=(& $readStage 1);ours=(& $readStage 2);theirs=(& $readStage 3)}
+    $full=Join-Path $Path $File;$working=$(if(Test-Path -LiteralPath $full -PathType Leaf){[IO.File]::ReadAllText($full)}else{''})
+    return [ordered]@{file=$File;operation=$operation.type;base=(& $readStage 1);ours=(& $readStage 2);theirs=(& $readStage 3);working=$working}
 }
 
 function Get-Worktrees([string]$Path) {
