@@ -579,4 +579,6 @@ GitDeckI18n.register('th',{
   "Add action":"เพิ่มคำสั่ง",
   "⚡ Custom actions":"⚡ Custom actions",
   "Your own programs in right-click menus":"คำสั่งของคุณเองในเมนูคลิกขวา",
+  "Rebase children of {hash} interactively…":"Rebase commit ที่ตามหลัง {hash} แบบ interactive…",
+  "(selected commit)":"(commit ที่เลือก)",
 });

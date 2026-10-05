@@ -9,6 +9,15 @@
   const askName=(message,value)=>{const name=prompt(message,value);return name&&name.trim();};
 
   // ---- History: commit rows -------------------------------------------------------------------------
+  // "Rebase children interactively": the Rebase page opens with this commit as the base, plan loaded.
+  let pendingRebaseBase='';
+  function startPendingRebase(root){
+    if(!pendingRebaseBase)return;
+    const form=root.querySelector('.rebase-controls');const select=form?.querySelector('select');if(!select)return;
+    const hash=pendingRebaseBase;pendingRebaseBase='';
+    if(![...select.options].some(option=>option.value===hash))select.append(new Option(hash.slice(0,8)+' '+t('(selected commit)'),hash));
+    select.value=hash;form.requestSubmit();
+  }
   if(typeof commitContextItems==='function'){
     const baseCommit=commitContextItems;
     commitContextItems=function(item){
@@ -21,6 +30,8 @@
         {label:t('Rebase {branch} onto this commit…',{branch:current||'HEAD'}),disabled:!current,disabledReason:t('Check out a branch first'),
           run:()=>runWorkspaceAction('rebase-start',{branch:item.fullHash},t('Rebase {branch} onto {hash}?\nYour commits are replayed on top of it.',{branch:current,hash:item.hash}))},
       ];
+      merge.push({label:t('Rebase children of {hash} interactively…',{hash:item.hash}),disabled:!current,disabledReason:t('Check out a branch first'),
+        run:()=>{pendingRebaseBase=item.fullHash;selectWorkspaceTab('rebase');}});
       const files=[
         {label:t('Create patch…'),hint:'.patch',run:()=>runWorkspaceAction('patch-export',{commit:item.fullHash},'')},
         {label:t('Archive as ZIP…'),hint:item.hash,run:()=>runWorkspaceAction('archive-export',{ref:item.fullHash},'')},
@@ -114,6 +125,7 @@
 
   // Rows that are drawn without a menu get one as they appear.
   function attach(root){
+    startPendingRebase(root);
     const stashes=data().stashes||[];
     for(const node of root.querySelectorAll('.stash-layout .stash-label:not([data-menu]), .ref-simple:not([data-menu])')){
       const text=node.textContent||'';const stash=stashes.find(item=>text.startsWith(item.ref));

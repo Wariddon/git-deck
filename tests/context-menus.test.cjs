@@ -25,7 +25,7 @@ const run = (items, start) => items.find((item) => item && item.label && item.la
 
 // Commit: merge / rebase next to checkout, then patch, ZIP and copies.
 const commit = context.commitContextItems({ hash: 'abc1234', fullHash: 'abc1234def', subject: 'feat: x' });
-assert.deepEqual(labels(commit), ['Checkout', 'Merge into main…', 'Rebase main onto this commit…', 'Cherry-pick', 'Create patch…', 'Archive as ZIP…', 'Copy SHA', 'Copy full SHA', 'Copy commit message']);
+assert.deepEqual(labels(commit), ['Checkout', 'Merge into main…', 'Rebase main onto this commit…', 'Rebase children of abc1234 interactively…', 'Cherry-pick', 'Create patch…', 'Archive as ZIP…', 'Copy SHA', 'Copy full SHA', 'Copy commit message']);
 run(commit, 'Merge into'); assert.deepEqual(JSON.parse(JSON.stringify(calls.pop().slice(0, 2))), ['merge', { branch: 'abc1234def', mode: 'default' }]);
 run(commit, 'Create patch'); assert.deepEqual(JSON.parse(JSON.stringify(calls.pop().slice(0, 2))), ['patch-export', { commit: 'abc1234def' }]);
 
