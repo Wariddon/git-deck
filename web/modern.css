@@ -1046,3 +1046,4 @@ html.ui-modern body .workspace-modal-head .toolbar-dashboard {
   color: var(--green) !important; font-weight: 600; cursor: pointer; white-space: nowrap;
 }
 html.ui-modern body .workspace-modal-head .toolbar-dashboard:hover { background: var(--surface-hover) !important; }
+html.ui-modern body :is(button.primary, .btn.primary, #push-submit):not(#gd-none):not(:disabled) { background: var(--green); border-color: var(--green); }

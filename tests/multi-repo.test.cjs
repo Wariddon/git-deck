@@ -45,6 +45,14 @@ assert.deepEqual(plain(steps), ['Commit or stash 3 changed file(s)', 'Publish th
 assert.equal(m.nextSteps(item({ ...clean, operation: 'rebase', conflicts: 2 }))[0].text, 'Resolve 2 conflict(s), then finish the rebase');
 assert.match(m.nextSteps(item(null, 'not a git repository'))[0].text, /^Could not check: not a git repository/);
 
+// A failed push says why in one line, not "To C:/...remote.git".
+const rejected = 'To C:/w/remote.git\n ! [rejected]        main -> main (fetch first)\nerror: failed to push some refs to \'C:/w/remote.git\'';
+assert.equal(m.explainError(rejected), '! [rejected]        main -> main (fetch first)');
+assert.equal(m.explainError('fatal: not a git repository'), 'fatal: not a git repository');
+const failed = { ...item(clean), actionError: { kind: 'push', reason: 'rejected', raw: rejected } };
+assert.equal(m.nextSteps(failed)[0].text, 'Push failed: rejected');
+assert.equal(m.pendingMatches(failed, 'problems'), true, 'A failed push shows under Fix these first');
+
 const found = (o) => ({ local: false, remote: '', current: 'main', dirty: false, ...o });
 assert.equal(m.switchPlan('feature/a', found({ current: 'feature/a' })).kind, 'none');
 assert.deepEqual(plain(m.switchPlan('feature/a', found({ local: true })).payload), { branch: 'feature/a', localChanges: 'stash' });

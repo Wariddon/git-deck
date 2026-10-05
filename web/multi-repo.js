@@ -100,10 +100,19 @@
     c.score=(c.operation||c.conflicts?1000:0)+c.changes*3+c.push*3+unpublished*5+c.pull*2+c.stashes+c.localOnly+(c.merged?1:0);
     return c;
   }
+  // Plain-words reason for a failed Git action: the error guide's title when one matches,
+  // otherwise the line of Git output that says what went wrong (not "To C:/...remote.git").
+  function explainError(message){
+    const text=String(message||'');const guide=typeof window!=='undefined'&&window.GitDeckErrorGuide?.guideFor?.(text);
+    if(guide)return guide.title();
+    const lines=text.split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+    return lines.find(line=>/^(error|fatal):|rejected|denied|not found|could not|failed/i.test(line))||lines[0]||'';
+  }
   // The next thing to do for a repository, in plain words, most urgent first.
   function nextSteps(item){
     const c=item.counts||pendingCounts(item.pending);const p=item.pending||{};const steps=[];
     if(item.error)steps.push({tone:'bad',text:t('Could not check: {error}',{error:item.error})});
+    if(item.actionError)steps.push({tone:'bad',text:item.actionError.kind==='pull'?t('Pull failed: {reason}',{reason:item.actionError.reason}):t('Push failed: {reason}',{reason:item.actionError.reason})});
     if(c.operation||c.conflicts)steps.push({tone:'bad',text:c.conflicts?t('Resolve {count} conflict(s), then finish the {operation}',{count:c.conflicts,operation:p.operation||'merge'}):t('Finish or abort the {operation}',{operation:p.operation})});
     if(c.changes)steps.push({tone:'warn',text:t('Commit or stash {count} changed file(s)',{count:c.changes})});
     if(c.push)steps.push({tone:'warn',text:t('Push {count} commit(s)',{count:c.push})});
@@ -126,8 +135,8 @@
       case 'localOnly':return c.localOnly>0;
       case 'stashes':return c.stashes>0;
       case 'merged':return c.merged>0;
-      case 'problems':return Boolean(item.error)||c.conflicts>0||c.operation>0;
-      default:return Boolean(item.error)||c.score>0;
+      case 'problems':return Boolean(item.error||item.actionError)||c.conflicts>0||c.operation>0;
+      default:return Boolean(item.error||item.actionError)||c.score>0;
     }
   }
   const ticketPrefix=(branch)=>{const match=String(branch||'').match(ticketPattern);return match?match[0]+': ':'';};
@@ -168,15 +177,27 @@
     const copy=el('button','',t('Copy summary'));copy.type='button';copy.title=t('Copy the shown rows as a Markdown table');
     const pruneMerged=el('button','',t('Delete merged branches (this computer)'));pruneMerged.type='button';pruneMerged.title=t('Delete local branches that are already merged; remote branches are not touched');
     menu.append(pushAll,pullAll,pruneMerged,copy);
-    bar.append(folder,search,sort,run,more);
+    // Two ways to look: grouped by what to do (default, easiest) or one table row per repository.
+    const viewSwitch=el('div','pending-view-switch');viewSwitch.setAttribute('role','group');viewSwitch.setAttribute('aria-label',t('View'));
+    const byTask=el('button','',t('By task'));byTask.type='button';const byTable=el('button','',t('Table'));byTable.type='button';viewSwitch.append(byTask,byTable);
+    bar.append(folder,search,viewSwitch,sort,run,more);
     const chips=el('div','pending-filters');const status=el('small','multi-repo-status');const out=el('div','multi-repo-body');
-    const help=el('p','multi-repo-note pending-help',t('Click a number to see the list. Hover a column name to see what it means. The What to do column says the next step.'));
+    const help=el('p','multi-repo-note pending-help');
     panel.append(bar,chips,help,status,out);
 
     // Filter and sort are remembered between visits.
     const remember=(key,value)=>{try{localStorage.setItem(key,value);}catch{}};
     const recall=(key,fallback)=>{try{return localStorage.getItem(key)||fallback;}catch{return fallback;}};
     let results=[];let filter=recall('gitdeck.pendingFilter','any');let runId=0;let checkedAt=null;const expanded=new Set();
+    let view=recall('gitdeck.pendingView','tasks')==='table'?'table':'tasks';
+    const syncView=()=>{
+      byTask.classList.toggle('active',view==='tasks');byTable.classList.toggle('active',view==='table');
+      byTask.setAttribute('aria-pressed',String(view==='tasks'));byTable.setAttribute('aria-pressed',String(view==='table'));
+      sort.hidden=chips.hidden=view==='tasks';
+      help.textContent=view==='tasks'?t('Grouped by what needs doing. Each group has a button that does it for every repository in the group.'):t('Click a number to see the list. Hover a column name to see what it means. The What to do column says the next step.');
+    };
+    byTask.onclick=()=>{view='tasks';remember('gitdeck.pendingView',view);syncView();draw();};
+    byTable.onclick=()=>{view='table';remember('gitdeck.pendingView',view);syncView();drawChips();draw();};
     sort.value=[...sort.options].some(option=>option.value===recall('gitdeck.pendingSort',''))?recall('gitdeck.pendingSort',''):'pending';
     const headerHelp={
       [t('Uncommitted')]:t('Files changed on this computer and not committed yet'),
@@ -218,7 +239,8 @@
       try{
         const result=id==='pull'?await runQuiet('pull',repo,{strategy:state.meta?.pullStrategy||'ff-only',autostash:true}):await runQuiet('push',repo);
         showActionFeedback(`${repo.name} · ${firstLine(result?.message)||t('Done')}`);
-      }catch(error){showActionFeedback(firstLine(error.message),{error:true,context:`${repo.name} · ${id}`});}
+        item.actionError=null;
+      }catch(error){item.actionError={kind:id,reason:explainError(error.message),raw:String(error.message||'')};showActionFeedback(error.message,{error:true,context:`${repo.name} · ${id}`});}
       Object.assign(item,await check(repo));drawChips();draw();
     };
     const actionLabels={commit:()=>t('Commit…'),push:()=>t('Push'),publish:()=>t('Publish'),pull:()=>t('Pull'),resolve:()=>t('Resolve…'),stashes:()=>t('Stashes…'),cleanup:()=>t('Clean up…')};
@@ -244,7 +266,72 @@
       }
       td.append(box);tr.append(td);return tr;
     };
+    // ---- By task: one group per kind of work, each repository a short line with one button ----
+    const taskGroups=[
+      {id:'problems',icon:'⚠️',title:()=>t('Fix these first'),hint:()=>t('A push or pull failed, a merge or rebase is unfinished, there are conflicts, or the repository could not be read.'),
+        line:item=>nextSteps(item)[0]?.text||'',
+        // A rejected push needs a pull first; other failures open the repository.
+        action:item=>item.actionError?.kind==='push'&&/rejected|fetch first|non-fast-forward|behind/i.test(item.actionError.raw)?{id:'pull',label:t('Pull first')}:item.error||item.actionError?{id:'open',label:t('Open')}:{id:'resolve',label:t('Resolve…')}},
+      {id:'changes',icon:'✏️',title:()=>t('Not committed yet'),hint:()=>t('You changed files and have not committed them.'),
+        line:item=>t('{count} changed file(s) on {branch}',{count:item.counts.changes,branch:item.pending.branch||'—'}),action:()=>({id:'commit',label:t('Commit…')})},
+      {id:'push',icon:'⬆️',title:()=>t('Ready to push'),hint:()=>t('Committed on this computer, not on the remote yet.'),
+        line:item=>t('{count} commit(s) on {branch}',{count:item.counts.push,branch:item.pending.branch}),action:()=>({id:'push',label:t('Push')}),bulk:{label:()=>t('Push all'),run:()=>bulk('push')}},
+      {id:'unpublished',icon:'🆕',title:()=>t('New branches not on the remote'),hint:()=>t('The branch you are on exists only on this computer.'),
+        line:item=>item.pending.branch,action:()=>({id:'publish',label:t('Publish')})},
+      {id:'pull',icon:'⬇️',title:()=>t('New commits to pull'),hint:()=>t('Someone pushed; your copy is behind.'),
+        line:item=>t('{count} new commit(s) for {branch}',{count:item.counts.pull,branch:item.pending.branch}),action:()=>({id:'pull',label:t('Pull')}),bulk:{label:()=>t('Pull all'),run:()=>bulk('pull')}},
+      {id:'localOnly',icon:'🌿',title:()=>t('Other branches only on this computer'),hint:()=>t('Not the branch you are on: older work that was never pushed. Push it if you need it, delete it if you do not.'),
+        line:item=>t('{count} branch(es), {commits} commit(s)',{count:item.counts.localOnly,commits:item.counts.localOnlyCommits}),action:()=>({id:'branches',label:t('Open Branches')}),list:item=>[...item.pending.unpushedBranches].sort((a,b)=>b.commits-a.commits).map(b=>`${b.branch} · ${b.commits}`)},
+      {id:'stashes',icon:'📦',title:()=>t('Stashes left behind'),hint:()=>t('Work you put aside. Restore it or delete it.'),
+        line:item=>t('{count} stash(es)',{count:item.counts.stashes}),action:()=>({id:'stashes',label:t('Stashes…')}),list:item=>item.pending.stashes.map(s=>s.message||s.ref)},
+      {id:'merged',icon:'🧹',title:()=>t('Merged branches you can delete'),hint:()=>t('Already in the main branch. Deleting them only tidies up; no work is lost.'),
+        line:item=>t('{count} branch(es)',{count:item.counts.merged}),action:()=>({id:'cleanup',label:t('Clean up…')}),list:item=>item.pending.mergedBranches,bulk:{label:()=>t('Delete all (this computer)'),run:()=>pruneMerged.onclick()}},
+    ];
+    const collapsed=new Set();
+    const drawTasks=()=>{
+      out.replaceChildren();
+      const term=search.value.trim().toLowerCase();
+      const pool=results.filter(item=>!term||`${item.repo.name} ${item.pending?.branch||''}`.toLowerCase().includes(term));
+      if(!pool.length){out.append(el('div','multi-repo-empty',results.length?t('No repository matches this filter.'):t('Checking…')));return;}
+      let shownAny=false;
+      for(const group of taskGroups){
+        const items=pool.filter(item=>pendingMatches(item,group.id)).sort((a,b)=>a.repo.name.localeCompare(b.repo.name));
+        if(!items.length)continue;shownAny=true;
+        const section=el('section',`pending-group pending-group-${group.id}`);
+        const head=el('div','pending-group-head');
+        const toggle=el('button','pending-group-toggle');toggle.type='button';toggle.setAttribute('aria-expanded',String(!collapsed.has(group.id)));
+        toggle.append(el('span','pending-group-icon',group.icon),el('strong','',group.title()),el('b','pending-group-count',String(items.length)));
+        toggle.onclick=()=>{collapsed.has(group.id)?collapsed.delete(group.id):collapsed.add(group.id);drawTasks();};
+        head.append(toggle);
+        if(group.bulk&&items.length>1){const all=el('button','primary',`${group.bulk.label()} (${items.length})`);all.type='button';all.onclick=group.bulk.run;head.append(all);}
+        section.append(head,el('p','pending-group-hint',group.hint()));
+        if(!collapsed.has(group.id)){
+          const list=el('div','pending-group-list');const limit=expanded.has('group|'+group.id)?items.length:8;
+          for(const item of items.slice(0,limit)){
+            const line=el('div','pending-line');
+            const what=el('div','pending-line-what');what.append(repoLink(item.repo),el('span','pending-line-text',group.line(item)));
+            const action=group.action(item);const button=el('button',action.id==='push'||action.id==='publish'||action.id==='pull'?'primary':'',action.label);button.type='button';
+            button.onclick=()=>{
+              if(action.id==='open'){document.getElementById('operations-close')?.click();openWorkspace(item.repo,'history',null);return;}
+              if(action.id==='branches'){document.getElementById('operations-close')?.click();openWorkspace(item.repo,'branches',null);return;}
+              act(item,action.id==='publish'?'push':action.id,button);
+            };
+            line.append(what);
+            if(group.list){const key=`${group.id}|${item.repo.path}`;const more=el('button','pending-line-more',expanded.has(key)?t('Hide list'):t('Show list'));more.type='button';more.onclick=()=>{expanded.has(key)?expanded.delete(key):expanded.add(key);drawTasks();};line.append(more);}
+            line.append(button);list.append(line);
+            if(group.list&&expanded.has(`${group.id}|${item.repo.path}`)){const names=el('div','pending-detail-list pending-line-list');group.list(item).forEach(name=>names.append(el('span','',name)));list.append(names);}
+          }
+          if(items.length>limit){const rest=el('button','pending-show-all',t('Show all {count}',{count:items.length}));rest.type='button';rest.onclick=()=>{expanded.add('group|'+group.id);drawTasks();};list.append(rest);}
+          section.append(list);
+        }
+        out.append(section);
+      }
+      const tidy=pool.filter(item=>!pendingMatches(item,'any')).length;
+      if(!shownAny&&checkedAt){const empty=el('div','multi-repo-empty');empty.append(el('strong','',t('🎉 Everything is tidy')),el('p','',t('Every repository in this folder is committed, pushed and up to date.')));out.append(empty);}
+      else if(tidy)out.append(el('p','pending-tidy',t('✓ {count} repositories need nothing',{count:tidy})));
+    };
     const draw=()=>{
+      if(view==='tasks')return drawTasks();
       out.replaceChildren();
       const rows=visible();
       if(!rows.length){
@@ -305,8 +392,8 @@
       run.disabled=true;let failed=0;
       for(const item of todo){
         status.textContent=(kind==='push'?t('Pushing {name}…',{name:item.repo.name}):t('Pulling {name}…',{name:item.repo.name}));let problem='';
-        try{await runQuiet(kind,item.repo,kind==='pull'?{strategy:state.meta?.pullStrategy||'ff-only',autostash:true}:{});}catch(error){failed++;problem=firstLine(error.message);}
-        Object.assign(item,await check(item.repo));if(problem)item.error=problem;drawChips();draw();
+        try{await runQuiet(kind,item.repo,kind==='pull'?{strategy:state.meta?.pullStrategy||'ff-only',autostash:true}:{});}catch(error){failed++;problem=String(error.message||'');}
+        Object.assign(item,await check(item.repo));item.actionError=problem?{kind,reason:explainError(problem),raw:problem}:null;drawChips();draw();
       }
       summary();if(failed)status.textContent+=' · '+t('{count} failed',{count:failed});run.disabled=false;
     };
@@ -332,7 +419,7 @@
       for(const item of visible()){const c=item.counts;lines.push(`| ${item.repo.name} | ${item.pending?.branch||''} | ${c.changes} | ${c.push} | ${c.pull} | ${c.stashes} | ${c.localOnly} | ${c.merged} |`);}
       try{await navigator.clipboard.writeText(lines.join('\n')+'\n');showActionFeedback(t('Copied {count} rows',{count:lines.length-2}));}catch(error){showActionFeedback(error.message,{error:true});}
     };
-    start();
+    syncView();start();
   }
 
   // Fetch or pull every repository in a folder.
@@ -583,5 +670,5 @@
     }
     setTimeout(checkGitLab,30000);setInterval(checkGitLab,10*60*1000);
   }
-  window.GitDeckMultiRepo={pendingLabels,pendingActions,pendingCounts,pendingMatches,nextSteps,switchPlan,cleanupReasons,ticketPrefix,gitlabNews,openBranchCleanup,checkGitLab};
+  window.GitDeckMultiRepo={pendingLabels,pendingActions,pendingCounts,pendingMatches,nextSteps,explainError,switchPlan,cleanupReasons,ticketPrefix,gitlabNews,openBranchCleanup,checkGitLab};
 })();
