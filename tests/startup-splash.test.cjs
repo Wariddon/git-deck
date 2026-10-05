@@ -24,8 +24,8 @@ assert.match(splashCss,/\.startup-card \{[^}]*background:var\(--brand\)/);
 // The whole window is brand green: no light page around the logo (user screenshot), and no white flash first.
 assert.match(splashCss,/#startup-splash \{ --brand:#0b6e47;[^}]*background:var\(--brand\);/);
 assert(!/box-shadow/.test(splashCss),'No card edge or shadow: only the logo and the name');
-assert.match(html,/<html lang="en" style="background:#0b6e47">/);
-assert.match(script,/document\.documentElement\.style\.background=''/,'The app gets its own background back after loading');
+assert(html.includes('<head>\n  <style id="startup-background">html{background:#0b6e47}</style>'),'The page starts green, before any stylesheet loads');
+assert(script.includes("document.getElementById('startup-background')?.remove();"),'The app gets its own background back after loading');
 assert(!html.includes('startup-spinner'),'No spinner: the card alone, like Sourcetree');
 // GitDeck.exe paints the same card natively until the app window appears.
 const launcher=fs.readFileSync(path.join(root,'launcher/GitDeckLauncher.cs'),'utf8');

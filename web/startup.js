@@ -10,7 +10,7 @@
       let finished=false;
       const timer=setTimeout(()=>{if(!finished)document.getElementById('startup-actions').hidden=false;},12000);
       // index.html starts the page green (no white flash before the splash); the app takes over after.
-      const finish=()=>{if(finished)return;finished=true;clearTimeout(timer);splash.close();if(document.documentElement)document.documentElement.style.background='';};
+      const finish=()=>{if(finished)return;finished=true;clearTimeout(timer);splash.close();document.getElementById('startup-background')?.remove();};
       window.GitDeckStartup={update(message){if(!finished)status.textContent=message;},finish};
       document.getElementById('startup-reload').onclick=()=>location.reload();
       document.getElementById('startup-continue').onclick=finish;
