@@ -18,7 +18,13 @@
   const query=(params)=>new URLSearchParams(params).toString();
   const usable=(repo)=>repo&&repo.valid!==false&&!repo.pending;
   function inFolder(repo,folder){if(!folder||folder==='all')return true;const path=repo.path.toLowerCase(),root=folder.toLowerCase();return path===root||path.startsWith(root+'\\');}
-  function folderSelect(){const select=document.createElement('select');select.className='workflow-input';select.setAttribute('aria-label',t('Folder'));select.append(new Option(t('All folders'),'all'));(state.scanLocations||[]).forEach(root=>select.append(new Option(root,root)));return select;}
+  // The folder choice is shared by every panel and the Work report, and remembered.
+  const folderKey='gitdeck.folder';
+  function folderSelect(){
+    const select=document.createElement('select');select.className='workflow-input';select.setAttribute('aria-label',t('Folder'));select.append(new Option(t('All folders'),'all'));(state.scanLocations||[]).forEach(root=>select.append(new Option(root,root)));
+    try{const saved=localStorage.getItem(folderKey);if(saved&&[...select.options].some(option=>option.value===saved))select.value=saved;}catch{}
+    select.addEventListener('change',()=>{try{localStorage.setItem(folderKey,select.value);}catch{}});return select;
+  }
   const reposIn=(folder)=>(state.repos||[]).filter(repo=>usable(repo)&&inFolder(repo,folder));
   function openRepo(repo){document.getElementById('operations-close')?.click();openWorkspace(repo,'history',null);}
   function repoLink(repo){const button=el('button','multi-repo-link',repo.name);button.type='button';button.title=repo.path;button.onclick=()=>openRepo(repo);return button;}
@@ -72,6 +78,18 @@
     const age=(now-Date.parse(branch.date))/86400000;if(Number.isFinite(age)&&age>days)reasons.push('old');
     return reasons;
   }
+  // The one-click fixes offered for a repository's pending work, most urgent first.
+  function pendingActions(p){
+    if(!p)return [];const ids=[];
+    if(p.operation||p.conflicts)ids.push('resolve');
+    if(p.changed||p.untracked)ids.push('commit');
+    if(p.ahead&&p.upstream&&!p.conflicts)ids.push('push');
+    else if(!p.upstream&&p.branch&&!['main','master','develop'].includes(p.branch))ids.push('publish');
+    if(p.behind&&!p.operation)ids.push('pull');
+    if((p.stashes||[]).length)ids.push('stashes');
+    if((p.mergedBranches||[]).length)ids.push('cleanup');
+    return ids;
+  }
   const ticketPrefix=(branch)=>{const match=String(branch||'').match(ticketPattern);return match?match[0]+': ':'';};
 
   // ---- Operations Center panels -------------------------------------------------------------
@@ -99,34 +117,57 @@
     const onlyOpen=document.createElement('input');onlyOpen.type='checkbox';onlyOpen.checked=true;
     const onlyLabel=el('label','modern-dialog-check');onlyLabel.append(onlyOpen,el('span','',t('Only repositories with something pending')));
     const run=el('button','primary',t('Check'));run.type='button';
+    const pushAll=el('button','',t('Push all'));pushAll.type='button';pushAll.title=t('Push the current branch of every repository that has commits to push');pushAll.disabled=true;
     const status=el('small','multi-repo-status');const out=el('div','multi-repo-body');
-    bar.append(folder,onlyLabel,run);panel.append(bar,status,out);
+    bar.append(folder,onlyLabel,run,pushAll);panel.append(bar,status,out);
     let results=[];
+    const check=async(repo)=>{try{const pending=(await api('/api/repo/pending?'+query({path:repo.path}))).pending;return {repo,pending,labels:pendingLabels(pending),error:''};}catch(error){return {repo,pending:null,labels:[],error:firstLine(error.message)};}};
+    const summary=()=>{const pending=results.filter(item=>item.labels.length).length;status.textContent=t('{pending} of {total} repositories have something pending',{pending,total:results.length});pushAll.disabled=!results.some(item=>pendingActions(item.pending).includes('push'));};
+    // One click per fix: the button does the safe step or opens the right view.
+    const act=async(item,id,button)=>{
+      const repo=item.repo;const go=(tab)=>{document.getElementById('operations-close')?.click();openWorkspace(repo,tab,null);};
+      if(id==='commit')return go('changes');if(id==='resolve')return go('conflicts');if(id==='stashes')return go('stashes');
+      if(id==='cleanup'){document.getElementById('operations-close')?.click();return openBranchCleanup(repo);}
+      button.disabled=true;button.textContent=t('Working…');
+      try{
+        const result=id==='pull'?await runQuiet('pull',repo,{strategy:state.meta?.pullStrategy||'ff-only',autostash:true}):await runQuiet('push',repo);
+        showActionFeedback(`${repo.name} · ${firstLine(result?.message)||t('Done')}`);
+      }catch(error){showActionFeedback(firstLine(error.message),{error:true,context:`${repo.name} · ${id}`});}
+      Object.assign(item,await check(repo));summary();draw();
+    };
+    const actionLabels={commit:()=>t('Commit…'),push:()=>t('Push'),publish:()=>t('Publish'),pull:()=>t('Pull'),resolve:()=>t('Resolve…'),stashes:()=>t('Stashes…'),cleanup:()=>t('Clean up…')};
     const draw=()=>{
       out.replaceChildren();
       const shown=results.filter(item=>item.error||!onlyOpen.checked||item.labels.length);
       if(!shown.length){out.append(el('p','multi-repo-empty',t('Nothing pending. Everything is committed, pushed and tidy.')));return;}
-      const grid=table([t('Repository'),t('Branch'),t('Pending')]);
+      const grid=table([t('Repository'),t('Branch'),t('Pending'),'']);
       shown.forEach(item=>{
         const chips=el('div','multi-repo-chips');
         if(item.error)chips.append(el('span','multi-repo-chip tone-bad',item.error));
         item.labels.forEach(label=>chips.append(el('span',`multi-repo-chip tone-${label.tone}`,label.text)));
-        grid.append(row([repoLink(item.repo),item.pending?.branch||'',chips]));
+        const actions=el('div','multi-repo-actions');
+        for(const id of pendingActions(item.pending)){const button=el('button',id==='push'||id==='publish'?'primary':'',actionLabels[id]());button.type='button';button.onclick=()=>act(item,id==='publish'?'push':id,button);actions.append(button);}
+        grid.append(row([repoLink(item.repo),item.pending?.branch||'',chips,actions]));
       });
       out.append(grid);
     };
     onlyOpen.onchange=draw;
     run.onclick=async()=>{
       const repos=reposIn(folder.value);run.disabled=true;let done=0;
-      results=await mapLimit(repos,4,async repo=>{
-        let item;try{const pending=(await api('/api/repo/pending?'+query({path:repo.path}))).pending;item={repo,pending,labels:pendingLabels(pending)};}
-        catch(error){item={repo,labels:[],error:firstLine(error.message)};}
-        status.textContent=t('Checked {done} of {total}',{done:++done,total:repos.length});return item;
-      });
+      results=await mapLimit(repos,4,async repo=>{const item=await check(repo);status.textContent=t('Checked {done} of {total}',{done:++done,total:repos.length});return item;});
       results.sort((a,b)=>(b.error?99:b.labels.length)-(a.error?99:a.labels.length)||a.repo.name.localeCompare(b.repo.name));
-      const pending=results.filter(item=>item.labels.length).length;
-      status.textContent=t('{pending} of {total} repositories have something pending',{pending,total:repos.length});
-      run.disabled=false;draw();
+      summary();run.disabled=false;draw();
+    };
+    pushAll.onclick=async()=>{
+      const todo=results.filter(item=>pendingActions(item.pending).includes('push'));if(!todo.length)return;
+      if(!confirm(t('Push {count} repositories now?',{count:todo.length})+'\n'+todo.map(item=>`${item.repo.name} (${item.pending.branch}, ${item.pending.ahead})`).join('\n')))return;
+      pushAll.disabled=run.disabled=true;let failed=0;
+      for(const item of todo){
+        status.textContent=t('Pushing {name}…',{name:item.repo.name});let problem='';
+        try{await runQuiet('push',item.repo);}catch(error){failed++;problem=firstLine(error.message);}
+        Object.assign(item,await check(item.repo));if(problem)item.error=problem;
+      }
+      summary();if(failed)status.textContent+=' · '+t('{count} could not push',{count:failed});run.disabled=false;draw();
     };
     run.click();
   }
@@ -227,8 +268,8 @@
   }
 
   // ---- Branch cleanup (open repository) --------------------------------------------------------
-  async function openBranchCleanup(){
-    const repo=state.workspaceRepo;if(!repo||typeof releaseDialog!=='function')return;
+  async function openBranchCleanup(target){
+    const repo=target?.path?target:state.workspaceRepo;if(!repo||typeof releaseDialog!=='function')return;
     const ui=releaseDialog(t('Clean up branches'));ui.dialog.classList.add('modern-action-dialog','branch-cleanup-dialog');ui.actions.querySelector('button').textContent=t('Close');
     ui.body.append(el('p','',t('Loading…')));
     let data;try{data=(await api('/api/repo/branch-cleanup?'+query({path:repo.path}))).cleanup;}catch(error){ui.body.replaceChildren(el('p','',error.message));return;}
@@ -371,5 +412,5 @@
     }
     setTimeout(checkGitLab,30000);setInterval(checkGitLab,10*60*1000);
   }
-  window.GitDeckMultiRepo={pendingLabels,switchPlan,cleanupReasons,ticketPrefix,gitlabNews,openBranchCleanup,checkGitLab};
+  window.GitDeckMultiRepo={pendingLabels,pendingActions,switchPlan,cleanupReasons,ticketPrefix,gitlabNews,openBranchCleanup,checkGitLab};
 })();

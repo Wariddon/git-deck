@@ -17,6 +17,13 @@ const busy = { ...clean, branch: 'feature/x', upstream: '', changed: 2, untracke
 assert.deepEqual(plain(m.pendingLabels(busy).map((l) => l.text)), ['3 uncommitted file(s)', 'Branch not published', 'fix/y: 3 not pushed', '4 to pull', '1 stash(es)', '1 merged branch(es) to delete']);
 assert.equal(m.pendingLabels({ ...clean, operation: 'merge', conflicts: 2 })[0].tone, 'bad');
 
+// One-click fixes per repository.
+assert.deepEqual(plain(m.pendingActions(clean)), []);
+assert.deepEqual(plain(m.pendingActions(busy)), ['commit', 'publish', 'pull', 'stashes', 'cleanup']);
+assert.deepEqual(plain(m.pendingActions({ ...clean, ahead: 2 })), ['push']);
+assert.deepEqual(plain(m.pendingActions({ ...clean, operation: 'merge', conflicts: 1, ahead: 1, behind: 1 })), ['resolve'], 'No push or pull during a merge');
+assert.deepEqual(plain(m.pendingActions(null)), []);
+
 const found = (o) => ({ local: false, remote: '', current: 'main', dirty: false, ...o });
 assert.equal(m.switchPlan('feature/a', found({ current: 'feature/a' })).kind, 'none');
 assert.deepEqual(plain(m.switchPlan('feature/a', found({ local: true })).payload), { branch: 'feature/a', localChanges: 'stash' });

@@ -781,4 +781,13 @@ GitDeckI18n.register('th',{
   "Switch branch in all repositories":"สลับ branch ทุก repository",
   "Search all repositories":"ค้นทุก repository",
   "Clean up branches…":"ล้าง branch…",
+  "Push all":"Push ทั้งหมด",
+  "Push the current branch of every repository that has commits to push":"Push branch ปัจจุบันของทุก repo ที่มี commit รอ push",
+  "Commit…":"Commit…",
+  "Resolve…":"แก้ conflict…",
+  "Stashes…":"ดู stash…",
+  "Clean up…":"ล้าง branch…",
+  "Push {count} repositories now?":"Push {count} repository ตอนนี้เลยไหม?",
+  "Pushing {name}…":"กำลัง push {name}…",
+  "{count} could not push":"push ไม่ได้ {count}",
 });

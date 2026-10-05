@@ -216,3 +216,5 @@ body.theme-dark .multi-repo-result.tone-ok{color:#7fd29a}
 .gitlab-news p{margin:2px 0}
 body .backdrop:not(#workspace-backdrop) .multi-repo-panel button.primary{color:var(--accent-contrast,#fff)}
 body .backdrop:not(#workspace-backdrop) .multi-repo-link{color:var(--green,#0969da)}
+.multi-repo-actions{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.multi-repo-actions button{padding:2px 8px;font-size:12px;min-height:0}

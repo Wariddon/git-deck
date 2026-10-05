@@ -112,9 +112,13 @@
     const form=el('div','work-report-filters');
     const preset=document.createElement('select');preset.className='workflow-input';preset.setAttribute('aria-label',t('Period'));
     [['today',t('Today')],['week',t('This week')],['last-week',t('Last week')],['7',t('Last 7 days')],['30',t('Last 30 days')],['month',t('This month')],['last-month',t('Last month')],['custom',t('Custom…')]].forEach(([value,label])=>preset.append(option(value,label,value==='week')));
+    try{const saved=localStorage.getItem('gitdeck.reportPeriod');if(saved&&[...preset.options].some(item=>item.value===saved))preset.value=saved;}catch{}
+    preset.addEventListener('change',()=>{try{localStorage.setItem('gitdeck.reportPeriod',preset.value);}catch{}});
     const since=input('date',t('From')),until=input('date',t('To'));
     const folder=document.createElement('select');folder.className='workflow-input';folder.setAttribute('aria-label',t('Folder'));
     folder.append(option('all',t('All folders')));(state.scanLocations||[]).forEach(root=>folder.append(option(root,root)));
+    try{const saved=localStorage.getItem('gitdeck.folder');if(saved&&[...folder.options].some(item=>item.value===saved))folder.value=saved;}catch{}
+    folder.addEventListener('change',()=>{try{localStorage.setItem('gitdeck.folder',folder.value);}catch{}});
     const author=input('text',t('Author'));author.placeholder=t('Everyone');
     const mine=document.createElement('input');mine.type='checkbox';mine.checked=true;
     const mineLabel=el('label','modern-dialog-check');mineLabel.append(mine,el('span','',t('Only my commits')));
