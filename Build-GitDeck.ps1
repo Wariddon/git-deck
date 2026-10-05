@@ -45,6 +45,8 @@ try {
 $base64 = [Convert]::ToBase64String($frames[-1])
 $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><image width="256" height="256" href="data:image/png;base64,' + $base64 + '"/></svg>'
 [System.IO.File]::WriteAllText((Join-Path $root 'web\favicon.svg'),$svg)
-& $compiler /nologo /target:winexe /optimize+ /win32icon:$icon /reference:System.dll /reference:System.Windows.Forms.dll /out:$output $source
+# The splash card draws the same artwork (resource GitDeck.logo.png).
+$logo = Join-Path $root 'assets\brand\git-deck-icon.png'
+& $compiler /nologo /target:winexe /optimize+ /win32icon:$icon /reference:System.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll "/resource:$logo,GitDeck.logo.png" /out:$output $source
 if ($LASTEXITCODE -ne 0) { throw 'GitDeck.exe build failed.' }
 Write-Host "Built $output with shared Git Deck artwork (16-256px)."

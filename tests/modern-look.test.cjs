@@ -79,7 +79,10 @@ assert.equal(sync({ ...base, sync: {} }).label, 'Publish branch');
 assert.equal(sync({ ...base, lastFetchAt: new Date(now - 5 * 60000).toISOString() }).caption, 'Last fetched 5m ago');
 assert.equal(sync(base).caption, 'Not fetched yet');
 assert.match(modernJs, /const local=action&&localKinds\.includes\(action\.kind\);/);
-assert.match(modernJs, /primary\.hidden=!local\|\|\(action\.kind==='review'&&state\.workspaceTab==='changes'\);/, 'No "Review changes" while already on Changes');
+assert.match(modernJs, /primary\.hidden=!local\|\|action\.kind!=='conflicts';/, 'Accent button only for conflicts; the action bar has Commit');
+// Sourcetree-style action bar: one button per everyday action, with Pull/Push counts.
+for (const kind of ['commit', 'pull', 'push', 'fetch', 'branch', 'merge', 'stash', 'tag', 'terminal', 'explorer']) assert.match(modernJs, new RegExp(`${kind}:actionButton\\('${kind}'`), kind);
+assert.match(modernCss, /\.modern-tb-sync \{ display: none !important; \}/, 'The single sync button gives way to Pull / Push / Fetch');
 assert.match(modernCss, /\.sync-actions > \[data-git-action\],\s*html\.ui-modern body \.sync-actions > \.toolbar-pull-group \{ display: none !important; \}/);
 // No local changes: suggestions replace the empty diff area.
 assert.match(modernJs, /if\(isModern\(\)&&data&&!\(data\.files\|\|\[\]\)\.length&&!conflictCount\(data\)\)/);

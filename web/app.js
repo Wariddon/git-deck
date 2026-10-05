@@ -49,14 +49,16 @@ function initializeCommitDetailResizer(split,handle){const storageKey='git-deck-
   handle.addEventListener('keydown',(event)=>{if(!['ArrowLeft','ArrowRight','Home'].includes(event.key))return;event.preventDefault();set(event.key==='Home'?280:preferred+(event.key==='ArrowLeft'?-20:20),true);});
 }
 
-function initializeHistorySplitResizer(layout,handle,viewKey){let preferred=260;const storageKey=`git-deck-history-graph-height:${viewKey}`;try{preferred=Number(localStorage.getItem(storageKey))||260;}catch{}
+function initializeHistorySplitResizer(layout,handle,viewKey){// Default: the commit list gets a bit more than half the height, like Sourcetree.
+  const defaultHeight=()=>Math.round(Math.max(260,layout.getBoundingClientRect().height*0.55));let preferred=0;const storageKey=`git-deck-history-graph-height:${viewKey}`;try{preferred=Number(localStorage.getItem(storageKey))||0;}catch{}
   const set=(height,save=false)=>{if(!layout.classList.contains('layout-stacked'))return;const bounds=layout.getBoundingClientRect();const maximum=Math.max(150,bounds.height-187);const value=Math.round(Math.min(Math.max(height,150),maximum));preferred=value;layout.style.setProperty('--history-graph-height',`${value}px`);handle.setAttribute('aria-valuemin','150');handle.setAttribute('aria-valuemax',String(maximum));handle.setAttribute('aria-valuenow',String(value));handle.setAttribute('aria-valuetext',`${value} pixels`);if(save){try{localStorage.setItem(storageKey,String(value));}catch{}}};
-  requestAnimationFrame(()=>set(preferred));
+  // Wait until the layout is on screen so the default can use its real height.
+  let tries=30;const first=()=>{if(layout.isConnected&&layout.getBoundingClientRect().height>0)set(preferred||defaultHeight());else if(tries-->0)requestAnimationFrame(first);};requestAnimationFrame(first);
   handle.addEventListener('pointerdown',(event)=>{if(!layout.classList.contains('layout-stacked')||window.innerWidth<=760)return;event.preventDefault();handle.setPointerCapture(event.pointerId);handle.classList.add('dragging');document.body.classList.add('resizing-rows');});
   handle.addEventListener('pointermove',(event)=>{if(!handle.hasPointerCapture(event.pointerId))return;set(event.clientY-layout.getBoundingClientRect().top);});
   const finish=(event)=>{if(!handle.hasPointerCapture(event.pointerId))return;handle.releasePointerCapture(event.pointerId);handle.classList.remove('dragging');document.body.classList.remove('resizing-rows');set(preferred,true);};
-  handle.addEventListener('pointerup',finish);handle.addEventListener('pointercancel',finish);handle.addEventListener('dblclick',()=>set(260,true));
-  handle.addEventListener('keydown',(event)=>{if(!['ArrowUp','ArrowDown','Home'].includes(event.key)||!layout.classList.contains('layout-stacked'))return;event.preventDefault();set(event.key==='Home'?260:preferred+(event.key==='ArrowUp'?-20:20),true);});
+  handle.addEventListener('pointerup',finish);handle.addEventListener('pointercancel',finish);handle.addEventListener('dblclick',()=>set(defaultHeight(),true));
+  handle.addEventListener('keydown',(event)=>{if(!['ArrowUp','ArrowDown','Home'].includes(event.key)||!layout.classList.contains('layout-stacked'))return;event.preventDefault();set(event.key==='Home'?defaultHeight():preferred+(event.key==='ArrowUp'?-20:20),true);});
 }
 
 function loadMeta() {

@@ -124,7 +124,55 @@
   }
 
   // ---- Header toolbar ------------------------------------------------------------------------------
-  let bar=null,repoButton,branchButton,syncButton,syncMore,primary;
+  let bar=null,repoButton,branchButton,syncButton,syncMore,primary,actionButtons={};
+  // Sourcetree-style action bar: icon over label, one button per everyday action.
+  function actionButton(kind,name,label,title,run){
+    const button=el('button','modern-act');button.type='button';button.dataset.act=kind;button.title=title;
+    const glyph=el('span','modern-act-icon');glyph.append(icon(name,20));
+    const badge=el('b','modern-act-badge');badge.hidden=true;
+    button.append(glyph,el('span','modern-act-label',label),badge);
+    button.addEventListener('click',run);return button;
+  }
+  function openStash(){
+    selectWorkspaceTab('stashes');
+    const focus=(tries)=>{const box=document.querySelector('#workspace-content .workspace-section-head .workspace-form input');if(box){box.focus();return;}if(tries)setTimeout(()=>focus(tries-1),50);};
+    setTimeout(()=>focus(20),0);
+  }
+  function buildActions(){
+    const strip=el('div','modern-actions');
+    const group=()=>{const node=el('div','modern-act-group');strip.append(node);return node;};
+    const repoRun=(action)=>()=>{if(state.workspaceRepo&&typeof run==='function')run(action,state.workspaceRepo);};
+    actionButtons={
+      commit:actionButton('commit','commit',t('Commit'),t('Stage files and write a commit (Ctrl+1)'),()=>runAction('commit')),
+      pull:actionButton('pull','pull',t('Pull'),t('Bring remote commits into this branch'),()=>legacyClick('pull')),
+      push:actionButton('push','push',t('Push'),t('Publish your commits'),()=>legacyClick('push')),
+      fetch:actionButton('fetch','fetch',t('Fetch'),t('Download new commits without changing your files'),()=>legacyClick('fetch')),
+      branch:actionButton('branch','branch',t('Branch'),t('Create a new branch from here'),()=>typeof showBranchCreator==='function'&&showBranchCreator()),
+      merge:actionButton('merge','merge',t('Merge'),t('Merge another branch into this one (opens Branches)'),()=>selectWorkspaceTab('branches')),
+      stash:actionButton('stash','stash',t('Stash'),t('Set your changes aside without committing'),openStash),
+      tag:actionButton('tag','tag',t('Tag'),t('Name this point in history, for example a release'),()=>typeof openTagCreator==='function'&&openTagCreator()),
+      terminal:actionButton('terminal','terminal',t('Terminal'),t('Open a terminal in this repository'),repoRun('open-terminal')),
+      explorer:actionButton('explorer','explorer',t('Explorer'),t('Open this repository folder in Explorer'),repoRun('open-folder')),
+    };
+    group().append(actionButtons.commit);
+    const syncGroup=group();syncGroup.append(actionButtons.pull,actionButtons.push,actionButtons.fetch);
+    group().append(actionButtons.branch,actionButtons.merge,actionButtons.stash,actionButtons.tag);
+    const end=group();end.classList.add('modern-act-end');end.append(actionButtons.terminal,actionButtons.explorer);
+    return {strip,syncGroup};
+  }
+  function renderActions(data){
+    const sync=data?.sync||{};const files=data?.files||[];const remotes=(data?.remotes||[]).length>0;
+    const badge=(kind,text)=>{const node=actionButtons[kind]?.querySelector('.modern-act-badge');if(node){node.textContent=text||'';node.hidden=!text;}};
+    badge('commit',files.length?String(files.length):'');badge('pull',sync.behind>0?String(sync.behind):'');badge('push',sync.ahead>0?String(sync.ahead):'');
+    const publish=data?.branch&&!sync.upstream&&remotes;
+    actionButtons.push.querySelector('.modern-act-label').textContent=publish?t('Publish'):t('Push');
+    actionButtons.push.title=publish?t('Push this branch and set its upstream'):sync.ahead>0?t('{count} commit(s) to publish',{count:sync.ahead}):t('Publish your commits');
+    actionButtons.pull.title=sync.behind>0?t('{count} incoming commit(s)',{count:sync.behind}):t('Bring remote commits into this branch');
+    for(const kind of ['pull','push','fetch'])actionButtons[kind].disabled=!remotes;
+    actionButtons.stash.disabled=!files.length;actionButtons.merge.disabled=!data?.branch;
+    actionButtons.pull.classList.toggle('modern-act-due',sync.behind>0);actionButtons.push.classList.toggle('modern-act-due',sync.ahead>0||!!publish);
+    actionButtons.commit.classList.toggle('modern-act-due',files.some(file=>file.staged));
+  }
   function toolbarBlock(className,caption,title){
     const button=el('button',`modern-tb ${className}`);button.type='button';button.title=title;
     const text=el('span','modern-tb-text');text.append(el('small','modern-tb-caption',caption),el('strong','modern-tb-value'));
@@ -146,8 +194,10 @@
     syncButton=toolbarBlock('modern-tb-sync','','');syncButton.addEventListener('click',()=>runAction(syncButton.dataset.kind));
     syncMore=el('button','modern-tb-more');syncMore.type='button';syncMore.title=t('More sync options');syncMore.setAttribute('aria-label',t('More sync options'));syncMore.setAttribute('aria-haspopup','dialog');
     syncMore.append(icon('chevron',16));syncMore.addEventListener('click',()=>openPopover(syncMore,'modern-sync-menu',t('More sync options'),syncMenu));
-    syncGroup.append(syncButton,syncMore);
-    bar.append(repoButton,branchButton,syncGroup);head.prepend(bar);
+    const actions=buildActions();
+    // The old single sync button stays for keyboard users of syncAction, hidden by modern.css; its menu sits after Fetch.
+    syncGroup.append(syncButton);actions.syncGroup.append(syncMore);
+    bar.append(repoButton,branchButton,syncGroup,actions.strip);head.prepend(bar);
     primary=el('button','modern-primary modern-made');primary.type='button';primary.addEventListener('click',()=>runAction(primary.dataset.kind));
     document.querySelector('.sync-actions')?.prepend(primary);
   }
@@ -161,9 +211,10 @@
       syncButton.dataset.kind=sync.kind;syncButton.title=sync.caption;setBlock(syncButton,sync.icon,sync.label,sync.caption);
       syncButton.querySelector('.modern-tb-badge')?.remove();if(sync.badge)syncButton.append(el('b','modern-tb-badge',sync.badge));
     }
+    renderActions(repo?data:null);
     const action=repo?primaryAction(data):null;const local=action&&localKinds.includes(action.kind);
-    // 'Review changes' only makes sense away from the Changes view.
-    primary.hidden=!local||(action.kind==='review'&&state.workspaceTab==='changes');
+    // The action bar has Commit; the accent button is kept for what blocks everything else: conflicts.
+    primary.hidden=!local||action.kind!=='conflicts';
     if(local){primary.dataset.kind=action.kind;primary.title=action.title;primary.replaceChildren(icon(action.icon),el('span','',action.label));}
   }
 

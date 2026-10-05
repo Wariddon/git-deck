@@ -18,9 +18,10 @@
 </head>
 <body>
   <dialog id="startup-splash" aria-labelledby="startup-title" aria-describedby="startup-status">
-    <img src="/favicon.svg?v=deck-2" alt="Git Deck logo" width="96" height="96" fetchpriority="high">
-    <div class="startup-spinner" aria-hidden="true"></div>
-    <!-- Title and progress text stay for screen readers; the splash shows only the logo and a spinner. -->
+    <!-- Like Sourcetree's splash: a brand-coloured card with the logo and the name, nothing else.
+         GitDeck.exe shows the same card natively until this window appears. -->
+    <div class="startup-card" aria-hidden="true"><img src="/favicon.svg?v=deck-2" alt="" width="72" height="72" fetchpriority="high"><span class="startup-wordmark">Git Deck</span></div>
+    <!-- Title and progress text stay for screen readers. -->
     <h1 id="startup-title" class="startup-sr">Git Deck</h1>
     <p id="startup-status" class="startup-sr" role="status" aria-live="polite">Starting Git Deck…</p>
     <div id="startup-actions" hidden><p class="startup-subtitle">Taking longer than expected. You can keep waiting or view the workspace for details.</p><button type="button" id="startup-reload">Reload</button><button type="button" id="startup-continue">View workspace</button></div>

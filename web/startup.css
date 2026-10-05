@@ -1,27 +1,28 @@
-    /* Startup splash (like Sourcetree): only the logo and a spinner on a plain background in the
-       saved theme's colours. startup.js sets data-theme from the saved preference before painting. */
-    #startup-splash { --splash-bg:#f4f4f5; --splash-ring:#d4d4d8; --splash-arc:#52525b; --splash-text:#27272a; --splash-muted:#6b6b75;
-      display:grid; place-items:center; align-content:center; gap:28px; width:100vw; max-width:none; height:100vh; max-height:none; margin:0; padding:0;
+    /* Startup splash (like Sourcetree): a brand-green card with the logo and the name, centred on a plain
+       background in the saved theme. GitDeck.exe shows the same card natively while the app window opens.
+       startup.js sets data-theme from the saved preference before painting. */
+    #startup-splash { --splash-bg:#f4f4f5; --splash-text:#27272a; --splash-muted:#6b6b75; --splash-line:#d4d4d8; --brand:#0b6e47;
+      display:grid; place-items:center; align-content:center; gap:20px; width:100vw; max-width:none; height:100vh; max-height:none; margin:0; padding:0;
       border:0; background:var(--splash-bg); color:var(--splash-text); font:13px/1.5 "Segoe UI Variable Text","Segoe UI",Arial,sans-serif; text-align:center; }
     #startup-splash:not([open]) { display:none; }
     #startup-splash::backdrop { background:#f4f4f5; }
-    #startup-splash[data-theme="dark"] { --splash-bg:#141416; --splash-ring:#2e2e33; --splash-arc:#d4d4d8; --splash-text:#e4e4e7; --splash-muted:#a1a1aa; }
+    #startup-splash[data-theme="dark"] { --splash-bg:#141416; --splash-text:#e4e4e7; --splash-muted:#a1a1aa; --splash-line:#2e2e33; }
     #startup-splash[data-theme="dark"]::backdrop { background:#141416; }
-    #startup-splash[data-theme="midnight"] { --splash-bg:#0f1724; --splash-ring:#2b3b55; --splash-arc:#b4c2d6; --splash-text:#edf4ff; --splash-muted:#b4c2d6; }
+    #startup-splash[data-theme="midnight"] { --splash-bg:#0f1724; --splash-text:#edf4ff; --splash-muted:#b4c2d6; --splash-line:#2b3b55; }
     #startup-splash[data-theme="midnight"]::backdrop { background:#0f1724; }
-    #startup-splash[data-theme="paper"] { --splash-bg:#f1ece1; --splash-ring:#e0d7c5; --splash-arc:#685f51; --splash-text:#3a332a; --splash-muted:#7f7565; }
+    #startup-splash[data-theme="paper"] { --splash-bg:#f1ece1; --splash-text:#3a332a; --splash-muted:#7f7565; --splash-line:#e0d7c5; }
     #startup-splash[data-theme="paper"]::backdrop { background:#f1ece1; }
-    #startup-splash img { display:block; width:72px; height:72px; margin:0; animation:startup-reveal .4s ease-out both; }
-    #startup-splash .startup-spinner { width:26px; height:26px; box-sizing:border-box; border:2.5px solid var(--splash-ring); border-top-color:var(--splash-arc); border-radius:50%;
-      opacity:0; animation:startup-spin .8s linear infinite, startup-fade .3s ease-out .25s forwards; }
+    #startup-splash .startup-card { display:flex; align-items:center; justify-content:center; gap:16px; width:460px; max-width:calc(100vw - 32px); height:250px;
+      background:var(--brand); color:#fff; box-shadow:0 12px 40px #0003; animation:startup-reveal .3s ease-out both; }
+    #startup-splash .startup-card img { display:block; width:72px; height:72px; margin:0; }
+    /* !important: a legacy rule forces one font size on every element. */
+    #startup-splash .startup-wordmark { font-family:"Segoe UI Variable Display","Segoe UI Semilight","Segoe UI",Arial,sans-serif !important; font-size:42px !important; font-weight:300 !important; line-height:1; letter-spacing:-.01em; white-space:nowrap; }
     /* Visually hidden, still announced by screen readers. */
     #startup-splash .startup-sr { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
     #startup-splash p { margin:8px 0; overflow-wrap:anywhere; }
     #startup-splash .startup-subtitle { max-width:320px; color:var(--splash-muted); font-size:12px; }
-    #startup-splash button { margin:8px 3px 0; padding:7px 12px; border:1px solid var(--splash-ring); border-radius:6px; background:transparent; color:var(--splash-text); font:inherit; cursor:pointer; }
-    #startup-splash button:focus-visible { outline:2px solid var(--splash-arc); outline-offset:3px; }
+    #startup-splash button { margin:8px 3px 0; padding:7px 12px; border:1px solid var(--splash-line); border-radius:6px; background:transparent; color:var(--splash-text); font:inherit; cursor:pointer; }
+    #startup-splash button:focus-visible { outline:2px solid var(--brand); outline-offset:3px; }
     #startup-actions[hidden] { display:none; }
-    @keyframes startup-spin { to { transform:rotate(360deg); } }
-    @keyframes startup-fade { to { opacity:1; } }
-    @keyframes startup-reveal { from { opacity:0; transform:scale(.94); } to { opacity:1; transform:none; } }
-    @media(prefers-reduced-motion:reduce) { #startup-splash img { animation:none; } #startup-splash .startup-spinner { animation:startup-spin 2.4s linear infinite; opacity:1; } }
+    @keyframes startup-reveal { from { opacity:0; transform:scale(.97); } to { opacity:1; transform:none; } }
+    @media(prefers-reduced-motion:reduce) { #startup-splash .startup-card { animation:none; } }

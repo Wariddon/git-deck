@@ -828,3 +828,49 @@ html.ui-modern body :is(.diff-file-position) { font-weight: 400 !important; }
 html.ui-modern body .commit-file-status { font-weight: 600 !important; }
 html.ui-modern body .change-group-action { font-weight: 500 !important; }
 html.ui-modern body .file-status { font-weight: 600 !important; }
+
+/* ---- Sourcetree density: an action bar of icon-over-label buttons, tighter rows, more history -------- */
+html.ui-modern body { --modern-row: 26px; }
+html.ui-modern body .modern-tb-sync { display: none !important; }
+html.ui-modern body .modern-tb-sync-group:not(:has(> :not(.modern-tb-sync))) { display: none !important; }
+html.ui-modern body .modern-tb-repo { width: 190px; }
+html.ui-modern body .modern-tb-branch { max-width: 230px; }
+html.ui-modern body .modern-actions { display: flex; flex: 1 1 auto; align-items: stretch; min-width: 0; padding: 0 4px; }
+html.ui-modern body .modern-act-group { display: flex; align-items: center; gap: 1px; padding: 0 6px; border-right: 1px solid var(--border-muted); }
+html.ui-modern body .modern-act-group:last-child { border-right: 0; }
+html.ui-modern body .modern-act-end { margin-left: auto; border-left: 1px solid var(--border-muted); }
+html.ui-modern body .modern-act {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-width: 48px; height: 46px; padding: 3px 6px; border: 0 !important; border-radius: 6px !important;
+  background: transparent !important; box-shadow: none !important; color: var(--text-secondary) !important;
+  font-size: var(--fs-xs) !important; font-weight: 500; line-height: 1.15; cursor: pointer;
+}
+html.ui-modern body .modern-act:hover:not(:disabled) { background: var(--surface-hover) !important; color: var(--text-primary) !important; }
+html.ui-modern body .modern-act:disabled { opacity: .38; cursor: default; }
+html.ui-modern body .modern-act-icon { display: grid; color: var(--text-secondary); }
+html.ui-modern body .modern-act-due .modern-act-icon { color: var(--green); }
+html.ui-modern body .modern-act-label { white-space: nowrap; }
+html.ui-modern body .modern-act-badge {
+  position: absolute; top: 1px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
+  background: var(--green); color: var(--accent-contrast, #fff); font-size: 10px !important; font-weight: 600; line-height: 16px; text-align: center;
+}
+html.ui-modern body .modern-act-badge[hidden] { display: none; }
+html.ui-modern body .modern-act-group .modern-tb-more { width: 20px; height: 46px; border: 0 !important; border-radius: 6px !important; }
+@media (max-width: 1280px) { html.ui-modern body .modern-act-end { display: none; } }
+@media (max-width: 1080px) {
+  html.ui-modern body .modern-act-label { display: none; }
+  html.ui-modern body .modern-act { min-width: 34px; }
+}
+@media (max-width: 760px) { html.ui-modern body .modern-actions { display: none; } }
+
+/* Rows and headers: about 24px per line, like Sourcetree's lists. */
+html.ui-modern body .commit-list.dense .commit-row { min-height: 24px; }
+html.ui-modern body .commit-list.dense .commit-row > * { padding-top: 0 !important; padding-bottom: 0 !important; }
+html.ui-modern body .commit-file-row { min-height: 24px; }
+html.ui-modern body #workspace-content .workspace-row { padding: 5px 10px !important; }
+html.ui-modern body .history-context { min-height: 28px; padding: 2px 10px !important; }
+html.ui-modern body .workspace-section-head { padding: 4px 10px !important; }
+html.ui-modern body :is(.history-context, .workspace-section-head, .commit-detail-actions, .diff-viewer-toolbar, .diff-navigation, .pagination, .commit-files-header, .workspace-row-actions) > :is(button, select, details > summary),
+html.ui-modern body .commit-detail-actions details > summary,
+html.ui-modern body .history-controls :is(select, input, details > summary) { height: 24px; min-height: 24px; padding: 0 8px; }
+html.ui-modern body .workspace-section-head .workspace-form :is(select, input, button.primary) { height: 28px; }

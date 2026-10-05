@@ -17,10 +17,16 @@ const app=fs.readFileSync(path.join(root,'web/app.js'),'utf8');assert.match(app,
 const release=fs.readFileSync(path.join(root,'Build-Release.ps1'),'utf8'),server=fs.readFileSync(path.join(root,'git-dashboard-server.ps1'),'utf8');assert.match(server,/Write-GitDeckStatic \$context \$route/);
 for(const file of ['startup.js','startup.css']){assert(html.includes('/'+file));assert(fs.existsSync(path.join(root,'web',file)));assert(release.includes("'"+path.extname(file)+"'"));}
 console.log('PASS: startup logo, status, completion, slow-load recovery, Escape and no reopening');
-// Splash shows only the logo and a spinner (like Sourcetree); title and status stay for screen readers.
+// Splash is a brand card with the logo and the name (like Sourcetree); title and status stay for screen readers.
 const splashCss=fs.readFileSync(path.join(root,'web/startup.css'),'utf8');
-assert.match(html,/<div class="startup-spinner" aria-hidden="true"><\/div>/);
+assert.match(html,/<div class="startup-card" aria-hidden="true"><img [^>]*><span class="startup-wordmark">Git Deck<\/span><\/div>/);
+assert.match(splashCss,/\.startup-card \{[^}]*background:var\(--brand\)/);
+assert(!html.includes('startup-spinner'),'No spinner: the card alone, like Sourcetree');
+// GitDeck.exe paints the same card natively until the app window appears.
+const launcher=fs.readFileSync(path.join(root,'launcher/GitDeckLauncher.cs'),'utf8');
+assert.match(launcher,/class SplashForm : Form/);assert.match(launcher,/Color\.FromArgb\(0x0B, 0x6E, 0x47\)/,'Same green as --brand');
+assert.match(splashCss,/--brand:#0b6e47/);
 assert.match(html,/<h1 id="startup-title" class="startup-sr">/);assert.match(html,/<p id="startup-status" class="startup-sr" role="status"/);
 assert.match(splashCss,/\.startup-sr \{ position:absolute; width:1px; height:1px;/);
 assert.match(script,/splash\.dataset\.theme=theme==='system'/,'splash uses the saved theme from the first frame');
-console.log('PASS: minimal splash (logo + spinner) in the saved theme');
+console.log('PASS: splash card (logo + name) in the saved theme');

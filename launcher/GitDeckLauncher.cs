@@ -1,5 +1,8 @@
 using System;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -30,21 +33,71 @@ internal static class GitDeckLauncher
             return;
         }
 
+        // Already open: bring that window back without a splash.
+        if (FolderArgument(args) == null && IsReady())
+        {
+            IntPtr open = FindAppWindow();
+            if (open != IntPtr.Zero) { FocusWindow(open); return; }
+        }
+
+        // Like Sourcetree: a small brand card shows at once and stays until the app window appears.
+        SetProcessDPIAware();
+        Application.EnableVisualStyles();
+        string error = null;
+        using (var splash = new SplashForm())
+        {
+            splash.Shown += (sender, e) =>
+            {
+                var worker = new Thread(() =>
+                {
+                    try { error = StartAndOpen(root, server, args); }
+                    catch (Exception ex) { error = ex.Message; }
+                    try { splash.BeginInvoke((Action)splash.Close); } catch (InvalidOperationException) { }
+                });
+                worker.IsBackground = true;
+                worker.Start();
+            };
+            Application.Run(splash);
+        }
+        if (error != null) MessageBox.Show(error, "Git Deck", MessageBoxButtons.OK, MessageBoxIcon.Error);
+    }
+
+    // Starts the server when needed, opens the window and waits for it; returns an error message or null.
+    private static string StartAndOpen(string root, string server, string[] args)
+    {
         bool ownsMutex;
         using (var mutex = new Mutex(true, "Local\\GitDeckServerLauncher", out ownsMutex))
         {
-            if (!IsReady())
+            try
             {
-                if (ownsMutex) StartServer(root, server);
-                if (!WaitUntilReady(TimeSpan.FromSeconds(20)))
+                if (!IsReady())
                 {
-                    MessageBox.Show("Git Deck local service did not start within 20 seconds\n\nRun git-dashboard.bat --console to inspect the error", "Git Deck", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
+                    if (ownsMutex) StartServer(root, server);
+                    if (!WaitUntilReady(TimeSpan.FromSeconds(20)))
+                        return "Git Deck local service did not start within 20 seconds\n\nRun git-dashboard.bat --console to inspect the error";
                 }
+                bool appWindow = OpenAppWindow(args);
+                // Keep the splash until the Git Deck window shows (a browser tab cannot be detected).
+                var until = DateTime.UtcNow + TimeSpan.FromSeconds(appWindow ? 20 : 2);
+                while (DateTime.UtcNow < until && FindAppWindow() == IntPtr.Zero) Thread.Sleep(150);
+                return null;
             }
-            OpenAppWindow(args);
-            if (ownsMutex) mutex.ReleaseMutex();
+            finally { if (ownsMutex) mutex.ReleaseMutex(); }
         }
+    }
+
+    private static string FolderArgument(string[] args)
+    {
+        if (args == null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0])) return null;
+        string requested = args[0].Trim().Trim('"');
+        try { requested = Path.GetFullPath(requested); } catch { return null; }
+        return Directory.Exists(requested) ? requested : null;
+    }
+
+    private static void FocusWindow(IntPtr window)
+    {
+        if (IsIconic(window)) ShowWindow(window, 9); // SW_RESTORE
+        SetForegroundWindow(window);
     }
 
     private static bool IsReady()
@@ -94,6 +147,7 @@ internal static class GitDeckLauncher
     [DllImport("user32.dll")] private static extern bool IsIconic(IntPtr window);
     [DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr window, int command);
     [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr window);
+    [DllImport("user32.dll")] private static extern bool SetProcessDPIAware();
 
     // An open Git Deck app window: its title is the page title ("Git Deck — …"). Browser tabs
     // are skipped because their window titles end with the browser name.
@@ -117,35 +171,28 @@ internal static class GitDeckLauncher
         return found;
     }
 
-    private static void OpenAppWindow(string[] args)
+    // Returns true when Git Deck opened in its own app window (Edge), false for a browser tab.
+    private static bool OpenAppWindow(string[] args)
     {
         string url = AppUrl;
-        bool specificFolder = false;
-        if (args != null && args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
-        {
-            string requested = args[0].Trim().Trim('"');
-            try { requested = Path.GetFullPath(requested); } catch { requested = string.Empty; }
-            if (!string.IsNullOrEmpty(requested) && Directory.Exists(requested))
-            {
-                url += "?path=" + Uri.EscapeDataString(requested);
-                specificFolder = true;
-            }
-        }
+        string folder = FolderArgument(args);
+        bool specificFolder = folder != null;
+        if (specificFolder) url += "?path=" + Uri.EscapeDataString(folder);
         // Like Sourcetree: opening Git Deck again brings the existing window back instead of a second one.
         IntPtr existing = specificFolder ? IntPtr.Zero : FindAppWindow();
         if (existing != IntPtr.Zero)
         {
-            if (IsIconic(existing)) ShowWindow(existing, 9); // SW_RESTORE
-            SetForegroundWindow(existing);
-            return;
+            FocusWindow(existing);
+            return true;
         }
         string edge = FindEdge();
         if (edge != null)
         {
             Process.Start(new ProcessStartInfo(edge, "--app=\"" + url + "\" --start-maximized") { UseShellExecute = true });
-            return;
+            return true;
         }
         Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        return false;
     }
 
     // Edge lives in Program Files (x86) on most machines, but per-machine x64 and
@@ -164,5 +211,55 @@ internal static class GitDeckLauncher
             if (File.Exists(candidate)) return candidate;
         }
         return null;
+    }
+}
+
+// The startup card: brand green, logo and name, nothing else (web/startup.css draws the same card).
+internal sealed class SplashForm : Form
+{
+    private readonly Image logo;
+    private readonly float scale;
+
+    public SplashForm()
+    {
+        using (var screen = Graphics.FromHwnd(IntPtr.Zero)) scale = screen.DpiX / 96f;
+        Text = "Git Deck";
+        FormBorderStyle = FormBorderStyle.None;
+        StartPosition = FormStartPosition.CenterScreen;
+        AutoScaleMode = AutoScaleMode.None;
+        ClientSize = new Size((int)(460 * scale), (int)(250 * scale));
+        BackColor = Color.FromArgb(0x0B, 0x6E, 0x47);
+        DoubleBuffered = true;
+        try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+        var stream = typeof(SplashForm).Assembly.GetManifestResourceStream("GitDeck.logo.png");
+        if (stream != null) logo = Image.FromStream(stream);
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        Graphics g = e.Graphics;
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+        g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+        Font font;
+        try { font = new Font("Segoe UI Semilight", 42f * scale, FontStyle.Regular, GraphicsUnit.Pixel); }
+        catch (ArgumentException) { font = new Font("Segoe UI", 42f * scale, FontStyle.Regular, GraphicsUnit.Pixel); }
+        using (font)
+        using (var white = new SolidBrush(Color.White))
+        {
+            const string name = "Git Deck";
+            SizeF text = g.MeasureString(name, font, PointF.Empty, StringFormat.GenericTypographic);
+            float icon = logo != null ? 72 * scale : 0;
+            float gap = logo != null ? 16 * scale : 0;
+            float left = (ClientSize.Width - (icon + gap + text.Width)) / 2f;
+            if (logo != null) g.DrawImage(logo, left, (ClientSize.Height - icon) / 2f, icon, icon);
+            g.DrawString(name, font, white, left + icon + gap, (ClientSize.Height - text.Height) / 2f, StringFormat.GenericTypographic);
+        }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && logo != null) logo.Dispose();
+        base.Dispose(disposing);
     }
 }
