@@ -943,4 +943,7 @@ GitDeckI18n.register('th',{
   "last commit {when}":"commit ล่าสุด {when}",
   "Restore size":"คืนขนาดเดิม",
   "Maximize":"ขยายเต็มจอ",
+  "Git Deck was updated. Close Git Deck and open it again to use the new version (reloading the page is not enough).":"Git Deck มีเวอร์ชันใหม่ ปิด Git Deck แล้วเปิดใหม่เพื่อใช้เวอร์ชันใหม่ (กดรีโหลดหน้าอย่างเดียวไม่พอ)",
+  "Git Deck was updated. Reload to see the new version.":"Git Deck มีเวอร์ชันใหม่ กดรีโหลดเพื่อดูเวอร์ชันใหม่",
+  "Reload now":"รีโหลดเลย",
 });

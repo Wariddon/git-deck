@@ -361,3 +361,7 @@ body.theme-dark .feedback-spotlight>strong{color:#ff9b8f}
 .operations-modal{resize:both;min-width:min(640px,calc(100vw - 28px));min-height:360px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px)}
 .operations-modal.operations-maximized{width:calc(100vw - 16px) !important;height:calc(100vh - 16px) !important;resize:none}
 .operations-maximize{margin-left:auto;font-size:15px;line-height:1}
+/* Git Deck updated while open (web/update-check.js). */
+.update-banner{position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:12600;display:flex;align-items:center;gap:10px;max-width:min(720px,calc(100vw - 32px));padding:10px 14px;border:1px solid var(--green,#0969da);border-radius:10px;background:var(--surface,#fff);color:var(--text-primary,inherit);box-shadow:0 12px 36px rgba(0,0,0,.3);font-size:13px}
+.update-banner-icon{font-size:18px}
+.update-banner button{flex:0 0 auto}

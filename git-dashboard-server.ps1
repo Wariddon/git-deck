@@ -17,6 +17,8 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
+# Newest change to the server code when this process started; /api/version compares it with the disk.
+$script:ServerStamp = (@(Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.ps1' -File) + @(Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'lib') -Filter '*.ps1' -File) | Measure-Object -Property LastWriteTimeUtc -Maximum).Maximum.Ticks
 $script:RepoList = Join-Path $PSScriptRoot 'git-repositories.txt'
 $script:ScanList = Join-Path $PSScriptRoot 'git-scan-locations.txt'
 $script:RepoCache = Join-Path $PSScriptRoot 'git-repository-cache.json'
@@ -32,7 +34,7 @@ $script:BaseUrl = "http://127.0.0.1:$Port/"
 [void](New-Item -ItemType Directory -Path $script:JobsRoot -Force)
 [void](New-Item -ItemType Directory -Path $script:ExportsRoot -Force)
 # Script variables copied into each parallel request runspace.
-$script:SharedVariableNames = @('Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide')
+$script:SharedVariableNames = @('Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','SecretRules','ServerStamp','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide')
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }
@@ -805,6 +807,14 @@ function Find-GitRepositories([string]$Root, [int]$MaxDepth=8) {
         }
     }
     return @($found | Sort-Object -Unique)
+}
+
+# Has Git Deck changed on disk since this page / this server started? web: newest web file;
+# serverStale: a .ps1 file is newer than when the server started (close and reopen Git Deck).
+function Get-GitDeckVersionState {
+    $web = (@(Get-ChildItem -LiteralPath $script:WebRoot -File | Where-Object { $_.Extension -in @('.js', '.css', '.html') }) | Measure-Object -Property LastWriteTimeUtc -Maximum).Maximum.Ticks
+    $server = (@(Get-ChildItem -LiteralPath $script:Root -Filter '*.ps1' -File) + @(Get-ChildItem -LiteralPath (Join-Path $script:Root 'lib') -Filter '*.ps1' -File) | Measure-Object -Property LastWriteTimeUtc -Maximum).Maximum.Ticks
+    return @{ web = [string]$web; serverStale = ([int64]$server -gt [int64]$script:ServerStamp) }
 }
 
 function Write-Response($Context, [byte[]]$Bytes, [string]$ContentType, [int]$StatusCode=200) {
@@ -1630,6 +1640,7 @@ function Invoke-GitDeckRequest($context) {
     if ($context.Body) { Write-Json $context (Invoke-Action $context.Body); return }
     switch ($route) {
         '/api/health' { Write-Json $context @{status='ok'} }
+        '/api/version' { Write-Json $context (Get-GitDeckVersionState) }
         '/api/repo/status-snapshot' { Write-Json $context (Get-WorkflowStatus $query['path']) }
         '/api/repo/checkout-review' { Write-Json $context (Get-CheckoutReview $query['path'] $query['target']) }
         '/api/readiness' { Write-Json $context (Get-SetupReadiness) }
