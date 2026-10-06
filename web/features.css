@@ -342,3 +342,15 @@ body.theme-dark .feedback-spotlight>strong{color:#ff9b8f}
 .repo-alert-text span{color:var(--muted,#6b7280);overflow-wrap:anywhere}
 .repo-alert-actions{display:flex;gap:6px;flex:0 0 auto;flex-wrap:wrap}
 .repo-alert-actions button{padding:3px 10px !important;min-height:0 !important;font-size:12px}
+/* Pending table fits the window: number headers wrap, the text columns cap their width and the
+   buttons stack instead of running past the right edge. */
+.multi-repo-table.pending-table{table-layout:auto;width:100%}
+.multi-repo-table.pending-table th{white-space:normal !important;vertical-align:bottom;line-height:1.25}
+.multi-repo-table.pending-table th:nth-child(n+5):not(:last-child),.multi-repo-table.pending-table td.pending-num{width:64px;min-width:52px;padding-left:4px;padding-right:4px}
+.multi-repo-table.pending-table td.pending-todo{min-width:150px;max-width:240px}
+.multi-repo-table.pending-table td.pending-repo{max-width:210px;white-space:normal;overflow-wrap:anywhere}
+.multi-repo-table.pending-table td.pending-branch{max-width:150px;white-space:normal;overflow-wrap:anywhere}
+.multi-repo-table.pending-table td.pending-tag-cell{max-width:120px;white-space:normal}
+.multi-repo-table.pending-table td.pending-actions{width:1%}
+.multi-repo-table.pending-table .pending-actions .multi-repo-actions{flex-wrap:wrap !important;justify-content:flex-end;min-width:76px;max-width:150px}
+.multi-repo-table.pending-table .pending-actions button{width:100%}

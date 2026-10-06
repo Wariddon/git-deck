@@ -92,6 +92,9 @@ const later = m.gitlabNews(first.next, { pipelines: [{ id: 1, status: 'failed' }
 assert.deepEqual(plain(later.news.map((n) => n.text)), ['Pipeline #2 failed on feature/x', 'New comment on !7 Login']);
 
 assert.ok(web('index.html').includes('/multi-repo.js'));
+// The Pending table fits the window: headers wrap, buttons stack.
+assert.ok(web('features.css').includes('.multi-repo-table.pending-table th{white-space:normal !important;'));
+assert.ok(web('features.css').includes('.multi-repo-table.pending-table .pending-actions .multi-repo-actions{flex-wrap:wrap !important;'));
 // Easy to find: All repos and Report sit on the left rail under Repos.
 assert.match(web('modern.js'), /railButton\(\['all-repos','repos',\(\)=>t\('All repos'\)\]\),railButton\(\['report','report',\(\)=>t\('Report'\)\]\)/);
 assert.match(web('modern.js'), /'all-repos':\(state\.repos\|\|\[\]\)\.filter\(/, 'All repos shows how many repositories need attention');
