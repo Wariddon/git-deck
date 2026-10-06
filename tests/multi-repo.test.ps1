@@ -44,6 +44,7 @@ try{
     Run-Git $local @('tag','-a','v1.0.0','-m','first release','HEAD~0')
     Run-Git $local @('commit','-q','--allow-empty','-m','after tag')
     $t=Get-GitDeckPendingWork $local
+    if($t.lastCommitSubject -ne 'after tag' -or $t.lastCommitDate -notmatch '^\d{4}-\d{2}-\d{2}T'){throw "Last commit wrong: $($t.lastCommitDate) $($t.lastCommitSubject)"}
     if($t.latestTag -ne 'v1.0.0' -or $t.commitsSinceTag -ne 1 -or $t.tagCount -ne 1 -or -not $t.latestTagDate){throw "Latest tag wrong: $($t.latestTag) / $($t.commitsSinceTag) / $($t.latestTagDate)"}
 
     $tidy=Join-Path $base 'tidy';Run-Git $base @('clone','-q','-c','core.autocrlf=false',$remote,$tidy)

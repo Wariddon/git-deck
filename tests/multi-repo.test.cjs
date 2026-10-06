@@ -68,6 +68,15 @@ assert.equal(m.tagMatches(repoItem('a', { latestTag: '' }), 'untagged'), true);
 assert.equal(m.tagMatches(repoItem('a', { latestTag: 'v1' }), 'tagged'), true);
 assert.equal(m.ageOf('2026-10-01T00:00:00Z', Date.parse('2026-10-05T12:00:00Z')), '4 days ago');
 assert.equal(m.ageOf('2026-10-05T00:00:00Z', Date.parse('2026-10-05T12:00:00Z')), 'today');
+assert.equal(m.ageOf(new Date(2026, 9, 5, 22, 0).toISOString(), new Date(2026, 9, 6, 9, 0).getTime()), 'yesterday', 'Calendar days, not 24-hour blocks');
+
+// Dates are shown as real dates, with the age next to them.
+assert.equal(m.dayOf('2026-10-03T09:15:00+07:00'), '2026-10-03');
+assert.equal(m.dayOf(''), '');
+assert.equal(m.whenOf('2026-10-01T00:00:00Z', Date.parse('2026-10-05T12:00:00Z')), '2026-10-01 · 4 days ago');
+assert.match(web('multi-repo.js'), /t\('Repository'\),t\('Branch'\),t\('Latest tag'\),t\('Last commit'\),t\('What to do'\)/);
+assert.match(web('features.css'), /\.operations-modal\{resize:both;/);
+assert.match(web('multi-repo.js'), /gitdeck\.dashboardMax/);
 
 const found = (o) => ({ local: false, remote: '', current: 'main', dirty: false, ...o });
 assert.equal(m.switchPlan('feature/a', found({ current: 'feature/a' })).kind, 'none');

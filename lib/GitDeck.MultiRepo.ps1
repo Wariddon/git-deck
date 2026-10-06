@@ -45,12 +45,15 @@ function Get-GitDeckPendingWork([string]$Path) {
     }
     $operation = Get-GitOperationState $Path
     $tag = Get-GitDeckLatestTag $Path
+    # When the current branch last changed, and with what.
+    $last = ([string](Invoke-GitCapture $Path @('log', '-1', '--format=%cI%x09%s')).Output).Trim() -split "`t", 2
     return [ordered]@{
         branch = $branch; upstream = $upstream; ahead = $ahead; behind = $behind
         changed = $files.Count - $untracked; untracked = $untracked; conflicts = $conflicts
         operation = $(if ($operation.active) { [string]$operation.type } else { '' })
         unpushedBranches = $unpushed.ToArray(); stashes = @($stashes); mergedBranches = $merged; mainline = $mainline
         latestTag = $tag.name; latestTagDate = $tag.date; commitsSinceTag = $tag.since; tagCount = $tag.count
+        lastCommitDate = $(if ($last[0] -match '^\d{4}-') { $last[0] } else { '' }); lastCommitSubject = $(if ($last.Count -gt 1) { $last[1] } else { '' })
     }
 }
 

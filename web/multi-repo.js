@@ -120,11 +120,17 @@
   }
   // "3 days ago" style age of an ISO date.
   function ageOf(iso,now=Date.now()){
-    const ms=now-Date.parse(iso);if(!Number.isFinite(ms))return '';
-    const days=Math.floor(ms/86400000);
+    // Calendar days, not 24-hour blocks: yesterday evening is "yesterday", not "today".
+    const then=new Date(Date.parse(iso));if(!Number.isFinite(then.getTime()))return '';const today=new Date(now);
+    const days=Math.round((new Date(today.getFullYear(),today.getMonth(),today.getDate())-new Date(then.getFullYear(),then.getMonth(),then.getDate()))/86400000);
     if(days<1)return t('today');if(days<2)return t('yesterday');if(days<60)return t('{count} days ago',{count:days});
     const months=Math.floor(days/30);return months<24?t('{count} months ago',{count:months}):t('{count} years ago',{count:Math.floor(days/365)});
   }
+  // Branch names break after "/" instead of in the middle of a word ("feature/" + "login").
+  function breakable(text){const span=document.createElement('span');String(text).split('/').forEach((part,i,all)=>{span.append(part+(i<all.length-1?'/':''));if(i<all.length-1)span.append(document.createElement('wbr'));});return span;}
+  // "2026-10-06" from an ISO date (Git already gives local time), and "2026-10-06 · 3 days ago".
+  const dayOf=(iso)=>/^\d{4}-\d{2}-\d{2}/.test(String(iso||''))?String(iso).slice(0,10):'';
+  const whenOf=(iso,now=Date.now())=>[dayOf(iso),ageOf(iso,now)].filter(Boolean).join(' · ');
   // Plain-words reason for a failed Git action: the error guide's title when one matches,
   // otherwise the line of Git output that says what went wrong (not "To C:/...remote.git").
   function explainError(message){
@@ -193,7 +199,7 @@
     const bar=el('div','operations-toolbar');const folder=folderSelect();
     const search=el('input','workflow-input pending-search');search.type='search';search.placeholder=t('Names, branches or tags: several at once, separated by commas');search.setAttribute('aria-label',t('Filter by names, branches or tags'));search.title=t('Type several names to see only those repositories, in the order you typed them. Example: crs-svc-common, lns-deployment-2, tonson');
     const sort=document.createElement('select');sort.className='workflow-input';sort.setAttribute('aria-label',t('Sort'));
-    [['pending',t('Most pending first')],['name',t('Name A–Z')],['push',t('Most to push')],['changes',t('Most uncommitted')],['tag',t('Newest tag first')]].forEach(([value,label])=>sort.append(new Option(label,value)));
+    [['pending',t('Most pending first')],['name',t('Name A–Z')],['push',t('Most to push')],['changes',t('Most uncommitted')],['tag',t('Newest tag first')],['recent',t('Recently changed first')]].forEach(([value,label])=>sort.append(new Option(label,value)));
     const run=el('button','primary',t('Check'));run.type='button';
     const more=document.createElement('details');more.className='pending-more';const moreLabel=el('summary','',t('Bulk actions'));more.append(moreLabel);
     const menu=el('div','pending-more-menu');more.append(menu);
@@ -238,6 +244,7 @@
       [t('Unpushed branches')]:t('Other branches with commits that exist only on this computer'),
       [t('Merged branches')]:t('Branches already in the main branch; safe to delete'),
       [t('What to do')]:t('The most important next step for this repository'),
+      [t('Last commit')]:t('When the branch you are on last changed; hover the date for the message'),
     };
     const check=async(repo)=>{try{const pending=(await api('/api/repo/pending?'+query({path:repo.path}))).pending;return {repo,pending,counts:pendingCounts(pending),error:''};}catch(error){return {repo,pending:null,counts:pendingCounts(null),error:firstLine(error.message)};}};
     const kinds=[
@@ -257,6 +264,7 @@
       // Several names typed: keep the order they were typed in.
       const terms=parseTerms(search.value);if(terms.length>1){const diff=termRank(a,terms)-termRank(b,terms);if(diff)return diff;}
       if(by==='name')return a.repo.name.localeCompare(b.repo.name);
+      if(by==='recent')return String(b.pending?.lastCommitDate||'').localeCompare(String(a.pending?.lastCommitDate||''))||a.repo.name.localeCompare(b.repo.name);
       if(by==='tag')return String(b.pending?.latestTagDate||'').localeCompare(String(a.pending?.latestTagDate||''))||a.repo.name.localeCompare(b.repo.name);
       if(by==='push')return (cb.push+cb.localOnlyCommits)-(ca.push+ca.localOnlyCommits)||a.repo.name.localeCompare(b.repo.name);
       if(by==='changes')return cb.changes-ca.changes||a.repo.name.localeCompare(b.repo.name);
@@ -287,7 +295,7 @@
       return td;
     };
     const detailRow=(item,kind)=>{
-      const tr=el('tr','pending-detail');const td=el('td');td.colSpan=11;const p=item.pending;const box=el('div','pending-detail-box');
+      const tr=el('tr','pending-detail');const td=el('td');td.colSpan=12;const p=item.pending;const box=el('div','pending-detail-box');
       if(kind==='localOnly'){
         box.append(el('strong','',t('Branches with commits that are on no remote')));
         const list=el('div','pending-detail-list');[...p.unpushedBranches].sort((a,b)=>b.commits-a.commits).forEach(b=>list.append(el('span','',`${b.branch} · ${b.commits}`)));box.append(list);
@@ -349,7 +357,7 @@
           const list=el('div','pending-group-list');const limit=expanded.has('group|'+group.id)?items.length:8;
           for(const item of items.slice(0,limit)){
             const line=el('div','pending-line');
-            const what=el('div','pending-line-what');what.append(repoLink(item.repo));if(item.pending?.latestTag)what.append(tagBadge(item));what.append(el('span','pending-line-text',group.line(item)));
+            const what=el('div','pending-line-what');what.append(repoLink(item.repo));if(item.pending?.latestTag)what.append(tagBadge(item));what.append(el('span','pending-line-text',group.line(item)));if(item.pending?.lastCommitDate){const when=el('small','pending-line-date',t('last commit {when}',{when:whenOf(item.pending.lastCommitDate)}));when.title=item.pending.lastCommitSubject||'';what.append(when);}
             const action=group.action(item);const button=el('button',action.id==='push'||action.id==='publish'||action.id==='pull'?'primary':'',action.label);button.type='button';
             button.onclick=()=>{
               if(action.id==='open'){document.getElementById('operations-close')?.click();openWorkspace(item.repo,'history',null);return;}
@@ -383,13 +391,13 @@
         else if(done&&filter!=='all'){const all=el('button','',t('Show all repositories'));all.type='button';all.onclick=()=>{filter='all';remember('gitdeck.pendingFilter','all');search.value='';drawChips();draw();};empty.append(all);}
         out.append(empty);return;
       }
-      const grid=table([t('Repository'),t('Branch'),t('Latest tag'),t('What to do'),t('Uncommitted'),t('To push'),t('To pull'),t('Stashes'),t('Unpushed branches'),t('Merged branches'),'']);
+      const grid=table([t('Repository'),t('Branch'),t('Latest tag'),t('Last commit'),t('What to do'),t('Uncommitted'),t('To push'),t('To pull'),t('Stashes'),t('Unpushed branches'),t('Merged branches'),'']);
       grid.classList.add('pending-table');
       grid.querySelectorAll('th').forEach(th=>{if(headerHelp[th.textContent]){th.title=headerHelp[th.textContent];th.classList.add('pending-has-help');}});
       for(const item of rows.slice(0,300)){
         const c=item.counts,p=item.pending,key=item.repo.path;
         const name=el('td','pending-repo');name.append(repoLink(item.repo));if(item.error)name.append(el('small','pending-error',item.error));else if(p?.operation)name.append(el('small','pending-error',t('{operation} in progress',{operation:p.operation})+(c.conflicts?` · ${t('{count} conflict(s)',{count:c.conflicts})}`:'')));
-        const branch=el('td','pending-branch');branch.append(el('span','',p?.branch||'—'));if(c.unpublished)branch.append(el('small','pending-tag',t('not published')));
+        const branch=el('td','pending-branch');branch.append(breakable(p?.branch||'—'));if(c.unpublished)branch.append(el('small','pending-tag',t('not published')));
         const actions=el('td','pending-actions');const box=el('div','multi-repo-actions');
         for(const id of pendingActions(p)){if(id==='cleanup'||id==='stashes')continue;const button=el('button',id==='push'||id==='publish'?'primary':'',actionLabels[id]());button.type='button';button.onclick=()=>act(item,id==='publish'?'push':id,button);box.append(button);}
         actions.append(box);
@@ -397,9 +405,12 @@
         if(steps.length){todo.append(el('span',`pending-step tone-${steps[0].tone}`,steps[0].text));if(steps.length>1){const more=el('small','pending-more-steps',t('+{count} more',{count:steps.length-1}));more.title=steps.slice(1).map(step=>'• '+step.text).join('\n');todo.append(more);}}
         else todo.append(el('span','pending-step tone-ok',t('Nothing to do')));
         const tagCell=el('td','pending-tag-cell');
-        if(p?.latestTag){tagCell.append(tagBadge(item));tagCell.append(el('small','',[ageOf(p.latestTagDate),Number(p.commitsSinceTag)>0?t('+{count} since',{count:p.commitsSinceTag}):''].filter(Boolean).join(' · ')));}
+        if(p?.latestTag){tagCell.append(tagBadge(item));tagCell.append(el('small','',[whenOf(p.latestTagDate),Number(p.commitsSinceTag)>0?t('+{count} since',{count:p.commitsSinceTag}):''].filter(Boolean).join(' · ')));}
         else tagCell.append(el('span','pending-zero',p?t('no tag'):'·'));
-        const tr=el('tr');tr.append(name,branch,tagCell,todo,
+        const lastCell=el('td','pending-last-cell');
+        if(p?.lastCommitDate){lastCell.append(el('span','',dayOf(p.lastCommitDate)),el('small','',ageOf(p.lastCommitDate)));lastCell.title=p.lastCommitSubject||'';}
+        else lastCell.append(el('span','pending-zero','·'));
+        const tr=el('tr');tr.append(name,branch,tagCell,lastCell,todo,
           numberCell(c.changes,{tone:'warn',title:t('{count} uncommitted file(s)',{count:c.changes})}),
           numberCell(c.push,{tone:'warn',title:t('{count} to push',{count:c.push})}),
           numberCell(c.pull,{tone:'info',title:t('{count} to pull',{count:c.pull})}),
@@ -415,7 +426,7 @@
     };
     const summary=()=>{
       const pending=results.filter(item=>pendingMatches(item,'any')).length;
-      const time=checkedAt?checkedAt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+      const time=checkedAt?checkedAt.toLocaleString([],{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
       status.textContent=t('{pending} of {total} repositories have something pending',{pending,total:results.length})+(time?' · '+t('checked at {time}',{time}):'');
     };
     let timer=0;const schedule=()=>{if(timer)return;timer=setTimeout(()=>{timer=0;drawChips();draw();},250);};
@@ -458,8 +469,8 @@
     };
     copy.onclick=async()=>{
       more.removeAttribute('open');
-      const lines=['| '+[t('Repository'),t('Branch'),t('Latest tag'),t('Uncommitted'),t('To push'),t('To pull'),t('Stashes'),t('Unpushed branches'),t('Merged branches')].join(' | ')+' |','|---|---|---|---|---|---|---|---|---|'];
-      for(const item of visible()){const c=item.counts;const p=item.pending||{};lines.push(`| ${item.repo.name} | ${p.branch||''} | ${p.latestTag?`${p.latestTag}${Number(p.commitsSinceTag)?` (+${p.commitsSinceTag})`:''}`:''} | ${c.changes} | ${c.push} | ${c.pull} | ${c.stashes} | ${c.localOnly} | ${c.merged} |`);}
+      const lines=['| '+[t('Repository'),t('Branch'),t('Latest tag'),t('Last commit'),t('Uncommitted'),t('To push'),t('To pull'),t('Stashes'),t('Unpushed branches'),t('Merged branches')].join(' | ')+' |','|---|---|---|---|---|---|---|---|---|---|'];
+      for(const item of visible()){const c=item.counts;const p=item.pending||{};lines.push(`| ${item.repo.name} | ${p.branch||''} | ${p.latestTag?`${p.latestTag} ${dayOf(p.latestTagDate)}${Number(p.commitsSinceTag)?` (+${p.commitsSinceTag})`:''}`:''} | ${dayOf(p.lastCommitDate)} | ${c.changes} | ${c.push} | ${c.pull} | ${c.stashes} | ${c.localOnly} | ${c.merged} |`);}
       try{await navigator.clipboard.writeText(lines.join('\n')+'\n');showActionFeedback(t('Copied {count} rows',{count:lines.length-2}));}catch(error){showActionFeedback(error.message,{error:true});}
     };
     syncView();start();
@@ -710,6 +721,14 @@
     // The everyday views come first, and the window is called what the toolbar button says: Dashboard.
     const nav=document.querySelector('.operations-tabs');
     if(nav){for(const id of ['search-all','switch-all','update-all','pending']){const tab=nav.querySelector(`[data-operations-view="${id}"]`);if(tab)nav.prepend(tab);}}
+    const modal=document.querySelector('.operations-modal');const closeButton=document.getElementById('operations-close');
+    if(modal&&closeButton&&!document.getElementById('operations-maximize')){
+      const max=el('button','operations-maximize','⤢');max.id='operations-maximize';max.type='button';
+      const sync=(on)=>{modal.classList.toggle('operations-maximized',on);max.textContent=on?'⤡':'⤢';max.title=on?t('Restore size'):t('Maximize');max.setAttribute('aria-label',max.title);max.setAttribute('aria-pressed',String(on));};
+      let on=false;try{on=localStorage.getItem('gitdeck.dashboardMax')==='1';}catch{}sync(on);
+      max.onclick=()=>{on=!on;try{localStorage.setItem('gitdeck.dashboardMax',on?'1':'0');}catch{}sync(on);};
+      closeButton.before(max);
+    }
     const heading=document.getElementById('operations-title');
     if(heading){heading.textContent=t('Dashboard');const eyebrow=heading.parentElement?.querySelector('.eyebrow');if(eyebrow)eyebrow.textContent=t('ALL REPOSITORIES');const line=heading.nextElementSibling;if(line?.tagName==='P')line.textContent=t('What is pending everywhere, update or switch many repositories at once, search them all. Background jobs and automation are here too.');}
     const openView=(view)=>{if(typeof showOperationsCenter==='function')showOperationsCenter(view);};
@@ -740,5 +759,5 @@
     }
     setTimeout(checkGitLab,30000);setInterval(checkGitLab,10*60*1000);
   }
-  window.GitDeckMultiRepo={pendingLabels,pendingActions,pendingCounts,pendingMatches,nextSteps,explainError,parseTerms,termRank,tagMatches,ageOf,switchPlan,cleanupReasons,ticketPrefix,gitlabNews,openBranchCleanup,checkGitLab};
+  window.GitDeckMultiRepo={dayOf,whenOf,pendingLabels,pendingActions,pendingCounts,pendingMatches,nextSteps,explainError,parseTerms,termRank,tagMatches,ageOf,switchPlan,cleanupReasons,ticketPrefix,gitlabNews,openBranchCleanup,checkGitLab};
 })();

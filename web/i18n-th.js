@@ -938,4 +938,9 @@ GitDeckI18n.register('th',{
   "Last error ({time})":"error ล่าสุด ({time})",
   "Show again":"ดูอีกครั้ง",
   "Clear":"ล้าง",
+  "Recently changed first":"เพิ่งเปลี่ยนล่าสุดก่อน",
+  "When the branch you are on last changed; hover the date for the message":"branch ที่ใช้อยู่เปลี่ยนล่าสุดเมื่อไร ชี้ที่วันที่เพื่อดูข้อความ commit",
+  "last commit {when}":"commit ล่าสุด {when}",
+  "Restore size":"คืนขนาดเดิม",
+  "Maximize":"ขยายเต็มจอ",
 });
