@@ -49,5 +49,8 @@ assert.ok(!motion.isQuiet('/api/repo/pending?path=x'));
   assert.match(polish, /\.backdrop:not\(\.hidden\):not\(#operations-backdrop\) \{[^}]*backdrop-filter: blur/, 'Dialogs blur the page behind them');
   assert.match(polish, /\.commit-action-block \{ display: flex !important; flex-direction: row !important; flex-wrap: wrap;/, 'Commit note under the button takes one line');
   assert.match(polish, /\.commit-assist \.recent-messages \{[^}]*max-width: 100%/, 'Recent messages stays inside the commit box');
+  assert.match(polish, /:is\(\.search, \.repo-switcher-search, \.tree-search, \.operations-search, \.command-palette-search, #gd-framed-field\) input \{ border-color: transparent !important; box-shadow: none !important; \}/, 'Framed search boxes glow as a whole, not a box inside a box');
+  assert.match(web('app.js'), /node\.closest\('\.workspace-row'\)\?\.classList\.toggle\('selected',node===label\)/, 'The open stash is marked');
+  assert.match(polish, /\.stash-layout \.workspace-row\.selected,/, 'The open stash is highlighted');
   console.log('PASS: polish layer');
 }

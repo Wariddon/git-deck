@@ -58,6 +58,11 @@ html.ui-modern body :is(input:not([type="checkbox"]):not([type="radio"]):not([ty
 html.ui-modern body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea):focus { border-color: color-mix(in srgb, var(--green) 65%, var(--border-default)) !important;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 18%, transparent) !important; outline: none !important; }
 html.ui-modern body :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--green); }
+/* Search fields drawn as a framed box around a bare input: the box glows, not the input inside it.
+   (#gd-framed-field never exists; it only lifts this rule above the glow rule above.) */
+html.ui-modern body :is(.search, .repo-switcher-search, .tree-search, .operations-search, .command-palette-search, #gd-framed-field) input { border-color: transparent !important; box-shadow: none !important; }
+html.ui-modern body :is(.search, .repo-switcher-search, .tree-search, .operations-search):focus-within { border-color: color-mix(in srgb, var(--green) 65%, var(--border-default)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 18%, transparent) !important; }
 
 /* ---- Dialogs float above a dimmed, slightly blurred page ---------------------------------------- */
 html.ui-modern body .backdrop:not(.hidden):not(#operations-backdrop) { background: color-mix(in srgb, #09090b 38%, transparent) !important; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
@@ -99,6 +104,29 @@ html.ui-modern body #workspace-content :is(.ai-card, .tag-manage-card, .settings
 html.ui-modern body #workspace-content :is(.ai-card, .tag-manage-card, .settings-card, .patch-card, .gitlab-inbox-card):focus-within { border-color: color-mix(in srgb, var(--green) 35%, var(--border-default)) !important; }
 html.ui-modern body #workspace-content .settings-card h4 { font-size: 1.1em; letter-spacing: -.005em; }
 html.ui-modern body.theme-dark #workspace-content :is(.ai-card, .tag-manage-card, .settings-card, .recovery-note, .journal-box, .patch-card, .gitlab-inbox-card, .worktree-list, .stash-preview) { box-shadow: 0 1px 0 rgb(255 255 255 / 3%) inset !important; }
+
+/* ---- Lists with a preview beside them (Stashes, Compare): the one you are looking at is marked ----- */
+html.ui-modern body #workspace-content .stash-layout .workspace-row { border-radius: 8px !important; transition: background-color .12s; }
+html.ui-modern body #workspace-content .stash-layout .workspace-row:not(.selected):hover { background: color-mix(in srgb, var(--text-primary) 4.5%, transparent) !important; }
+html.ui-modern body #workspace-content .stash-layout .workspace-row.selected,
+html.ui-modern body #workspace-content .compare-file-list .compare-file-row.active { background: var(--modern-accent-soft) !important; box-shadow: inset 2px 0 0 var(--green) !important; }
+html.ui-modern body #workspace-content .stash-layout .workspace-row.selected strong { color: var(--green) !important; }
+html.ui-modern body #workspace-content .compare-file-list .compare-file-row { border-radius: 6px !important; }
+
+/* ---- Branches page: the current branch row carries a soft accent background --------------------- */
+html.ui-modern body #workspace-content .branch-card[data-current] { background: color-mix(in srgb, var(--green) 7%, transparent) !important; }
+html.ui-modern body #workspace-content .branch-card[data-current]:hover { background: color-mix(in srgb, var(--green) 11%, transparent) !important; }
+
+/* ---- "More" menu: icons sit in soft tiles, a little wider so descriptions are readable ------------ */
+html.ui-modern body .sync-actions .sync-more > div { width: 580px !important; padding: 10px !important; border-radius: 14px !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text-primary) 6%, transparent), 0 20px 48px -12px rgb(0 0 0 / 28%), 0 6px 16px -6px rgb(0 0 0 / 14%) !important; }
+html.ui-modern body .sync-actions .sync-more > div > button { grid-template-columns: 30px minmax(0, 1fr) !important; column-gap: 10px; border-radius: 9px !important; }
+html.ui-modern body .sync-actions .sync-more > div > button > .gd-icon { box-sizing: content-box; width: 16px; height: 16px; padding: 7px; border-radius: 8px;
+  background: color-mix(in srgb, var(--text-primary) 7%, var(--surface)); color: var(--text-secondary); transition: background-color .15s, color .15s; }
+html.ui-modern body .sync-actions .sync-more > div > button:hover > .gd-icon,
+html.ui-modern body .sync-actions .sync-more > div > button:focus-visible > .gd-icon { background: var(--modern-accent-soft); color: var(--green); }
+html.ui-modern body .sync-more > div > .sync-more-group { text-transform: uppercase !important; font-size: 10.5px; letter-spacing: .06em; }
+html.ui-modern body .sync-more > div > .sync-more-group:not(:first-child) { margin-top: 10px !important; padding-top: 10px !important; border-top: 1px solid var(--border-muted) !important; }
 
 /* ---- Primary buttons: a touch of depth so the one thing to press stands out ------------------------ */
 html.ui-modern body button.primary:not(:disabled) { background-image: linear-gradient(180deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 0%)) !important; }
