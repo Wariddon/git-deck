@@ -217,7 +217,9 @@
     bar.append(folder,search,tagFilter,viewSwitch,sort,run,more);
     const chips=el('div','pending-filters');const status=el('small','multi-repo-status');const out=el('div','multi-repo-body');
     const help=el('p','multi-repo-note pending-help');
-    panel.append(bar,chips,help,status,out);
+    // One line under the filters: what was checked on the left, how to read the view on the right.
+    const info=el('div','pending-info');info.append(status,help);
+    panel.append(bar,chips,info,out);
 
     // Filter and sort are remembered between visits.
     const remember=(key,value)=>{try{localStorage.setItem(key,value);}catch{}};
@@ -227,6 +229,31 @@
     tagFilter.value=[...tagFilter.options].some(option=>option.value===recall('gitdeck.pendingTag',''))?recall('gitdeck.pendingTag',''):'any';
     // Tag name, with its date and the commits since it in the tooltip.
     const tagBadge=(item)=>{const p=item.pending;const badge=el('span','pending-tag-badge','🏷 '+p.latestTag);badge.title=[t('Latest tag: {tag}',{tag:p.latestTag}),p.latestTagDate?String(p.latestTagDate).slice(0,10)+' ('+ageOf(p.latestTagDate)+')':'',Number(p.commitsSinceTag)>0?t('{count} commit(s) on {branch} after this tag',{count:p.commitsSinceTag,branch:p.branch||'HEAD'}):t('Nothing new since this tag'),t('{count} tag(s) in total',{count:p.tagCount||1})].filter(Boolean).join('\n');return badge;};
+    // Columns can be widened to read long names in full: drag the edge of a column name.
+    // Widths are remembered; double-click the edge to go back to the automatic width.
+    const colKey='gitdeck.pendingColumns';
+    const readWidths=()=>{try{return JSON.parse(localStorage.getItem(colKey)||'{}')||{};}catch{return {};}};
+    const applyWidth=(grid,index,width)=>{
+      for(const row of grid.rows){const cell=row.cells[index];if(!cell||cell.colSpan>1)continue;
+        cell.style.width=cell.style.minWidth=cell.style.maxWidth=width?width+'px':'';cell.classList.toggle('pending-col-sized',Boolean(width));}
+    };
+    function sizeColumns(grid){
+      const widths=readWidths();const head=grid.rows[0];if(!head)return;
+      [...head.cells].forEach((th,index)=>{
+        if(widths[index])applyWidth(grid,index,widths[index]);
+        const grip=el('span','pending-col-grip');grip.title=t('Drag to widen or narrow this column. Double-click: automatic width.');grip.setAttribute('aria-hidden','true');
+        grip.onpointerdown=(event)=>{
+          event.preventDefault();event.stopPropagation();const startX=event.clientX;const start=th.getBoundingClientRect().width;
+          try{grip.setPointerCapture(event.pointerId);}catch{}document.body.classList.add('pending-col-resizing');
+          const move=(e)=>applyWidth(grid,index,Math.max(44,Math.round(start+e.clientX-startX)));
+          const up=()=>{grip.removeEventListener('pointermove',move);grip.removeEventListener('pointerup',up);document.body.classList.remove('pending-col-resizing');
+            const all=readWidths();all[index]=Math.round(th.getBoundingClientRect().width);try{localStorage.setItem(colKey,JSON.stringify(all));}catch{}};
+          grip.addEventListener('pointermove',move);grip.addEventListener('pointerup',up);
+        };
+        grip.ondblclick=(event)=>{event.stopPropagation();applyWidth(grid,index,0);const all=readWidths();delete all[index];try{localStorage.setItem(colKey,JSON.stringify(all));}catch{}};
+        th.append(grip);
+      });
+    }
     const syncView=()=>{
       byTask.classList.toggle('active',view==='tasks');byTable.classList.toggle('active',view==='table');
       byTask.setAttribute('aria-pressed',String(view==='tasks'));byTable.setAttribute('aria-pressed',String(view==='table'));
@@ -398,13 +425,18 @@
         const name=el('td','pending-repo');name.append(repoLink(item.repo));if(item.error)name.append(el('small','pending-error',item.error));else if(p?.operation)name.append(el('small','pending-error',t('{operation} in progress',{operation:p.operation})+(c.conflicts?` · ${t('{count} conflict(s)',{count:c.conflicts})}`:'')));
         const branch=el('td','pending-branch');branch.append(breakable(p?.branch||'—'));if(c.unpublished)branch.append(el('small','pending-tag',t('not published')));
         const steps=nextSteps(item);const todo=el('td','pending-todo');
-        if(steps.length){todo.append(el('span',`pending-step tone-${steps[0].tone}`,steps[0].text));if(steps.length>1){const more=el('small','pending-more-steps',t('+{count} more',{count:steps.length-1}));more.title=steps.slice(1).map(step=>'• '+step.text).join('\n');todo.append(more);}}
+        if(steps.length){todo.append(el('span',`pending-step tone-${steps[0].tone}`,steps[0].text));if(steps.length>1){
+          // The other steps open in place: click +N more (or hover it to read them).
+          const rest=el('ul','pending-steps-rest');for(const step of steps.slice(1))rest.append(el('li',`pending-step tone-${step.tone}`,step.text));
+          const more=el('button','pending-more-steps',t('+{count} more',{count:steps.length-1}));more.type='button';more.title=steps.slice(1).map(step=>'• '+step.text).join('\n');
+          more.onclick=()=>{const open=todo.classList.toggle('pending-steps-open');more.textContent=open?t('Show less'):t('+{count} more',{count:steps.length-1});more.setAttribute('aria-expanded',String(open));};
+          more.setAttribute('aria-expanded','false');todo.append(rest,more);}}
         else todo.append(el('span','pending-step tone-ok',t('Nothing to do')));
         const tagCell=el('td','pending-tag-cell');
         if(p?.latestTag){tagCell.append(tagBadge(item));tagCell.append(el('small','',[whenOf(p.latestTagDate),Number(p.commitsSinceTag)>0?t('+{count} since',{count:p.commitsSinceTag}):''].filter(Boolean).join(' · ')));}
         else tagCell.append(el('span','pending-zero',p?t('no tag'):'·'));
         const lastCell=el('td','pending-last-cell');
-        if(p?.lastCommitDate){lastCell.append(el('span','',dayOf(p.lastCommitDate)),el('small','',ageOf(p.lastCommitDate)));lastCell.title=p.lastCommitSubject||'';}
+        if(p?.lastCommitDate){lastCell.append(el('span','',dayOf(p.lastCommitDate)),el('small','',ageOf(p.lastCommitDate)));if(p.lastCommitSubject)lastCell.append(el('small','pending-last-subject',p.lastCommitSubject));lastCell.title=p.lastCommitSubject||'';}
         else lastCell.append(el('span','pending-zero','·'));
         const tr=el('tr');tr.append(name,branch,tagCell,lastCell,todo,
           numberCell(c.changes,{tone:'warn',title:t('{count} uncommitted file(s)',{count:c.changes})}),
@@ -416,7 +448,7 @@
         grid.append(tr);
         for(const kind of ['localOnly','merged','stashes'])if(expanded.has(key+'|'+kind))grid.append(detailRow(item,kind));
       }
-      out.append(grid);
+      out.append(grid);sizeColumns(grid);
       if(rows.length>300)out.append(el('p','multi-repo-note',t('Showing the first 300. Narrow the folder or filter.')));
     };
     const summary=()=>{
@@ -715,6 +747,14 @@
     backdrop.classList.add('dashboard-as-page');
     closeButton.textContent='← '+t('Back');closeButton.classList.add('dashboard-back');
     closeButton.title=t('Back to the repository');closeButton.setAttribute('aria-label',closeButton.title);
+    // A page header: Back first, then the title on one line.
+    const head=modal.querySelector('.operations-head');if(head)head.prepend(closeButton);
+    // / jumps to the name filter of the open view.
+    document.addEventListener('keydown',(event)=>{
+      if(event.key!=='/'||!document.body.classList.contains('dashboard-page-open')||event.ctrlKey||event.altKey||event.metaKey)return;
+      if(event.target.closest?.('input,textarea,select,[contenteditable="true"]'))return;
+      const box=modal.querySelector('.operations-view:not(.hidden) input');if(box){event.preventDefault();box.focus();box.select?.();}
+    });
     const host=()=>{const body=document.querySelector('.workbench-body');return body&&body.getClientRects().length?body:null;};
     const place=()=>{
       const open=!backdrop.classList.contains('hidden');const body=open?host():null;
@@ -754,6 +794,8 @@
     const modal=document.querySelector('.operations-modal');const closeButton=document.getElementById('operations-close');
     const backdrop=document.getElementById('operations-backdrop');
     if(modal&&closeButton&&backdrop&&!backdrop.classList.contains('dashboard-as-page'))setUpDashboardPage(modal,closeButton,backdrop);
+    // The health view is one of the Dashboard's tabs, so it is not called a dashboard itself.
+    const fleetTab=nav?.querySelector('[data-operations-view="fleet"]');if(fleetTab)fleetTab.textContent=t('Repository health');
     const heading=document.getElementById('operations-title');
     if(heading){heading.textContent=t('Dashboard');const eyebrow=heading.parentElement?.querySelector('.eyebrow');if(eyebrow)eyebrow.textContent=t('ALL REPOSITORIES');const line=heading.nextElementSibling;if(line?.tagName==='P')line.textContent=t('What is pending everywhere, update or switch many repositories at once, search them all. Background jobs and automation are here too.');}
     const openView=(view)=>{if(typeof showOperationsCenter==='function')showOperationsCenter(view);};

@@ -945,4 +945,7 @@ GitDeckI18n.register('th',{
   "Reload now":"รีโหลดเลย",
   "An overview to read: click a repository to open it, or a number to see the list. To act on many repositories, use By task.":"ตารางนี้ไว้ดูภาพรวม กดชื่อ repo เพื่อเปิด หรือกดตัวเลขเพื่อดูรายการ ถ้าจะทำกับหลาย repo ให้ใช้มุมมอง \"ตามงาน\"",
   "Back to the repository":"กลับไปที่ repository",
+  "Drag to widen or narrow this column. Double-click: automatic width.":"ลากเพื่อขยายหรือหดคอลัมน์นี้ ดับเบิลคลิกเพื่อกลับเป็นความกว้างอัตโนมัติ",
+  "Show less":"ย่อลง",
+  "Repository health":"สุขภาพ repo",
 });

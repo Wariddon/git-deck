@@ -372,6 +372,32 @@ body.dashboard-page-open #dashboard-button{background:color-mix(in srgb,var(--gr
 .multi-repo-table.pending-table td.pending-tag-cell .pending-tag-badge{display:block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .multi-repo-table.pending-table td.pending-tag-cell{max-width:160px}
 .multi-repo-table.pending-table td.pending-repo>a,.multi-repo-table.pending-table td.pending-repo>button{font-weight:600}
+/* Dashboard page header on one line: Back, title, short description (cut, full text in the tooltip). */
+.workbench-body>.operations-modal .operations-head{align-items:center;justify-content:flex-start;gap:14px}
+.workbench-body>.operations-modal .operations-head>div{display:flex;align-items:baseline;gap:10px;min-width:0}
+.workbench-body>.operations-modal .operations-head .eyebrow{display:none}
+.workbench-body>.operations-modal .operations-head h2{margin:0;white-space:nowrap}
+.workbench-body>.operations-modal .operations-head p{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+/* Checked status and how to read the view share one line. */
+.pending-info{display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;margin:6px 0}
+.pending-info>.multi-repo-status{margin:0}
+.pending-info>.pending-help{margin:0 0 0 auto;font-size:11px}
+/* Table: the other next steps open in place; last commit message under its date; faint empty cells. */
+.pending-steps-rest{display:none;margin:3px 0 0;padding-left:14px;font-size:12px}
+.pending-steps-open>.pending-steps-rest{display:block}
+button.pending-more-steps{padding:0;border:0;background:none;font-size:11px;cursor:pointer;text-decoration:underline dotted}
+.pending-last-subject{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85}
+.multi-repo-table.pending-table .pending-zero{opacity:.35}
+/* Resizable columns: a grip on the right edge of each column name. */
+.multi-repo-table.pending-table th{position:relative}
+.multi-repo-table.pending-table tr:first-child th{position:sticky}
+.pending-col-grip{position:absolute;top:0;right:-3px;bottom:0;width:7px;cursor:col-resize;z-index:2}
+.multi-repo-table.pending-table th:last-child>.pending-col-grip{right:0}
+.pending-col-grip:hover,body.pending-col-resizing .pending-col-grip:hover{background:color-mix(in srgb,var(--green,#0969da) 45%,transparent)}
+body.pending-col-resizing{cursor:col-resize;user-select:none}
+.multi-repo-table.pending-table tr:first-child th{user-select:none}
+.multi-repo-table.pending-table td.pending-col-sized{white-space:normal;overflow-wrap:anywhere}
+.multi-repo-table.pending-table td.pending-col-sized .pending-tag-badge,.multi-repo-table.pending-table td.pending-col-sized .pending-last-subject{max-width:100%}
 /* Git Deck updated while open (web/update-check.js). */
 .update-banner{position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:12600;display:flex;align-items:center;gap:10px;max-width:min(720px,calc(100vw - 32px));padding:10px 14px;border:1px solid var(--green,#0969da);border-radius:10px;background:var(--surface,#fff);color:var(--text-primary,inherit);box-shadow:0 12px 36px rgba(0,0,0,.3);font-size:13px}
 .update-banner-icon{font-size:18px}

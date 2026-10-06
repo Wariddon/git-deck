@@ -109,6 +109,10 @@ assert.ok(web('features.css').includes('.multi-repo-table.pending-table th{white
 // Column names stay in view while the table scrolls; long tags are cut instead of covering the next column.
 assert.ok(web('features.css').includes('.multi-repo-table.pending-table tr:first-child th{position:sticky;top:0;'));
 assert.ok(web('features.css').includes('.multi-repo-table.pending-table td.pending-tag-cell .pending-tag-badge{display:block;max-width:150px;overflow:hidden;text-overflow:ellipsis;'));
+// Columns can be dragged wider to read long names; widths are remembered, double-click resets.
+assert.match(web('multi-repo.js'), /function sizeColumns\(grid\)/);
+assert.match(web('multi-repo.js'), /gitdeck\.pendingColumns/);
+assert.ok(web('features.css').includes('.pending-col-grip{position:absolute;'));
 // Easy to find: All repos and Report sit on the left rail under Repos.
 assert.match(web('modern.js'), /railButton\(\['all-repos','repos',\(\)=>t\('All repos'\)\]\),railButton\(\['report','report',\(\)=>t\('Report'\)\]\)/);
 assert.match(web('modern.js'), /'all-repos':\(state\.repos\|\|\[\]\)\.filter\(/, 'All repos shows how many repositories need attention');
