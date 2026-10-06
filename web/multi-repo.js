@@ -231,7 +231,7 @@
       byTask.classList.toggle('active',view==='tasks');byTable.classList.toggle('active',view==='table');
       byTask.setAttribute('aria-pressed',String(view==='tasks'));byTable.setAttribute('aria-pressed',String(view==='table'));
       sort.hidden=chips.hidden=view==='tasks';
-      help.textContent=view==='tasks'?t('Grouped by what needs doing. Each group has a button that does it for every repository in the group.'):t('Click a number to see the list. Hover a column name to see what it means. The What to do column says the next step.');
+      help.textContent=view==='tasks'?t('Grouped by what needs doing. Each group has a button that does it for every repository in the group.'):t('An overview to read: click a repository to open it, or a number to see the list. To act on many repositories, use By task.');
     };
     byTask.onclick=()=>{view='tasks';remember('gitdeck.pendingView',view);syncView();draw();};
     byTable.onclick=()=>{view='table';remember('gitdeck.pendingView',view);syncView();drawChips();draw();};
@@ -286,7 +286,6 @@
       }catch(error){item.actionError={kind:id,reason:explainError(error.message),raw:String(error.message||'')};showActionFeedback(error.message,{error:true,context:`${repo.name} · ${id}`});}
       Object.assign(item,await check(repo));drawChips();draw();
     };
-    const actionLabels={commit:()=>t('Commit…'),push:()=>t('Push'),publish:()=>t('Publish'),pull:()=>t('Pull'),resolve:()=>t('Resolve…'),stashes:()=>t('Stashes…'),cleanup:()=>t('Clean up…')};
     const numberCell=(value,{tone='',detail='',title=''}={})=>{
       const td=el('td','pending-num');if(!value){td.append(el('span','pending-zero','·'));return td;}
       const text=String(value);
@@ -295,7 +294,7 @@
       return td;
     };
     const detailRow=(item,kind)=>{
-      const tr=el('tr','pending-detail');const td=el('td');td.colSpan=12;const p=item.pending;const box=el('div','pending-detail-box');
+      const tr=el('tr','pending-detail');const td=el('td');td.colSpan=11;const p=item.pending;const box=el('div','pending-detail-box');
       if(kind==='localOnly'){
         box.append(el('strong','',t('Branches with commits that are on no remote')));
         const list=el('div','pending-detail-list');[...p.unpushedBranches].sort((a,b)=>b.commits-a.commits).forEach(b=>list.append(el('span','',`${b.branch} · ${b.commits}`)));box.append(list);
@@ -391,16 +390,13 @@
         else if(done&&filter!=='all'){const all=el('button','',t('Show all repositories'));all.type='button';all.onclick=()=>{filter='all';remember('gitdeck.pendingFilter','all');search.value='';drawChips();draw();};empty.append(all);}
         out.append(empty);return;
       }
-      const grid=table([t('Repository'),t('Branch'),t('Latest tag'),t('Last commit'),t('What to do'),t('Uncommitted'),t('To push'),t('To pull'),t('Stashes'),t('Unpushed branches'),t('Merged branches'),'']);
+      const grid=table([t('Repository'),t('Branch'),t('Latest tag'),t('Last commit'),t('What to do'),t('Uncommitted'),t('To push'),t('To pull'),t('Stashes'),t('Unpushed branches'),t('Merged branches')]);
       grid.classList.add('pending-table');
       grid.querySelectorAll('th').forEach(th=>{if(headerHelp[th.textContent]){th.title=headerHelp[th.textContent];th.classList.add('pending-has-help');}});
       for(const item of rows.slice(0,300)){
         const c=item.counts,p=item.pending,key=item.repo.path;
         const name=el('td','pending-repo');name.append(repoLink(item.repo));if(item.error)name.append(el('small','pending-error',item.error));else if(p?.operation)name.append(el('small','pending-error',t('{operation} in progress',{operation:p.operation})+(c.conflicts?` · ${t('{count} conflict(s)',{count:c.conflicts})}`:'')));
         const branch=el('td','pending-branch');branch.append(breakable(p?.branch||'—'));if(c.unpublished)branch.append(el('small','pending-tag',t('not published')));
-        const actions=el('td','pending-actions');const box=el('div','multi-repo-actions');
-        for(const id of pendingActions(p)){if(id==='cleanup'||id==='stashes')continue;const button=el('button',id==='push'||id==='publish'?'primary':'',actionLabels[id]());button.type='button';button.onclick=()=>act(item,id==='publish'?'push':id,button);box.append(button);}
-        actions.append(box);
         const steps=nextSteps(item);const todo=el('td','pending-todo');
         if(steps.length){todo.append(el('span',`pending-step tone-${steps[0].tone}`,steps[0].text));if(steps.length>1){const more=el('small','pending-more-steps',t('+{count} more',{count:steps.length-1}));more.title=steps.slice(1).map(step=>'• '+step.text).join('\n');todo.append(more);}}
         else todo.append(el('span','pending-step tone-ok',t('Nothing to do')));
@@ -416,8 +412,7 @@
           numberCell(c.pull,{tone:'info',title:t('{count} to pull',{count:c.pull})}),
           numberCell(c.stashes,{tone:'info',detail:c.stashes?key+'|stashes':'',title:t('Show stashes')}),
           numberCell(c.localOnly,{tone:'warn',detail:c.localOnly?key+'|localOnly':'',title:t('{count} branches, {commits} commits on no remote',{count:c.localOnly,commits:c.localOnlyCommits})}),
-          numberCell(c.merged,{tone:'muted',detail:c.merged?key+'|merged':'',title:t('Show merged branches')}),
-          actions);
+          numberCell(c.merged,{tone:'muted',detail:c.merged?key+'|merged':'',title:t('Show merged branches')}));
         grid.append(tr);
         for(const kind of ['localOnly','merged','stashes'])if(expanded.has(key+'|'+kind))grid.append(detailRow(item,kind));
       }

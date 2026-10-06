@@ -831,7 +831,6 @@ GitDeckI18n.register('th',{
   "Delete {count} merged branch(es)":"ลบ branch ที่ merge แล้ว {count} อัน",
   "Delete merged branches (this computer)":"ลบ branch ที่ merge แล้ว (ในเครื่อง)",
   "Delete local branches that are already merged; remote branches are not touched":"ลบ branch ในเครื่องที่ merge แล้ว ไม่แตะ branch บน remote",
-  "Click a number to see the list. Hover a column name to see what it means. The What to do column says the next step.":"กดตัวเลขเพื่อดูรายการ ชี้ที่หัวคอลัมน์เพื่อดูความหมาย คอลัมน์ \"ต้องทำอะไร\" บอกขั้นต่อไป",
   "Files changed on this computer and not committed yet":"ไฟล์ที่แก้ในเครื่องนี้และยังไม่ commit",
   "Commits on the current branch that the remote does not have yet":"commit บน branch ปัจจุบันที่ remote ยังไม่มี",
   "New commits on the remote that this computer does not have yet":"commit ใหม่บน remote ที่เครื่องนี้ยังไม่มี",
@@ -946,4 +945,5 @@ GitDeckI18n.register('th',{
   "Git Deck was updated. Close Git Deck and open it again to use the new version (reloading the page is not enough).":"Git Deck มีเวอร์ชันใหม่ ปิด Git Deck แล้วเปิดใหม่เพื่อใช้เวอร์ชันใหม่ (กดรีโหลดหน้าอย่างเดียวไม่พอ)",
   "Git Deck was updated. Reload to see the new version.":"Git Deck มีเวอร์ชันใหม่ กดรีโหลดเพื่อดูเวอร์ชันใหม่",
   "Reload now":"รีโหลดเลย",
+  "An overview to read: click a repository to open it, or a number to see the list. To act on many repositories, use By task.":"ตารางนี้ไว้ดูภาพรวม กดชื่อ repo เพื่อเปิด หรือกดตัวเลขเพื่อดูรายการ ถ้าจะทำกับหลาย repo ให้ใช้มุมมอง \"ตามงาน\"",
 });
