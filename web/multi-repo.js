@@ -707,6 +707,41 @@
     };
   }
 
+  // ---- Dashboard as a page -----------------------------------------------------------------------
+  // The Dashboard is a page, not a window over the screen: it takes the work area (right of the
+  // left rail, under the toolbar), so the toolbar and rail stay. Back, any rail view or opening a
+  // repository leaves it. Without a work area (no repository open yet) it stays a full window.
+  function setUpDashboardPage(modal,closeButton,backdrop){
+    backdrop.classList.add('dashboard-as-page');
+    closeButton.textContent='← '+t('Back');closeButton.classList.add('dashboard-back');
+    closeButton.title=t('Back to the repository');closeButton.setAttribute('aria-label',closeButton.title);
+    const host=()=>{const body=document.querySelector('.workbench-body');return body&&body.getClientRects().length?body:null;};
+    const place=()=>{
+      const open=!backdrop.classList.contains('hidden');const body=open?host():null;
+      if(body){
+        if(modal.parentElement!==body)body.append(modal);
+        const rail=body.querySelector(':scope > .modern-rail');modal.style.left=rail&&rail.getClientRects().length?rail.offsetWidth+'px':'0px';
+      }else if(modal.parentElement!==backdrop){modal.style.left='';backdrop.append(modal);}
+      document.body.classList.toggle('dashboard-page-open',Boolean(body));
+      window.dispatchEvent(new Event('gitdeck:dashboard'));
+    };
+    if(typeof MutationObserver==='function')new MutationObserver(place).observe(backdrop,{attributes:true,attributeFilter:['class']});
+    window.addEventListener('resize',()=>{if(document.body.classList.contains('dashboard-page-open'))place();});
+    const leave=()=>{if(!backdrop.classList.contains('hidden')&&typeof hideOperationsCenter==='function')hideOperationsCenter();};
+    // Opening another repository or another view leaves the page; a refresh of the same view does not.
+    if(typeof openWorkspace==='function'){
+      const baseOpen=openWorkspace;
+      openWorkspace=function(repo,tab='history',...rest){
+        const same=state.workspaceRepo&&repoKey(state.workspaceRepo)===repoKey(repo)&&state.workspaceTab===tab;
+        if(!same)leave();return baseOpen(repo,tab,...rest);
+      };
+    }
+    if(typeof selectWorkspaceTab==='function'){
+      const baseSelect=selectWorkspaceTab;
+      selectWorkspaceTab=function(tab,...rest){if(rest[0]!==false)leave();return baseSelect(tab,...rest);};
+    }
+  }
+
   // ---- entry points ----------------------------------------------------------------------------
   if(typeof document!=='undefined'&&document.querySelector('.operations-tabs')){
     addPanel('pending',t('Pending work'),buildPending);
@@ -717,13 +752,8 @@
     const nav=document.querySelector('.operations-tabs');
     if(nav){for(const id of ['search-all','switch-all','update-all','pending']){const tab=nav.querySelector(`[data-operations-view="${id}"]`);if(tab)nav.prepend(tab);}}
     const modal=document.querySelector('.operations-modal');const closeButton=document.getElementById('operations-close');
-    if(modal&&closeButton&&!document.getElementById('operations-maximize')){
-      const max=el('button','operations-maximize','⤢');max.id='operations-maximize';max.type='button';
-      const sync=(on)=>{modal.classList.toggle('operations-maximized',on);max.textContent=on?'⤡':'⤢';max.title=on?t('Restore size'):t('Maximize');max.setAttribute('aria-label',max.title);max.setAttribute('aria-pressed',String(on));};
-      let on=false;try{on=localStorage.getItem('gitdeck.dashboardMax')==='1';}catch{}sync(on);
-      max.onclick=()=>{on=!on;try{localStorage.setItem('gitdeck.dashboardMax',on?'1':'0');}catch{}sync(on);};
-      closeButton.before(max);
-    }
+    const backdrop=document.getElementById('operations-backdrop');
+    if(modal&&closeButton&&backdrop&&!backdrop.classList.contains('dashboard-as-page'))setUpDashboardPage(modal,closeButton,backdrop);
     const heading=document.getElementById('operations-title');
     if(heading){heading.textContent=t('Dashboard');const eyebrow=heading.parentElement?.querySelector('.eyebrow');if(eyebrow)eyebrow.textContent=t('ALL REPOSITORIES');const line=heading.nextElementSibling;if(line?.tagName==='P')line.textContent=t('What is pending everywhere, update or switch many repositories at once, search them all. Background jobs and automation are here too.');}
     const openView=(view)=>{if(typeof showOperationsCenter==='function')showOperationsCenter(view);};

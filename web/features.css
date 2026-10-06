@@ -240,7 +240,6 @@ body .backdrop:not(#workspace-backdrop) .pending-filter.active{background:var(--
 .pending-more-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:5;display:grid;gap:4px;min-width:190px;padding:6px;border:1px solid var(--line,rgba(127,127,127,.3));border-radius:8px;background:var(--surface,#fff);box-shadow:0 8px 24px rgba(0,0,0,.18)}
 .pending-more-menu button{text-align:left}
 .pending-table td,.pending-table th{white-space:nowrap}
-.pending-table th:nth-child(n+3):not(:last-child){text-align:center}
 .pending-num{text-align:center;font-variant-numeric:tabular-nums}
 .pending-zero{color:var(--muted,#8b949e);opacity:.6}
 .pending-count{display:inline-block;min-width:26px;padding:1px 7px;border-radius:999px;font-weight:600;font-size:12px;background:rgba(127,127,127,.14)}
@@ -257,13 +256,12 @@ body.theme-dark .pending-error{color:#ff9b8f}
 .pending-branch{max-width:220px;overflow:hidden;text-overflow:ellipsis}
 .pending-tag{color:#92400e}
 body.theme-dark .pending-tag{color:#f0b46a}
-.pending-actions .multi-repo-actions{flex-wrap:nowrap}
 .pending-detail td{background:rgba(127,127,127,.06);white-space:normal}
 .pending-detail-box{display:grid;gap:6px;padding:4px 2px}
 .pending-detail-list{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;max-height:160px;overflow:auto}
 .pending-detail-box button{justify-self:start}
 [data-operations-panel="pending"] .operations-toolbar>select:first-child{flex:0 1 220px;max-width:260px}
-.multi-repo-table.pending-table td.pending-num,.multi-repo-table.pending-table th:nth-child(n+3):not(:last-child){text-align:center}
+.multi-repo-table.pending-table td.pending-num{text-align:center}
 .pending-help{margin:2px 0 0}
 .pending-todo{white-space:normal !important;min-width:200px;max-width:340px;font-size:12px}
 .pending-step.tone-bad{color:#b42318;font-weight:600}
@@ -346,21 +344,34 @@ body.theme-dark .feedback-spotlight>strong{color:#ff9b8f}
    buttons stack instead of running past the right edge. */
 .multi-repo-table.pending-table{table-layout:auto;width:100%}
 .multi-repo-table.pending-table th{white-space:normal !important;vertical-align:bottom;line-height:1.25}
-.multi-repo-table.pending-table th:nth-child(n+6):not(:last-child),.multi-repo-table.pending-table td.pending-num{width:64px;min-width:52px;padding-left:4px;padding-right:4px}
+.multi-repo-table.pending-table th:nth-child(n+6),.multi-repo-table.pending-table td.pending-num{width:64px;min-width:52px;padding-left:4px;padding-right:4px}
 .multi-repo-table.pending-table td.pending-todo{min-width:150px;max-width:240px}
 .multi-repo-table.pending-table td.pending-repo{max-width:210px;white-space:normal;overflow-wrap:anywhere}
 .multi-repo-table.pending-table td.pending-branch{max-width:170px;white-space:normal;overflow-wrap:break-word}
-.multi-repo-table.pending-table td.pending-tag-cell{max-width:120px;white-space:normal}
-.multi-repo-table.pending-table td.pending-actions{width:1%}
-.multi-repo-table.pending-table .pending-actions .multi-repo-actions{flex-wrap:wrap !important;justify-content:flex-end;min-width:76px;max-width:150px}
-.multi-repo-table.pending-table .pending-actions button{width:100%}
 .multi-repo-table.pending-table td.pending-last-cell{white-space:nowrap}
 .pending-last-cell small{display:block;font-size:11px;color:var(--muted,#6b7280)}
 .pending-line-date{flex:0 0 auto;color:var(--muted,#6b7280);font-size:11px;white-space:nowrap}
-/* Dashboard window: drag the corner to resize, or maximize to fill the screen (remembered). */
-.operations-modal{resize:both;min-width:min(640px,calc(100vw - 28px));min-height:360px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px)}
-.operations-modal.operations-maximized{width:calc(100vw - 16px) !important;height:calc(100vh - 16px) !important;resize:none}
-.operations-maximize{margin-left:auto;font-size:15px;line-height:1}
+/* Dashboard as a page (multi-repo.js): it fills the work area right of the rail, under the toolbar.
+   The backdrop only carries the open/closed state; without a work area it is still a full window. */
+body.dashboard-page-open #operations-backdrop{display:none !important}
+body.dashboard-page-open .workbench-body{position:relative}
+.workbench-body>.operations-modal{position:absolute;top:0;right:0;bottom:0;left:0;z-index:9;width:auto;height:auto;max-width:none;max-height:none;border:0;border-left:1px solid var(--border-default);border-radius:0;box-shadow:none;resize:none}
+#operations-backdrop.dashboard-as-page .operations-modal{width:calc(100vw - 16px);height:calc(100vh - 16px)}
+.workbench-body>.operations-modal .operations-head{padding:10px 16px 8px}
+.workbench-body>.operations-modal .operations-head h2{font-size:18px}
+body.dashboard-page-open #dashboard-button{background:color-mix(in srgb,var(--green,#0969da) 16%,transparent);color:var(--green,#0969da)}
+.operations-head>button.dashboard-back{width:auto;height:30px;padding:0 12px;font-size:12px;font-weight:700;white-space:nowrap}
+/* Dashboard table: the column names stay in view while the list scrolls, long tags are cut with
+   the full name in the tooltip, and the row under the mouse is lit so a number is read on the right line. */
+.multi-repo-panel:not(.hidden):has(>.multi-repo-body>.pending-table){display:flex;flex-direction:column;overflow:hidden}
+.multi-repo-panel:not(.hidden):has(>.multi-repo-body>.pending-table)>.multi-repo-body{flex:1 1 auto;min-height:0;overflow:auto;border:1px solid var(--border-default,rgba(127,127,127,.3));border-radius:8px}
+.multi-repo-table.pending-table tr:first-child th{position:sticky;top:0;z-index:1;background:var(--surface-subtle,var(--surface,#fff));box-shadow:inset 0 -1px 0 var(--border-default,rgba(127,127,127,.3))}
+.multi-repo-table.pending-table th{text-align:left}
+.multi-repo-table.pending-table th:nth-child(n+6){text-align:center}
+.multi-repo-table.pending-table tr:not(:first-child):hover>td{background:color-mix(in srgb,var(--green,#0969da) 7%,transparent)}
+.multi-repo-table.pending-table td.pending-tag-cell .pending-tag-badge{display:block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.multi-repo-table.pending-table td.pending-tag-cell{max-width:160px}
+.multi-repo-table.pending-table td.pending-repo>a,.multi-repo-table.pending-table td.pending-repo>button{font-weight:600}
 /* Git Deck updated while open (web/update-check.js). */
 .update-banner{position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:12600;display:flex;align-items:center;gap:10px;max-width:min(720px,calc(100vw - 32px));padding:10px 14px;border:1px solid var(--green,#0969da);border-radius:10px;background:var(--surface,#fff);color:var(--text-primary,inherit);box-shadow:0 12px 36px rgba(0,0,0,.3);font-size:13px}
 .update-banner-icon{font-size:18px}

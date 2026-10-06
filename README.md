@@ -200,7 +200,7 @@ The alert bar above every view also shows states that block you, with the button
 
 ## Dashboard: every repository at once
 
-The **Dashboard** button in the toolbar (or *All repos* on the left rail) opens these views for a scan folder or for all repositories:
+The **Dashboard** button in the toolbar (or *All repos* on the left rail) opens these views for a scan folder or for all repositories. The Dashboard is a page in the work area, not a window over the screen: the toolbar and the left rail stay, and **← Back**, any other rail view or opening a repository leaves it. In the table the column names stay in view while you scroll:
 
 - **Pending work**: what is still open everywhere.
   - *By task* groups repositories by what to do: fix first, not committed, ready to push, new branch not on the remote, commits to pull, branches only on this computer, stashes, merged branches. Each group has one button per repository and a bulk button (Push all, Pull all, Delete merged branches on this computer).

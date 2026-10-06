@@ -333,6 +333,7 @@
     railItems.forEach(item=>rail.append(railButton(item)));
     const bottom=el('div','modern-rail-bottom');railBottom.forEach(item=>bottom.append(railButton(item)));rail.append(bottom);
     body.prepend(rail);
+    window.addEventListener('gitdeck:dashboard',renderRail);
   }
   function renderRail(){
     if(!rail)return;const data=state.workspace||{};
@@ -341,7 +342,9 @@
       'all-repos':(state.repos||[]).filter(repo=>repo.valid!==false&&(Number(repo.changes)>0||Number(repo.ahead)>0||Number(repo.behind)>0)).length};
     for(const button of rail.querySelectorAll('.modern-rail-item')){
       const tab=button.dataset.tab;
-      const active=tab==='repos'?libraryOpen():tab==='focus'?document.body.classList.contains('focus-workbench'):tab===state.workspaceTab;button.classList.toggle('active',active);
+      // While the Dashboard page is open, it is the current place: All repos is lit, not the repository view under it.
+      const dashboard=document.body.classList.contains('dashboard-page-open');
+      const active=tab==='repos'?libraryOpen():tab==='focus'?document.body.classList.contains('focus-workbench'):tab==='all-repos'?dashboard:!dashboard&&tab===state.workspaceTab;button.classList.toggle('active',active);
       if(tab==='repos'||tab==='focus')button.setAttribute('aria-pressed',String(active));
       else if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
       const count=counts[tab]||0;const badge=button.querySelector('.modern-rail-badge');

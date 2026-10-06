@@ -940,10 +940,9 @@ GitDeckI18n.register('th',{
   "Recently changed first":"เพิ่งเปลี่ยนล่าสุดก่อน",
   "When the branch you are on last changed; hover the date for the message":"branch ที่ใช้อยู่เปลี่ยนล่าสุดเมื่อไร ชี้ที่วันที่เพื่อดูข้อความ commit",
   "last commit {when}":"commit ล่าสุด {when}",
-  "Restore size":"คืนขนาดเดิม",
-  "Maximize":"ขยายเต็มจอ",
   "Git Deck was updated. Close Git Deck and open it again to use the new version (reloading the page is not enough).":"Git Deck มีเวอร์ชันใหม่ ปิด Git Deck แล้วเปิดใหม่เพื่อใช้เวอร์ชันใหม่ (กดรีโหลดหน้าอย่างเดียวไม่พอ)",
   "Git Deck was updated. Reload to see the new version.":"Git Deck มีเวอร์ชันใหม่ กดรีโหลดเพื่อดูเวอร์ชันใหม่",
   "Reload now":"รีโหลดเลย",
   "An overview to read: click a repository to open it, or a number to see the list. To act on many repositories, use By task.":"ตารางนี้ไว้ดูภาพรวม กดชื่อ repo เพื่อเปิด หรือกดตัวเลขเพื่อดูรายการ ถ้าจะทำกับหลาย repo ให้ใช้มุมมอง \"ตามงาน\"",
+  "Back to the repository":"กลับไปที่ repository",
 });

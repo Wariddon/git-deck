@@ -75,8 +75,11 @@ assert.equal(m.dayOf('2026-10-03T09:15:00+07:00'), '2026-10-03');
 assert.equal(m.dayOf(''), '');
 assert.equal(m.whenOf('2026-10-01T00:00:00Z', Date.parse('2026-10-05T12:00:00Z')), '2026-10-01 · 4 days ago');
 assert.match(web('multi-repo.js'), /t\('Repository'\),t\('Branch'\),t\('Latest tag'\),t\('Last commit'\),t\('What to do'\)/);
-assert.match(web('features.css'), /\.operations-modal\{resize:both;/);
-assert.match(web('multi-repo.js'), /gitdeck\.dashboardMax/);
+// The Dashboard is a page in the work area (rail and toolbar stay), not a window over the screen.
+assert.match(web('multi-repo.js'), /function setUpDashboardPage\(/);
+assert.ok(web('features.css').includes('body.dashboard-page-open #operations-backdrop{display:none !important}'));
+assert.ok(web('features.css').includes('.workbench-body>.operations-modal{position:absolute;'));
+assert.match(web('modern.js'), /tab==='all-repos'\?dashboard:!dashboard&&tab===state\.workspaceTab/, 'All repos is lit while the Dashboard page is open');
 
 const found = (o) => ({ local: false, remote: '', current: 'main', dirty: false, ...o });
 assert.equal(m.switchPlan('feature/a', found({ current: 'feature/a' })).kind, 'none');
@@ -103,7 +106,9 @@ assert.deepEqual(plain(later.news.map((n) => n.text)), ['Pipeline #2 failed on f
 assert.ok(web('index.html').includes('/multi-repo.js'));
 // The Pending table fits the window: headers wrap, buttons stack.
 assert.ok(web('features.css').includes('.multi-repo-table.pending-table th{white-space:normal !important;'));
-assert.ok(web('features.css').includes('.multi-repo-table.pending-table .pending-actions .multi-repo-actions{flex-wrap:wrap !important;'));
+// Column names stay in view while the table scrolls; long tags are cut instead of covering the next column.
+assert.ok(web('features.css').includes('.multi-repo-table.pending-table tr:first-child th{position:sticky;top:0;'));
+assert.ok(web('features.css').includes('.multi-repo-table.pending-table td.pending-tag-cell .pending-tag-badge{display:block;max-width:150px;overflow:hidden;text-overflow:ellipsis;'));
 // Easy to find: All repos and Report sit on the left rail under Repos.
 assert.match(web('modern.js'), /railButton\(\['all-repos','repos',\(\)=>t\('All repos'\)\]\),railButton\(\['report','report',\(\)=>t\('Report'\)\]\)/);
 assert.match(web('modern.js'), /'all-repos':\(state\.repos\|\|\[\]\)\.filter\(/, 'All repos shows how many repositories need attention');
