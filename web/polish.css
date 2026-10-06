@@ -75,6 +75,31 @@ html.ui-modern body .operations-tabs button.active { background: var(--surface) 
 html.ui-modern body .operations-tabs button.active::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 3px; height: 2px; border-radius: 2px; background: var(--green); }
 html.ui-modern body .operations-tabs b { font-variant-numeric: tabular-nums; }
 
+/* ---- History: quiet column labels, a soft hover on rows, chips with a hairline edge ----------------- */
+html.ui-modern body .commit-list-header { text-transform: uppercase; letter-spacing: .06em; font-size: 10.5px !important; font-weight: 600 !important; color: var(--text-tertiary) !important; }
+html.ui-modern body .commit-row:not(.selected):hover { background: color-mix(in srgb, var(--text-primary) 4.5%, transparent) !important; }
+html.ui-modern body .commit-refs i { box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 16%, transparent); }
+html.ui-modern body .commit-refs i[data-ref="head"] { box-shadow: 0 1px 2px color-mix(in srgb, var(--green) 35%, transparent); }
+html.ui-modern body .modern-avatar { box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 14%, transparent); }
+
+/* ---- Changed files: rounded rows; the open file name stands out ------------------------------------ */
+html.ui-modern body .change-file-main { border-radius: 7px !important; }
+html.ui-modern body .change-file-main.active .change-file-path strong { font-weight: 600; }
+
+/* ---- Commit box: the note under the button takes one line ("to feature/login · Stage files…") ------- */
+html.ui-modern body .modern-changes-column .commit-action-block { display: flex !important; flex-direction: row !important; flex-wrap: wrap; justify-content: center; gap: 4px 0; }
+html.ui-modern body .modern-changes-column .commit-action-block > :is(.modern-commit-target, .action-disabled-reason) { width: auto !important; }
+html.ui-modern body .modern-changes-column .commit-action-block > .modern-commit-target:not([hidden]) + .action-disabled-reason:not([hidden]):not(:empty)::before { content: "·"; margin: 0 6px; }
+html.ui-modern body .modern-changes-column .commit-assist .recent-messages { flex: 1 1 100%; order: 9; width: 100% !important; min-width: 0; max-width: 100%; }
+html.ui-modern body .modern-changes-column .commit-composer textarea { box-shadow: inset 0 1px 2px rgb(0 0 0 / 4%); }
+
+/* ---- Cards on Settings, Tools, Tags, Recovery…: a little depth and a stronger heading ----------- */
+html.ui-modern body #workspace-content :is(.ai-card, .tag-manage-card, .settings-card, .recovery-note, .journal-box, .patch-card, .gitlab-inbox-card, .worktree-list, .stash-preview) {
+  border-radius: 12px !important; box-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 2px 8px -4px rgb(0 0 0 / 6%) !important; transition: border-color .15s; }
+html.ui-modern body #workspace-content :is(.ai-card, .tag-manage-card, .settings-card, .patch-card, .gitlab-inbox-card):focus-within { border-color: color-mix(in srgb, var(--green) 35%, var(--border-default)) !important; }
+html.ui-modern body #workspace-content .settings-card h4 { font-size: 1.1em; letter-spacing: -.005em; }
+html.ui-modern body.theme-dark #workspace-content :is(.ai-card, .tag-manage-card, .settings-card, .recovery-note, .journal-box, .patch-card, .gitlab-inbox-card, .worktree-list, .stash-preview) { box-shadow: 0 1px 0 rgb(255 255 255 / 3%) inset !important; }
+
 /* ---- Primary buttons: a touch of depth so the one thing to press stands out ------------------------ */
 html.ui-modern body button.primary:not(:disabled) { background-image: linear-gradient(180deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 0%)) !important; }
 

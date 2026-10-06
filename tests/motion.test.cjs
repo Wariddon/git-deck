@@ -47,5 +47,7 @@ assert.ok(!motion.isQuiet('/api/repo/pending?path=x'));
   assert.match(polish, /::-webkit-scrollbar-button \{ display: none/, 'No arrow buttons on scrollbars');
   assert.match(polish, /\.ref-filter-tabs \{ display: grid !important; grid-template-columns: repeat\(auto-fit, minmax\(62px, 1fr\)\)/, 'Branch filters wrap instead of truncating');
   assert.match(polish, /\.backdrop:not\(\.hidden\):not\(#operations-backdrop\) \{[^}]*backdrop-filter: blur/, 'Dialogs blur the page behind them');
+  assert.match(polish, /\.commit-action-block \{ display: flex !important; flex-direction: row !important; flex-wrap: wrap;/, 'Commit note under the button takes one line');
+  assert.match(polish, /\.commit-assist \.recent-messages \{[^}]*max-width: 100%/, 'Recent messages stays inside the commit box');
   console.log('PASS: polish layer');
 }
