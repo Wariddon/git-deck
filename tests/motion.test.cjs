@@ -40,3 +40,12 @@ assert.ok(!motion.isQuiet('/api/repo/pending?path=x'));
   assert.match(web('multi-repo.js'), /if\(!seenRows\.has\(key\)\)\{seenRows\.add\(key\);tr\.classList\.add\('gd-enter'\);\}/);
   console.log('PASS: loading bar, skeletons and motion');
 })().catch((error) => { console.error(error); process.exit(1); });
+
+// Finishing touches: slim scrollbars, branch filters that wrap instead of "Overvi...", dialogs above a blurred page.
+{
+  const polish = web('polish.css');
+  assert.match(polish, /::-webkit-scrollbar-button \{ display: none/, 'No arrow buttons on scrollbars');
+  assert.match(polish, /\.ref-filter-tabs \{ display: grid !important; grid-template-columns: repeat\(auto-fit, minmax\(62px, 1fr\)\)/, 'Branch filters wrap instead of truncating');
+  assert.match(polish, /\.backdrop:not\(\.hidden\):not\(#operations-backdrop\) \{[^}]*backdrop-filter: blur/, 'Dialogs blur the page behind them');
+  console.log('PASS: polish layer');
+}

@@ -1,0 +1,83 @@
+/* Finishing touches for the Modern look (loaded last). Small, quiet details that make the app feel
+   finished: slim scrollbars, a clearer "you are here" in the left rail, branch filters that never
+   cut their names, softer alert cards, a focus glow on fields, and dialogs that float above a
+   dimmed, slightly blurred page. Colours come from the theme tokens, so light, dark, midnight and
+   paper all follow along. */
+
+/* ---- Slim, rounded scrollbars instead of the grey Windows ones with arrow buttons -------------------- */
+html.ui-modern body { --gd-scroll: color-mix(in srgb, var(--text-primary) 18%, transparent); --gd-scroll-hover: color-mix(in srgb, var(--text-primary) 34%, transparent); }
+html.ui-modern body *::-webkit-scrollbar { width: 11px; height: 11px; background: transparent; }
+html.ui-modern body *::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+html.ui-modern body *::-webkit-scrollbar-track, html.ui-modern body *::-webkit-scrollbar-corner { background: transparent; }
+html.ui-modern body *::-webkit-scrollbar-thumb { min-height: 32px; border: 3px solid transparent; border-radius: 8px; background: var(--gd-scroll) padding-box; }
+html.ui-modern body *::-webkit-scrollbar-thumb:hover { background-color: var(--gd-scroll-hover); }
+html.ui-modern body *::-webkit-scrollbar-thumb:active { background-color: color-mix(in srgb, var(--green) 60%, transparent); }
+html.ui-modern body ::selection { background: color-mix(in srgb, var(--green) 26%, transparent); }
+
+/* ---- Left rail: the current view is a lifted tile with an accent icon; counts are tidy pills -------- */
+html.ui-modern body .modern-rail-item { border-radius: 10px !important; }
+html.ui-modern body .modern-rail-item svg { color: inherit; }
+html.ui-modern body .modern-rail-item.active { background: var(--surface) !important; color: var(--text-primary) !important;
+  box-shadow: 0 0 0 1px var(--border-default), 0 1px 3px rgb(0 0 0 / 6%) !important; }
+html.ui-modern body .modern-rail-item.active svg { color: var(--green); }
+html.ui-modern body .modern-rail-item.active .modern-rail-label { font-weight: 600; }
+html.ui-modern body .modern-rail-item.active::before { top: 14px; bottom: 14px; width: 3px; border-radius: 0 4px 4px 0; }
+html.ui-modern body .modern-rail-badge { min-width: 16px !important; height: 16px !important; padding: 0 4px; border-radius: 8px !important; line-height: 16px !important;
+  font-size: 9.5px !important; font-weight: 600 !important; font-variant-numeric: tabular-nums; text-align: center;
+  background: var(--text-tertiary) !important; color: var(--surface) !important; box-shadow: 0 0 0 2px var(--surface-subtle); }
+html.ui-modern body .modern-rail-item.active .modern-rail-badge { background: var(--green) !important; color: var(--accent-contrast, #fff) !important; box-shadow: 0 0 0 2px var(--surface); }
+html.ui-modern body .modern-rail-alert .modern-rail-badge { background: var(--danger, #dc2626) !important; color: #fff !important; }
+
+/* ---- Branch filters (Overview / All / Pinned / Recent): wrap to two rows instead of "Overvi…" ------- */
+html.ui-modern body #tree-content .ref-filter-tabs { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 2px; padding: 3px; border-radius: 9px; }
+html.ui-modern body #tree-content .ref-filter-tabs > button { min-width: 0; padding: 0 6px !important; overflow: visible; text-overflow: clip; white-space: nowrap; border-radius: 7px !important; }
+html.ui-modern body #tree-content .ref-filter-tabs > button[aria-pressed="true"] { color: var(--text-primary) !important; font-weight: 600; }
+
+/* ---- Branch tree rows: rounded hover, like the rest of the lists ------------------------------------ */
+html.ui-modern body #tree-content .ref-branch-row { border-radius: 7px; }
+html.ui-modern body #tree-content .ref-section > summary { border-radius: 7px; }
+html.ui-modern body #tree-content .ref-current-card { border-radius: 10px; }
+
+/* ---- Alerts above the history: a soft card with a coloured stripe and the icon in a round badge ----- */
+html.ui-modern body .repo-alert { --tone: var(--text-tertiary); position: relative; overflow: hidden; gap: 12px; padding: 10px 12px 10px 16px; border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--tone) 30%, var(--border-default)) !important;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tone) 11%, var(--surface)), color-mix(in srgb, var(--tone) 4%, var(--surface)) 60%) !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%); }
+html.ui-modern body .repo-alert::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--tone); }
+html.ui-modern body .repo-alert.tone-warn { --tone: #d97706; }
+html.ui-modern body .repo-alert.tone-bad { --tone: #dc2626; }
+html.ui-modern body .repo-alert.tone-info { --tone: #3b82f6; }
+html.ui-modern body .repo-alert-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; font-size: 15px; line-height: 1;
+  background: color-mix(in srgb, var(--tone) 16%, var(--surface)); color: var(--tone); }
+html.ui-modern body .repo-alert-text strong { color: var(--text-primary); }
+html.ui-modern body .repo-alert-text span { color: var(--text-secondary); }
+html.ui-modern body .repo-alert-actions button { border-radius: 7px !important; min-height: 28px !important; padding: 0 12px !important; }
+
+/* ---- Fields: a soft accent glow while you type --------------------------------------------------- */
+html.ui-modern body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) { transition: border-color .15s, box-shadow .15s; }
+html.ui-modern body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea):focus { border-color: color-mix(in srgb, var(--green) 65%, var(--border-default)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 18%, transparent) !important; outline: none !important; }
+html.ui-modern body :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--green); }
+
+/* ---- Dialogs float above a dimmed, slightly blurred page ---------------------------------------- */
+html.ui-modern body .backdrop:not(.hidden):not(#operations-backdrop) { background: color-mix(in srgb, #09090b 38%, transparent) !important; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+html.ui-modern body.dashboard-page-open #operations-backdrop { -webkit-backdrop-filter: none; backdrop-filter: none; }
+html.ui-modern body .backdrop:not(.hidden) > :first-child { border-radius: 14px !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text-primary) 8%, transparent), 0 24px 60px -12px rgb(0 0 0 / 35%), 0 8px 20px -8px rgb(0 0 0 / 20%) !important; }
+html.ui-modern body .workbench-body > .operations-modal { border-radius: 0 !important; box-shadow: none !important; }
+html.ui-modern body .action-feedback { border-radius: 12px !important; box-shadow: 0 0 0 1px var(--border-default), 0 12px 32px -8px rgb(0 0 0 / 22%) !important; }
+
+/* ---- Dashboard tabs: the open one is a raised tab with an accent underline ------------------------ */
+html.ui-modern body .operations-tabs button { position: relative; border-radius: 7px !important; }
+html.ui-modern body .operations-tabs button:not(.active):hover { background: var(--surface-hover) !important; color: var(--text-primary) !important; }
+html.ui-modern body .operations-tabs button.active { background: var(--surface) !important; color: var(--text-primary) !important;
+  box-shadow: 0 0 0 1px var(--border-default), 0 1px 2px rgb(0 0 0 / 5%) !important; }
+html.ui-modern body .operations-tabs button.active::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 3px; height: 2px; border-radius: 2px; background: var(--green); }
+html.ui-modern body .operations-tabs b { font-variant-numeric: tabular-nums; }
+
+/* ---- Primary buttons: a touch of depth so the one thing to press stands out ------------------------ */
+html.ui-modern body button.primary:not(:disabled) { background-image: linear-gradient(180deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 0%)) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  html.ui-modern body :is(input, select, textarea) { transition: none; }
+}
