@@ -1047,3 +1047,7 @@ html.ui-modern body .workspace-modal-head .toolbar-dashboard {
 }
 html.ui-modern body .workspace-modal-head .toolbar-dashboard:hover { background: var(--surface-hover) !important; }
 html.ui-modern body :is(button.primary, .btn.primary, #push-submit):not(#gd-none):not(:disabled) { background: var(--green); border-color: var(--green); }
+/* Narrow windows: the one-row History header wraps instead of letting buttons overlap the selects. */
+@media (max-width: 1180px) {
+  html.ui-modern body .modern-history-head, html.ui-modern body .modern-history-head .history-controls, html.ui-modern body .modern-history-head .history-controls > div { flex-wrap: wrap !important; row-gap: 6px; }
+}

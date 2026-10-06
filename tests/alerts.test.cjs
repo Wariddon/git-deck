@@ -26,5 +26,7 @@ assert.deepEqual(ids({ branch: 'main', stashes: [{ ref: 'stash@{0}', message: 'O
 assert.deepEqual(ids({ branch: 'main', stashes: [{ ref: 'stash@{0}', message: 'On main: my own wip' }] }), [], 'Your own stashes are not alerts');
 
 assert.ok(web('index.html').includes('/alerts.js'));
+// Narrow windows: the History header wraps instead of buttons overlapping the selects.
+assert.ok(web('modern.css').includes('@media (max-width: 1180px) {\n  html.ui-modern body .modern-history-head, html.ui-modern body .modern-history-head .history-controls, html.ui-modern body .modern-history-head .history-controls > div { flex-wrap: wrap !important;'));
 assert.match(web('features.css'), /\.error-spotlight\{position:fixed;top:64px/);
 console.log('PASS: repository alerts (conflicts, unfinished operation, detached, diverged, parked changes) and error spotlight');

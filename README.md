@@ -56,6 +56,8 @@ The build uses the Windows .NET Framework C# compiler. Keep the generated execut
 - GitLab project and merge-request workflows with optional GitLab CLI.
 - GitHub pull requests, Actions runs, PR checkout and PR creation with optional GitHub CLI.
 - Optional AI helpers (explain errors and commits, PR/MR drafts, merge proposals, commit splitting, pre-push review, release notes, reflog questions, natural-language commands), controlled per repository.
+- Dashboard for every repository at once: pending work, update all, switch branch, search, latest tags, and a dated work report (see below).
+- Word-level highlight inside changed diff lines; Thai and spaced file names work end to end.
 - Modern look with a view rail, repo / branch switcher and a smart primary button; Classic layout still available.
 - Themes, resizable panels and saved UI preferences.
 - Bounded in-session workspace snapshots and on-demand LFS/submodule checks.
@@ -183,6 +185,34 @@ Every error card says, in plain words, what happened and what to do next. It als
 Pull with *fast-forward only* on a branch that has its own commits and incoming ones no longer fails: Git Deck asks *Pull with merge* or *Pull with rebase* first. The card keeps only the repository name visible; the full repository and folder block is under *Details*.
 
 Errors Git Deck does not recognise still get *Try again* and *Check repository health*. The Push dialog's error box uses the same wording.
+
+The error card opens large at the top of the window and stays until you dismiss it. After that, the alert bar keeps *Last error (time)* with *Show again*.
+
+The alert bar above every view also shows states that block you, with the buttons that fix them:
+
+| State | Buttons |
+| --- | --- |
+| A merge or rebase stopped on conflicts | Resolve conflicts · Abort |
+| A merge or rebase is waiting to be finished | Continue · Abort |
+| Detached HEAD | Open Branches |
+| Your branch and its upstream both have new commits (push will be rejected) | Pull now |
+| Git Deck put your changes in a stash ("Saved by Git Deck before …") and they are not back | Put them back · Show stashes |
+
+## Dashboard: every repository at once
+
+The **Dashboard** button in the toolbar (or *All repos* on the left rail) opens these views for a scan folder or for all repositories:
+
+- **Pending work**: what is still open everywhere.
+  - *By task* groups repositories by what to do: fix first, not committed, ready to push, new branch not on the remote, commits to pull, branches only on this computer, stashes, merged branches. Each group has one button per repository and a bulk button (Push all, Pull all, Delete merged branches on this computer).
+  - *Table* shows one row per repository with numbers, filter chips, sort, and a *What to do* column.
+  - Both views show the latest tag with its age and the commits after it, and can filter by tag.
+  - The filter box takes several names, branches or tags separated by commas, and lists them in the order typed.
+  - *Copy summary* copies a Markdown table.
+- **Update all**: fetch, or pull with autostash, every repository, with one result list.
+- **Switch branch**: put every repository of a ticket on the same branch. Preview first, then switch, track or create.
+- **Search all**: commit messages, ticket keys, branch names or changed code in every repository.
+- **Report** (left rail): the work report. Pick a date range to see what was committed in each repository, oldest first, with tickets, push/merge status and the most changed files. Copy or save it as Markdown or CSV, or ask AI for a summary.
+- **Clean up branches** (More menu or branch menu): merged, gone or old branches, local and remote. main, master, develop and the current branch are protected.
 
 ## Pre-push checks
 
