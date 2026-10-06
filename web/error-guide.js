@@ -39,7 +39,7 @@
       next:()=>t('Open Conflicts to finish it (Continue) or cancel it (Abort), then try again.'),actions:()=>[tab('conflicts')]},
     {id:'conflicts',test:/\bCONFLICT\b|merge conflict|paused for conflicts|fix conflicts|unmerged (paths|files)|needs merge|conflicted|conflict with yours|resolve conflicts/i,
       title:()=>t('Some files conflict'),why:()=>t('Both sides changed the same lines, so Git needs you to choose what to keep.'),
-      next:()=>t('Open each conflicted file, pick mine, theirs or both, then commit to finish.'),actions:()=>[tab(state.workspace?.operation?.active?'conflicts':'changes')]},
+      next:()=>t('Open each conflicted file, pick mine, theirs or both, then commit to finish.'),actions:()=>[tab('conflicts')]},
     {id:'untracked',test:/untracked working tree files? would be (overwritten|removed)|would overwrite \d+ untracked file/i,
       title:()=>t('A new file is in the way'),why:()=>t('An incoming file has the same name as a file you have not added to Git yet.'),
       next:()=>t('Stash your changes (untracked files included) and try again, or rename or delete that file in File Status.'),actions:ctx=>[stashRetry(ctx),tab('changes')]},
