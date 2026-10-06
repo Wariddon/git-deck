@@ -28,6 +28,8 @@
   const reposIn=(folder)=>(state.repos||[]).filter(repo=>usable(repo)&&inFolder(repo,folder));
   function openRepo(repo){document.getElementById('operations-close')?.click();openWorkspace(repo,'history',null);}
   function repoLink(repo){const button=el('button','multi-repo-link',repo.name);button.type='button';button.title=repo.path;button.onclick=()=>openRepo(repo);return button;}
+  // Placeholder rows that shimmer while the first results load (styles in motion.css).
+  function skeleton(rows=6){const box=el('div','gd-skeleton');box.setAttribute('aria-hidden','true');for(let index=0;index<rows;index+=1){const row=el('div','gd-skeleton-row');for(let cell=0;cell<5;cell+=1)row.append(el('i'));box.append(row);}return box;}
   function table(headers){const node=el('table','multi-repo-table');const head=el('tr');headers.forEach(label=>head.append(el('th','',label)));node.append(head);return node;}
   function row(cells){const tr=el('tr');cells.forEach(cell=>{const td=el('td');if(cell instanceof Node)td.append(cell);else td.textContent=cell??'';tr.append(td);});return tr;}
   const firstLine=(text)=>String(text||'').split(/\r?\n/).find(line=>line.trim())||'';
@@ -219,11 +221,15 @@
     const help=el('p','multi-repo-note pending-help');
     // One line under the filters: what was checked on the left, how to read the view on the right.
     const info=el('div','pending-info');info.append(status,help);
-    panel.append(bar,chips,info,out);
+    // While checking: a bar fills as repositories report back.
+    const meter=el('div','gd-meter');meter.hidden=true;const meterFill=el('span','gd-meter-fill');meter.append(meterFill);
+    const setMeter=(done,total)=>{meter.hidden=!total||done>=total;meterFill.style.width=total?Math.round(done/total*100)+'%':'0';};
+    panel.append(bar,chips,info,meter,out);
 
     // Filter and sort are remembered between visits.
     const remember=(key,value)=>{try{localStorage.setItem(key,value);}catch{}};
     const recall=(key,fallback)=>{try{return localStorage.getItem(key)||fallback;}catch{return fallback;}};
+    let checking=false;const seenRows=new Set();
     let results=[];let filter=recall('gitdeck.pendingFilter','any');let runId=0;let checkedAt=null;const expanded=new Set();
     let view=recall('gitdeck.pendingView','tasks')==='table'?'table':'tasks';
     tagFilter.value=[...tagFilter.options].some(option=>option.value===recall('gitdeck.pendingTag',''))?recall('gitdeck.pendingTag',''):'any';
@@ -420,6 +426,7 @@
       else if(tidy)out.append(el('p','pending-tidy',t('✓ {count} repositories need nothing',{count:tidy})));
     };
     const draw=()=>{
+      if(checking&&!results.length){out.replaceChildren(skeleton(view==='tasks'?5:7));return;}
       if(view==='tasks')return drawTasks();
       out.replaceChildren();
       const rows=visible();
@@ -453,7 +460,7 @@
         const lastCell=el('td','pending-last-cell');
         if(p?.lastCommitDate){lastCell.append(el('span','',dayOf(p.lastCommitDate)),el('small','',ageOf(p.lastCommitDate)));if(p.lastCommitSubject)lastCell.append(el('small','pending-last-subject',p.lastCommitSubject));lastCell.title=p.lastCommitSubject||'';}
         else lastCell.append(el('span','pending-zero','·'));
-        const tr=el('tr');tr.append(name,branch,tagCell,lastCell,todo,
+        const tr=el('tr');if(!seenRows.has(key)){seenRows.add(key);tr.classList.add('gd-enter');}tr.append(name,branch,tagCell,lastCell,todo,
           numberCell(c.changes,{tone:'warn',title:t('{count} uncommitted file(s)',{count:c.changes})}),
           numberCell(c.push,{tone:'warn',title:t('{count} to push',{count:c.push})}),
           numberCell(c.pull,{tone:'info',title:t('{count} to pull',{count:c.pull})}),
@@ -473,10 +480,10 @@
     };
     let timer=0;const schedule=()=>{if(timer)return;timer=setTimeout(()=>{timer=0;drawChips();draw();},250);};
     const start=async()=>{
-      const id=++runId;const repos=reposIn(folder.value);results=[];expanded.clear();let done=0;drawChips();draw();
+      const id=++runId;const repos=reposIn(folder.value);results=[];expanded.clear();seenRows.clear();let done=0;checking=repos.length>0;setMeter(0,repos.length);drawChips();draw();
       status.textContent=t('Checking {done} of {total}…',{done:0,total:repos.length});
-      await mapLimit(repos,4,async repo=>{if(id!==runId)return;const item=await check(repo);if(id!==runId)return;results.push(item);status.textContent=t('Checking {done} of {total}…',{done:++done,total:repos.length});schedule();});
-      if(id!==runId)return;checkedAt=new Date();summary();drawChips();draw();
+      await mapLimit(repos,4,async repo=>{if(id!==runId)return;const item=await check(repo);if(id!==runId)return;results.push(item);status.textContent=t('Checking {done} of {total}…',{done:++done,total:repos.length});setMeter(done,repos.length);schedule();});
+      if(id!==runId)return;checking=false;setMeter(0,0);checkedAt=new Date();summary();drawChips();draw();
     };
     run.onclick=start;folder.addEventListener('change',start);sort.onchange=()=>{remember('gitdeck.pendingSort',sort.value);draw();};tagFilter.onchange=()=>{remember('gitdeck.pendingTag',tagFilter.value);drawChips();draw();};search.oninput=()=>{drawChips();draw();};
     const bulk=async(kind)=>{

@@ -1,0 +1,81 @@
+/* Motion and loading feedback for the whole app (web/motion.js).
+   Short, eased movement that says "something is happening" or "this is new"; never decoration
+   that slows work down. Everything here is off for prefers-reduced-motion (bottom of file). */
+:root { --gd-ease: cubic-bezier(.2,.8,.2,1); --gd-accent: var(--green,#0969da); }
+
+/* ---- Top progress bar: waiting for the server ------------------------------------------------- */
+#gd-progress { position: fixed; top: 0; left: 0; right: 0; z-index: 13000; height: 3px; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity .25s ease; }
+#gd-progress.on { opacity: 1; }
+#gd-progress > span { position: absolute; top: 0; bottom: 0; left: 0; width: 38%; border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, transparent, var(--gd-accent) 35%, color-mix(in srgb, var(--gd-accent) 55%, #fff) 75%, var(--gd-accent));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--gd-accent) 70%, transparent); animation: gd-progress 1.15s var(--gd-ease) infinite; }
+#gd-progress.done > span { width: 100%; animation: none; transition: width .2s ease; }
+@keyframes gd-progress { from { transform: translateX(-100%); } to { transform: translateX(265%); } }
+
+/* ---- Placeholder rows that shimmer while data loads ------------------------------------------- */
+.gd-skeleton { --sk-a: color-mix(in srgb, var(--text-primary,#1f2328) 6%, transparent); --sk-b: color-mix(in srgb, var(--text-primary,#1f2328) 15%, transparent);
+  display: grid; gap: 8px; padding: 8px 2px; }
+.gd-skeleton-row { display: grid; grid-template-columns: 1.3fr 1fr .9fr 1.6fr .45fr; align-items: center; gap: 18px; height: 42px; padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--border-default,#d0d7de) 55%, transparent); border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-subtle,#f6f8fa) 55%, transparent); animation: gd-fade-up .35s var(--gd-ease) both; }
+.gd-skeleton-row i { display: block; height: 10px; border-radius: 6px; background: linear-gradient(90deg, var(--sk-a) 25%, var(--sk-b) 50%, var(--sk-a) 75%) 0 0 / 300% 100%; animation: gd-shimmer 1.5s ease-in-out infinite; }
+.gd-skeleton-row i:nth-child(2) { width: 75%; }
+.gd-skeleton-row i:nth-child(3) { width: 60%; }
+.gd-skeleton-row i:nth-child(4) { width: 85%; }
+.gd-skeleton-row i:nth-child(5) { width: 26px; height: 18px; justify-self: center; border-radius: 9px; }
+.gd-skeleton-row:nth-child(2) { animation-delay: .04s; } .gd-skeleton-row:nth-child(2) i { animation-delay: .08s; }
+.gd-skeleton-row:nth-child(3) { animation-delay: .08s; } .gd-skeleton-row:nth-child(3) i { animation-delay: .16s; }
+.gd-skeleton-row:nth-child(4) { animation-delay: .12s; } .gd-skeleton-row:nth-child(4) i { animation-delay: .24s; }
+.gd-skeleton-row:nth-child(5) { animation-delay: .16s; } .gd-skeleton-row:nth-child(5) i { animation-delay: .32s; }
+.gd-skeleton-row:nth-child(n+6) { animation-delay: .2s; } .gd-skeleton-row:nth-child(n+6) i { animation-delay: .4s; }
+.gd-skeleton-row:nth-child(n+6) { opacity: .75; } .gd-skeleton-row:nth-child(n+8) { opacity: .5; }
+/* A repository opening: commit-list shaped rows (graph dot, message, author, date, hash). */
+.gd-skeleton-workspace { padding: 12px 14px; }
+.gd-skeleton-workspace .gd-skeleton-row { grid-template-columns: 16px 2.4fr 1fr .8fr .5fr; height: 36px; border-color: transparent; }
+.gd-skeleton-workspace .gd-skeleton-row i:first-child { width: 12px; height: 12px; border-radius: 50%; }
+@keyframes gd-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+
+/* ---- Check progress under the Dashboard filters ---------------------------------------------- */
+.gd-meter { height: 4px; margin: 0 0 8px; overflow: hidden; border-radius: 4px; background: color-mix(in srgb, var(--gd-accent) 14%, transparent); }
+.gd-meter[hidden] { display: none; }
+.gd-meter-fill { position: relative; display: block; width: 0; height: 100%; overflow: hidden; border-radius: inherit;
+  background: linear-gradient(90deg, var(--gd-accent), color-mix(in srgb, var(--gd-accent) 55%, #fff)); transition: width .35s var(--gd-ease); }
+.gd-meter-fill::after { content: ""; position: absolute; inset: 0; width: 40%; background: linear-gradient(90deg, transparent, rgb(255 255 255 / 45%), transparent); animation: gd-progress 1.2s linear infinite; }
+
+/* ---- Things arriving: pages, views, dialogs, new rows ------------------------------------------ */
+@keyframes gd-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gd-fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes gd-rise { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes gd-page-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+.gd-enter { animation: gd-fade-up .3s var(--gd-ease) both; }
+.gd-view-enter { animation: gd-fade-up .24s var(--gd-ease); }
+.workbench-body > .operations-modal { animation: gd-page-in .28s var(--gd-ease); }
+.operations-view:not(.hidden) { animation: gd-fade .2s ease-out; }
+.backdrop:not(.hidden) { animation: gd-fade .16s ease-out; }
+.backdrop:not(.hidden) > :first-child { animation: gd-rise .24s var(--gd-ease); }
+
+/* ---- Touch feedback: buttons press, cards lift ----------------------------------------------- */
+button { transition: background-color .15s, border-color .15s, color .15s, box-shadow .15s, filter .15s, transform .08s; }
+button:not(:disabled):active { transform: translateY(1px); }
+button.primary:not(:disabled) { box-shadow: 0 1px 2px rgb(0 0 0 / 18%), inset 0 1px 0 rgb(255 255 255 / 14%); }
+button.primary:not(:disabled):hover { filter: brightness(1.08); }
+.pending-tile { transition: transform .16s var(--gd-ease), box-shadow .16s, border-color .16s; }
+.pending-tile:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgb(0 0 0 / 12%); }
+.pending-group { transition: box-shadow .2s, border-color .2s; }
+.pending-group:hover { box-shadow: 0 6px 22px rgb(0 0 0 / 8%); }
+.pending-filter { transition: background-color .15s, border-color .15s, color .15s, transform .1s; }
+.pending-filter:not(.active):hover { transform: translateY(-1px); }
+.modern-rail-item svg { transition: transform .18s var(--gd-ease); }
+.modern-rail-item:hover svg { transform: translateY(-1px) scale(1.08); }
+.modern-rail-item.active svg { transform: scale(1.05); }
+.pending-tag-badge, .pending-step { transition: filter .15s; }
+.multi-repo-table.pending-table tr > td { transition: background-color .12s; }
+#dashboard-button svg { transition: transform .25s var(--gd-ease); }
+#dashboard-button:hover svg { transform: rotate(-8deg) scale(1.1); }
+
+@media (prefers-reduced-motion: reduce) {
+  #gd-progress > span { width: 100%; animation: none; opacity: .8; }
+  .gd-skeleton-row, .gd-skeleton-row i, .gd-meter-fill::after, .gd-enter, .gd-view-enter, .workbench-body > .operations-modal,
+  .operations-view:not(.hidden), .backdrop:not(.hidden), .backdrop:not(.hidden) > :first-child { animation: none !important; }
+  button:not(:disabled):active, .pending-tile:hover, .pending-filter:not(.active):hover, .modern-rail-item svg, #dashboard-button svg { transform: none !important; }
+}

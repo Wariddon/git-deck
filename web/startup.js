@@ -10,7 +10,15 @@
       let finished=false;
       const timer=setTimeout(()=>{if(!finished)document.getElementById('startup-actions').hidden=false;},12000);
       // index.html starts the page green (no white flash before the splash); the app takes over after.
-      const finish=()=>{if(finished)return;finished=true;clearTimeout(timer);splash.close();document.getElementById('startup-background')?.remove();};
+      // The splash fades out instead of vanishing (no fade for reduced motion or without Web Animations).
+      const finish=()=>{
+        if(finished)return;finished=true;clearTimeout(timer);
+        const done=()=>{splash.close();document.getElementById('startup-background')?.remove();};
+        const still=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if(typeof splash.animate!=='function'||still)return done();
+        document.getElementById('startup-background')?.remove();
+        splash.animate([{opacity:1},{opacity:0}],{duration:220,easing:'ease-out',fill:'forwards'}).onfinish=done;
+      };
       window.GitDeckStartup={update(message){if(!finished)status.textContent=message;},finish};
       document.getElementById('startup-reload').onclick=()=>location.reload();
       document.getElementById('startup-continue').onclick=finish;

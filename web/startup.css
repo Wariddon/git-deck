@@ -18,4 +18,15 @@
     #startup-splash button:focus-visible { outline:2px solid #fff; outline-offset:3px; }
     #startup-actions[hidden] { display:none; }
     @keyframes startup-reveal { from { opacity:0; } to { opacity:1; } }
-    @media(prefers-reduced-motion:reduce) { #startup-splash .startup-card { animation:none; } }
+    /* While loading: the logo breathes with a soft glow, a light sweeps across the name and a thin line
+       runs under them. Nothing moves from where GitDeck.exe's native card drew it: every effect starts
+       from the still picture after the hand-over (delay), and the line sits below without pushing the card. */
+    #startup-splash .startup-card img { animation:startup-breathe 1.8s ease-in-out .45s infinite alternate; }
+    #startup-splash .startup-wordmark { background:linear-gradient(100deg,#fff 0 40%,#b9f2d4 50%,#fff 60% 100%) 0 0 / 250% 100% repeat-x; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; animation:startup-sweep 2.4s ease-in-out .6s infinite; }
+    #startup-splash[open]::after { content:""; position:fixed; left:50%; top:calc(50% + 62px); width:132px; height:3px; margin-left:-66px; border-radius:3px;
+      background:linear-gradient(90deg,transparent,#ffffffd9,transparent) -60% 0 / 45% 100% no-repeat,#ffffff26; opacity:0; animation:startup-line-in .4s ease-out .7s forwards, startup-line 1.3s ease-in-out .7s infinite; }
+    @keyframes startup-breathe { from { transform:scale(1); filter:drop-shadow(0 0 0 #ffffff00); } to { transform:scale(1.06); filter:drop-shadow(0 0 14px #ffffff59); } }
+    @keyframes startup-sweep { 0% { background-position:0 0; } 70%,100% { background-position:100% 0; } }
+    @keyframes startup-line { from { background-position:-60% 0,0 0; } to { background-position:160% 0,0 0; } }
+    @keyframes startup-line-in { to { opacity:1; } }
+    @media(prefers-reduced-motion:reduce) { #startup-splash .startup-card, #startup-splash .startup-card img, #startup-splash .startup-wordmark, #startup-splash[open]::after { animation:none; } #startup-splash[open]::after { opacity:1; } }
