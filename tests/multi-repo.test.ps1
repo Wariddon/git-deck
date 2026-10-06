@@ -40,6 +40,11 @@ try{
     if(@($p.stashes).Count -ne 1 -or $p.stashes[0].message -notmatch 'wip'){throw 'Stash not listed'}
     if((@($p.mergedBranches) -join ',') -ne 'done-work'){throw "Merged branches wrong: $(@($p.mergedBranches) -join ',')"}
     if($p.mainline -ne 'origin/main'){throw "Mainline wrong: $($p.mainline)"}
+    if($p.latestTag -ne '' -or $p.tagCount -ne 0){throw 'No tags expected yet'}
+    Run-Git $local @('tag','-a','v1.0.0','-m','first release','HEAD~0')
+    Run-Git $local @('commit','-q','--allow-empty','-m','after tag')
+    $t=Get-GitDeckPendingWork $local
+    if($t.latestTag -ne 'v1.0.0' -or $t.commitsSinceTag -ne 1 -or $t.tagCount -ne 1 -or -not $t.latestTagDate){throw "Latest tag wrong: $($t.latestTag) / $($t.commitsSinceTag) / $($t.latestTagDate)"}
 
     $tidy=Join-Path $base 'tidy';Run-Git $base @('clone','-q','-c','core.autocrlf=false',$remote,$tidy)
     $q=Get-GitDeckPendingWork $tidy

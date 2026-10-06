@@ -44,12 +44,26 @@ function Get-GitDeckPendingWork([string]$Path) {
             Where-Object { $_ -ne $branch -and $script:ProtectedBranches -notcontains $_ -and "origin/$_" -ne $mainline })
     }
     $operation = Get-GitOperationState $Path
+    $tag = Get-GitDeckLatestTag $Path
     return [ordered]@{
         branch = $branch; upstream = $upstream; ahead = $ahead; behind = $behind
         changed = $files.Count - $untracked; untracked = $untracked; conflicts = $conflicts
         operation = $(if ($operation.active) { [string]$operation.type } else { '' })
         unpushedBranches = $unpushed.ToArray(); stashes = @($stashes); mergedBranches = $merged; mainline = $mainline
+        latestTag = $tag.name; latestTagDate = $tag.date; commitsSinceTag = $tag.since; tagCount = $tag.count
     }
+}
+
+# The newest tag in the repository (by tag or commit date) and how many commits the current
+# branch has that the tag does not: "v1.4.0, 3 days ago, 5 commits since".
+function Get-GitDeckLatestTag([string]$Path) {
+    $lines = @(Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--sort=-creatordate', '--format=%(refname:short)%09%(creatordate:iso-strict)', 'refs/tags')))
+    if (-not $lines.Count) { return @{ name = ''; date = ''; since = 0; count = 0 } }
+    $f = $lines[0] -split "`t", 2
+    $since = 0
+    $count = (Invoke-GitCapture $Path @('rev-list', '--count', "refs/tags/$($f[0])..HEAD")).Output
+    [void][int]::TryParse(([string]$count).Trim(), [ref]$since)
+    return @{ name = $f[0]; date = $(if ($f.Count -gt 1) { $f[1] } else { '' }); since = $since; count = $lines.Count }
 }
 
 # Branch hygiene: local and remote branches with merged state, age and a gone upstream.

@@ -312,3 +312,10 @@ body.theme-dark .pending-tidy{color:#7fd29a}
 .pending-tile b{font-size:18px;line-height:1}
 .pending-tile-icon{font-size:16px}
 .pending-tile-problems{border-color:rgba(220,38,38,.5) !important}
+/* Latest tag in Pending work. */
+.pending-tag-badge{display:inline-block;padding:0 7px;border-radius:999px;font-size:11px;background:rgba(124,58,237,.13);color:#6d28d9;white-space:nowrap;cursor:help}
+body.theme-dark .pending-tag-badge{background:rgba(167,139,250,.16);color:#c4b5fd}
+.pending-tag-cell small{display:block;font-size:11px;color:var(--muted,#6b7280)}
+.pending-line-what .pending-tag-badge{flex:0 0 auto}
+.pending-tag-filter{flex:0 1 180px}
+[data-operations-panel="pending"] .multi-repo-body{overflow-x:auto}

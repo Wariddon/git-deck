@@ -100,6 +100,31 @@
     c.score=(c.operation||c.conflicts?1000:0)+c.changes*3+c.push*3+unpublished*5+c.pull*2+c.stashes+c.localOnly+(c.merged?1:0);
     return c;
   }
+  // The filter box takes several names at once: "crs-svc, lns-deployment tonson". Each term matches
+  // a repository name, branch or latest tag; the rank (which term matched first) keeps the typed order.
+  const parseTerms=(text)=>String(text||'').toLowerCase().split(/[,\s]+/).map(term=>term.trim()).filter(Boolean);
+  function termRank(item,terms){
+    if(!terms.length)return 0;
+    const name=item.repo.name.toLowerCase();const other=`${item.pending?.branch||''} ${item.pending?.latestTag||''}`.toLowerCase();
+    // An exact name beats a partial one, so "lns" lists lns before lns-deployment-2.
+    const exact=terms.indexOf(name);if(exact>=0)return exact;
+    return terms.findIndex(term=>name.includes(term)||other.includes(term));
+  }
+  // Tag filter: has a tag, no tag yet, or commits on the branch after its latest tag (time to release?).
+  function tagMatches(item,mode){
+    const p=item.pending||{};
+    if(mode==='tagged')return Boolean(p.latestTag);
+    if(mode==='untagged')return Boolean(item.pending)&&!p.latestTag;
+    if(mode==='since')return Boolean(p.latestTag)&&Number(p.commitsSinceTag)>0;
+    return true;
+  }
+  // "3 days ago" style age of an ISO date.
+  function ageOf(iso,now=Date.now()){
+    const ms=now-Date.parse(iso);if(!Number.isFinite(ms))return '';
+    const days=Math.floor(ms/86400000);
+    if(days<1)return t('today');if(days<2)return t('yesterday');if(days<60)return t('{count} days ago',{count:days});
+    const months=Math.floor(days/30);return months<24?t('{count} months ago',{count:months}):t('{count} years ago',{count:Math.floor(days/365)});
+  }
   // Plain-words reason for a failed Git action: the error guide's title when one matches,
   // otherwise the line of Git output that says what went wrong (not "To C:/...remote.git").
   function explainError(message){
@@ -166,9 +191,9 @@
   // under the row instead of filling it. Results appear as they arrive; a new check cancels the old.
   function buildPending(panel){
     const bar=el('div','operations-toolbar');const folder=folderSelect();
-    const search=el('input','workflow-input pending-search');search.type='search';search.placeholder=t('Filter by repository or branch');search.setAttribute('aria-label',t('Filter by repository or branch'));
+    const search=el('input','workflow-input pending-search');search.type='search';search.placeholder=t('Names, branches or tags: several at once, separated by commas');search.setAttribute('aria-label',t('Filter by names, branches or tags'));search.title=t('Type several names to see only those repositories, in the order you typed them. Example: crs-svc-common, lns-deployment-2, tonson');
     const sort=document.createElement('select');sort.className='workflow-input';sort.setAttribute('aria-label',t('Sort'));
-    [['pending',t('Most pending first')],['name',t('Name A–Z')],['push',t('Most to push')],['changes',t('Most uncommitted')]].forEach(([value,label])=>sort.append(new Option(label,value)));
+    [['pending',t('Most pending first')],['name',t('Name A–Z')],['push',t('Most to push')],['changes',t('Most uncommitted')],['tag',t('Newest tag first')]].forEach(([value,label])=>sort.append(new Option(label,value)));
     const run=el('button','primary',t('Check'));run.type='button';
     const more=document.createElement('details');more.className='pending-more';const moreLabel=el('summary','',t('Bulk actions'));more.append(moreLabel);
     const menu=el('div','pending-more-menu');more.append(menu);
@@ -180,7 +205,10 @@
     // Two ways to look: grouped by what to do (default, easiest) or one table row per repository.
     const viewSwitch=el('div','pending-view-switch');viewSwitch.setAttribute('role','group');viewSwitch.setAttribute('aria-label',t('View'));
     const byTask=el('button','',t('By task'));byTask.type='button';const byTable=el('button','',t('Table'));byTable.type='button';viewSwitch.append(byTask,byTable);
-    bar.append(folder,search,viewSwitch,sort,run,more);
+    const tagFilter=document.createElement('select');tagFilter.className='workflow-input pending-tag-filter';tagFilter.setAttribute('aria-label',t('Tags'));
+    [['any',t('Any tag')],['tagged',t('Has a tag')],['untagged',t('No tag yet')],['since',t('Commits after latest tag')]].forEach(([value,label])=>tagFilter.append(new Option(label,value)));
+    tagFilter.title=t('Commits after latest tag: the branch has work that is not in any release tag yet.');
+    bar.append(folder,search,tagFilter,viewSwitch,sort,run,more);
     const chips=el('div','pending-filters');const status=el('small','multi-repo-status');const out=el('div','multi-repo-body');
     const help=el('p','multi-repo-note pending-help');
     panel.append(bar,chips,help,status,out);
@@ -190,6 +218,9 @@
     const recall=(key,fallback)=>{try{return localStorage.getItem(key)||fallback;}catch{return fallback;}};
     let results=[];let filter=recall('gitdeck.pendingFilter','any');let runId=0;let checkedAt=null;const expanded=new Set();
     let view=recall('gitdeck.pendingView','tasks')==='table'?'table':'tasks';
+    tagFilter.value=[...tagFilter.options].some(option=>option.value===recall('gitdeck.pendingTag',''))?recall('gitdeck.pendingTag',''):'any';
+    // Tag name, with its date and the commits since it in the tooltip.
+    const tagBadge=(item)=>{const p=item.pending;const badge=el('span','pending-tag-badge','🏷 '+p.latestTag);badge.title=[t('Latest tag: {tag}',{tag:p.latestTag}),p.latestTagDate?String(p.latestTagDate).slice(0,10)+' ('+ageOf(p.latestTagDate)+')':'',Number(p.commitsSinceTag)>0?t('{count} commit(s) on {branch} after this tag',{count:p.commitsSinceTag,branch:p.branch||'HEAD'}):t('Nothing new since this tag'),t('{count} tag(s) in total',{count:p.tagCount||1})].filter(Boolean).join('\n');return badge;};
     const syncView=()=>{
       byTask.classList.toggle('active',view==='tasks');byTable.classList.toggle('active',view==='table');
       byTask.setAttribute('aria-pressed',String(view==='tasks'));byTable.setAttribute('aria-pressed',String(view==='table'));
@@ -215,7 +246,7 @@
     const drawChips=()=>{
       chips.replaceChildren();
       for(const [id,label] of kinds){
-        const count=results.filter(item=>pendingMatches(item,id)).length;
+        const count=results.filter(item=>shown(item)&&pendingMatches(item,id)).length;
         if(!count&&id!==filter&&!['any','all'].includes(id))continue;
         const chip=el('button',`pending-filter${filter===id?' active':''}`);chip.type='button';chip.append(el('span','',label()),el('b','',String(count)));
         chip.onclick=()=>{filter=id;remember('gitdeck.pendingFilter',id);drawChips();draw();};chips.append(chip);
@@ -223,12 +254,16 @@
     };
     const order=(a,b)=>{
       const by=sort.value;const ca=a.counts,cb=b.counts;
+      // Several names typed: keep the order they were typed in.
+      const terms=parseTerms(search.value);if(terms.length>1){const diff=termRank(a,terms)-termRank(b,terms);if(diff)return diff;}
       if(by==='name')return a.repo.name.localeCompare(b.repo.name);
+      if(by==='tag')return String(b.pending?.latestTagDate||'').localeCompare(String(a.pending?.latestTagDate||''))||a.repo.name.localeCompare(b.repo.name);
       if(by==='push')return (cb.push+cb.localOnlyCommits)-(ca.push+ca.localOnlyCommits)||a.repo.name.localeCompare(b.repo.name);
       if(by==='changes')return cb.changes-ca.changes||a.repo.name.localeCompare(b.repo.name);
       return (b.error?1e6:cb.score)-(a.error?1e6:ca.score)||a.repo.name.localeCompare(b.repo.name);
     };
-    const visible=()=>{const term=search.value.trim().toLowerCase();return results.filter(item=>pendingMatches(item,filter)&&(!term||`${item.repo.name} ${item.pending?.branch||''}`.toLowerCase().includes(term))).sort(order);};
+    const shown=(item)=>{const terms=parseTerms(search.value);return (!terms.length||termRank(item,terms)>=0)&&tagMatches(item,tagFilter.value);};
+    const visible=()=>results.filter(item=>pendingMatches(item,filter)&&shown(item)).sort(order);
 
     // One click per fix: the button does the safe step or opens the right view.
     const act=async(item,id,button)=>{
@@ -252,7 +287,7 @@
       return td;
     };
     const detailRow=(item,kind)=>{
-      const tr=el('tr','pending-detail');const td=el('td');td.colSpan=10;const p=item.pending;const box=el('div','pending-detail-box');
+      const tr=el('tr','pending-detail');const td=el('td');td.colSpan=11;const p=item.pending;const box=el('div','pending-detail-box');
       if(kind==='localOnly'){
         box.append(el('strong','',t('Branches with commits that are on no remote')));
         const list=el('div','pending-detail-list');[...p.unpushedBranches].sort((a,b)=>b.commits-a.commits).forEach(b=>list.append(el('span','',`${b.branch} · ${b.commits}`)));box.append(list);
@@ -290,14 +325,14 @@
     const collapsed=new Set();
     const drawTasks=()=>{
       out.replaceChildren();
-      const term=search.value.trim().toLowerCase();
-      const pool=results.filter(item=>!term||`${item.repo.name} ${item.pending?.branch||''}`.toLowerCase().includes(term));
+      const pool=results.filter(shown);const terms=parseTerms(search.value);
+      const byTyped=(a,b)=>(terms.length>1?termRank(a,terms)-termRank(b,terms):0)||a.repo.name.localeCompare(b.repo.name);
       if(!pool.length){out.append(el('div','multi-repo-empty',results.length?t('No repository matches this filter.'):t('Checking…')));return;}
       let shownAny=false;
       // At a glance: one tile per group with its count; a click jumps to the group.
       const overview=el('div','pending-overview');out.append(overview);
       for(const group of taskGroups){
-        const items=pool.filter(item=>pendingMatches(item,group.id)).sort((a,b)=>a.repo.name.localeCompare(b.repo.name));
+        const items=pool.filter(item=>pendingMatches(item,group.id)).sort(byTyped);
         if(!items.length)continue;shownAny=true;
         const tile=el('button',`pending-tile pending-tile-${group.id}`);tile.type='button';tile.append(el('span','pending-tile-icon',group.icon),el('b','',String(items.length)),el('span','',group.title()));
         tile.onclick=()=>{collapsed.delete(group.id);if(!out.querySelector('#pending-group-'+group.id+' .pending-group-list'))drawTasks();out.querySelector('#pending-group-'+group.id)?.scrollIntoView({behavior:'smooth',block:'start'});};
@@ -314,7 +349,7 @@
           const list=el('div','pending-group-list');const limit=expanded.has('group|'+group.id)?items.length:8;
           for(const item of items.slice(0,limit)){
             const line=el('div','pending-line');
-            const what=el('div','pending-line-what');what.append(repoLink(item.repo),el('span','pending-line-text',group.line(item)));
+            const what=el('div','pending-line-what');what.append(repoLink(item.repo));if(item.pending?.latestTag)what.append(tagBadge(item));what.append(el('span','pending-line-text',group.line(item)));
             const action=group.action(item);const button=el('button',action.id==='push'||action.id==='publish'||action.id==='pull'?'primary':'',action.label);button.type='button';
             button.onclick=()=>{
               if(action.id==='open'){document.getElementById('operations-close')?.click();openWorkspace(item.repo,'history',null);return;}
@@ -348,7 +383,7 @@
         else if(done&&filter!=='all'){const all=el('button','',t('Show all repositories'));all.type='button';all.onclick=()=>{filter='all';remember('gitdeck.pendingFilter','all');search.value='';drawChips();draw();};empty.append(all);}
         out.append(empty);return;
       }
-      const grid=table([t('Repository'),t('Branch'),t('What to do'),t('Uncommitted'),t('To push'),t('To pull'),t('Stashes'),t('Unpushed branches'),t('Merged branches'),'']);
+      const grid=table([t('Repository'),t('Branch'),t('Latest tag'),t('What to do'),t('Uncommitted'),t('To push'),t('To pull'),t('Stashes'),t('Unpushed branches'),t('Merged branches'),'']);
       grid.classList.add('pending-table');
       grid.querySelectorAll('th').forEach(th=>{if(headerHelp[th.textContent]){th.title=headerHelp[th.textContent];th.classList.add('pending-has-help');}});
       for(const item of rows.slice(0,300)){
@@ -361,7 +396,10 @@
         const steps=nextSteps(item);const todo=el('td','pending-todo');
         if(steps.length){todo.append(el('span',`pending-step tone-${steps[0].tone}`,steps[0].text));if(steps.length>1){const more=el('small','pending-more-steps',t('+{count} more',{count:steps.length-1}));more.title=steps.slice(1).map(step=>'• '+step.text).join('\n');todo.append(more);}}
         else todo.append(el('span','pending-step tone-ok',t('Nothing to do')));
-        const tr=el('tr');tr.append(name,branch,todo,
+        const tagCell=el('td','pending-tag-cell');
+        if(p?.latestTag){tagCell.append(tagBadge(item));tagCell.append(el('small','',[ageOf(p.latestTagDate),Number(p.commitsSinceTag)>0?t('+{count} since',{count:p.commitsSinceTag}):''].filter(Boolean).join(' · ')));}
+        else tagCell.append(el('span','pending-zero',p?t('no tag'):'·'));
+        const tr=el('tr');tr.append(name,branch,tagCell,todo,
           numberCell(c.changes,{tone:'warn',title:t('{count} uncommitted file(s)',{count:c.changes})}),
           numberCell(c.push,{tone:'warn',title:t('{count} to push',{count:c.push})}),
           numberCell(c.pull,{tone:'info',title:t('{count} to pull',{count:c.pull})}),
@@ -387,7 +425,7 @@
       await mapLimit(repos,4,async repo=>{if(id!==runId)return;const item=await check(repo);if(id!==runId)return;results.push(item);status.textContent=t('Checking {done} of {total}…',{done:++done,total:repos.length});schedule();});
       if(id!==runId)return;checkedAt=new Date();summary();drawChips();draw();
     };
-    run.onclick=start;folder.addEventListener('change',start);sort.onchange=()=>{remember('gitdeck.pendingSort',sort.value);draw();};search.oninput=draw;
+    run.onclick=start;folder.addEventListener('change',start);sort.onchange=()=>{remember('gitdeck.pendingSort',sort.value);draw();};tagFilter.onchange=()=>{remember('gitdeck.pendingTag',tagFilter.value);drawChips();draw();};search.oninput=()=>{drawChips();draw();};
     const bulk=async(kind)=>{
       more.removeAttribute('open');
       const todo=results.filter(item=>kind==='push'?pendingActions(item.pending).includes('push'):(item.counts.pull&&!item.pending?.operation));
@@ -420,8 +458,8 @@
     };
     copy.onclick=async()=>{
       more.removeAttribute('open');
-      const lines=['| '+[t('Repository'),t('Branch'),t('Uncommitted'),t('To push'),t('To pull'),t('Stashes'),t('Unpushed branches'),t('Merged branches')].join(' | ')+' |','|---|---|---|---|---|---|---|---|'];
-      for(const item of visible()){const c=item.counts;lines.push(`| ${item.repo.name} | ${item.pending?.branch||''} | ${c.changes} | ${c.push} | ${c.pull} | ${c.stashes} | ${c.localOnly} | ${c.merged} |`);}
+      const lines=['| '+[t('Repository'),t('Branch'),t('Latest tag'),t('Uncommitted'),t('To push'),t('To pull'),t('Stashes'),t('Unpushed branches'),t('Merged branches')].join(' | ')+' |','|---|---|---|---|---|---|---|---|---|'];
+      for(const item of visible()){const c=item.counts;const p=item.pending||{};lines.push(`| ${item.repo.name} | ${p.branch||''} | ${p.latestTag?`${p.latestTag}${Number(p.commitsSinceTag)?` (+${p.commitsSinceTag})`:''}`:''} | ${c.changes} | ${c.push} | ${c.pull} | ${c.stashes} | ${c.localOnly} | ${c.merged} |`);}
       try{await navigator.clipboard.writeText(lines.join('\n')+'\n');showActionFeedback(t('Copied {count} rows',{count:lines.length-2}));}catch(error){showActionFeedback(error.message,{error:true});}
     };
     syncView();start();
@@ -702,5 +740,5 @@
     }
     setTimeout(checkGitLab,30000);setInterval(checkGitLab,10*60*1000);
   }
-  window.GitDeckMultiRepo={pendingLabels,pendingActions,pendingCounts,pendingMatches,nextSteps,explainError,switchPlan,cleanupReasons,ticketPrefix,gitlabNews,openBranchCleanup,checkGitLab};
+  window.GitDeckMultiRepo={pendingLabels,pendingActions,pendingCounts,pendingMatches,nextSteps,explainError,parseTerms,termRank,tagMatches,ageOf,switchPlan,cleanupReasons,ticketPrefix,gitlabNews,openBranchCleanup,checkGitLab};
 })();

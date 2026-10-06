@@ -53,6 +53,22 @@ const failed = { ...item(clean), actionError: { kind: 'push', reason: 'rejected'
 assert.equal(m.nextSteps(failed)[0].text, 'Push failed: rejected');
 assert.equal(m.pendingMatches(failed, 'problems'), true, 'A failed push shows under Fix these first');
 
+// Several names in the filter, in the order typed; tag filter; ages.
+assert.deepEqual(plain(m.parseTerms(' crs-svc, lns  tonson,,')), ['crs-svc', 'lns', 'tonson']);
+const repoItem = (name, p = {}) => ({ repo: { name }, pending: { branch: 'main', ...p } });
+const typed = m.parseTerms('tonson, lns, crs');
+assert.equal(m.termRank(repoItem('crs-svc-common'), typed), 2);
+assert.equal(m.termRank(repoItem('lns'), typed), 1, 'Exact name');
+assert.equal(m.termRank(repoItem('lns-deployment-2'), typed), 1);
+assert.equal(m.termRank(repoItem('other'), typed), -1);
+assert.equal(m.termRank(repoItem('api', { latestTag: 'v2.1.0' }), m.parseTerms('v2.1')), 0, 'Tags are searchable');
+assert.equal(m.tagMatches(repoItem('a', { latestTag: 'v1', commitsSinceTag: 3 }), 'since'), true);
+assert.equal(m.tagMatches(repoItem('a', { latestTag: 'v1', commitsSinceTag: 0 }), 'since'), false);
+assert.equal(m.tagMatches(repoItem('a', { latestTag: '' }), 'untagged'), true);
+assert.equal(m.tagMatches(repoItem('a', { latestTag: 'v1' }), 'tagged'), true);
+assert.equal(m.ageOf('2026-10-01T00:00:00Z', Date.parse('2026-10-05T12:00:00Z')), '4 days ago');
+assert.equal(m.ageOf('2026-10-05T00:00:00Z', Date.parse('2026-10-05T12:00:00Z')), 'today');
+
 const found = (o) => ({ local: false, remote: '', current: 'main', dirty: false, ...o });
 assert.equal(m.switchPlan('feature/a', found({ current: 'feature/a' })).kind, 'none');
 assert.deepEqual(plain(m.switchPlan('feature/a', found({ local: true })).payload), { branch: 'feature/a', localChanges: 'stash' });
