@@ -113,6 +113,11 @@ assert.ok(web('features.css').includes('.multi-repo-table.pending-table td.pendi
 assert.match(web('multi-repo.js'), /function sizeColumns\(grid\)/);
 assert.match(web('multi-repo.js'), /gitdeck\.pendingColumns/);
 assert.ok(web('features.css').includes('.pending-col-grip{position:absolute;'));
+// The resize cursor never sticks: the drag ends on release anywhere, cancel, lost capture or window blur,
+// even when the table is redrawn under the mouse while results arrive.
+for (const type of ["'pointerup'", "'pointercancel'", "'blur'"]) assert.ok(web('multi-repo.js').includes(type), type);
+assert.ok(web('multi-repo.js').includes("window.addEventListener('pointermove',move,true)"));
+assert.ok(web('multi-repo.js').includes("grip.addEventListener('lostpointercapture',end)"));
 // Easy to find: All repos and Report sit on the left rail under Repos.
 assert.match(web('modern.js'), /railButton\(\['all-repos','repos',\(\)=>t\('All repos'\)\]\),railButton\(\['report','report',\(\)=>t\('Report'\)\]\)/);
 assert.match(web('modern.js'), /'all-repos':\(state\.repos\|\|\[\]\)\.filter\(/, 'All repos shows how many repositories need attention');

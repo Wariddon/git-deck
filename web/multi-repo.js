@@ -237,18 +237,33 @@
       for(const row of grid.rows){const cell=row.cells[index];if(!cell||cell.colSpan>1)continue;
         cell.style.width=cell.style.minWidth=cell.style.maxWidth=width?width+'px':'';cell.classList.toggle('pending-col-sized',Boolean(width));}
     };
+    let columnDragEnd=null;const endColumnDrag=()=>{columnDragEnd?.();document.body.classList.remove('pending-col-resizing');};
     function sizeColumns(grid){
       const widths=readWidths();const head=grid.rows[0];if(!head)return;
       [...head.cells].forEach((th,index)=>{
         if(widths[index])applyWidth(grid,index,widths[index]);
         const grip=el('span','pending-col-grip');grip.title=t('Drag to widen or narrow this column. Double-click: automatic width.');grip.setAttribute('aria-hidden','true');
+        // The drag is followed on the whole window, not the grip: the table can be redrawn while
+        // dragging (results still arriving) and the button can be released outside the grip or the
+        // window. Every way a drag can end (release, cancel, lost capture, window blur) ends it, so
+        // the resize cursor never stays on.
         grip.onpointerdown=(event)=>{
-          event.preventDefault();event.stopPropagation();const startX=event.clientX;const start=th.getBoundingClientRect().width;
+          if(event.button!==0)return;
+          event.preventDefault();event.stopPropagation();endColumnDrag();
+          const startX=event.clientX;const start=th.getBoundingClientRect().width;let width=0;
           try{grip.setPointerCapture(event.pointerId);}catch{}document.body.classList.add('pending-col-resizing');
-          const move=(e)=>applyWidth(grid,index,Math.max(44,Math.round(start+e.clientX-startX)));
-          const up=()=>{grip.removeEventListener('pointermove',move);grip.removeEventListener('pointerup',up);document.body.classList.remove('pending-col-resizing');
-            const all=readWidths();all[index]=Math.round(th.getBoundingClientRect().width);try{localStorage.setItem(colKey,JSON.stringify(all));}catch{}};
-          grip.addEventListener('pointermove',move);grip.addEventListener('pointerup',up);
+          const move=(e)=>{width=Math.max(44,Math.round(start+e.clientX-startX));applyWidth(grid,index,width);};
+          const end=()=>{
+            window.removeEventListener('pointermove',move,true);
+            for(const type of ['pointerup','pointercancel','blur'])window.removeEventListener(type,end,true);
+            grip.removeEventListener('lostpointercapture',end);
+            document.body.classList.remove('pending-col-resizing');columnDragEnd=null;
+            if(width){const all=readWidths();all[index]=width;try{localStorage.setItem(colKey,JSON.stringify(all));}catch{}}
+          };
+          columnDragEnd=end;
+          window.addEventListener('pointermove',move,true);
+          for(const type of ['pointerup','pointercancel','blur'])window.addEventListener(type,end,true);
+          grip.addEventListener('lostpointercapture',end);
         };
         grip.ondblclick=(event)=>{event.stopPropagation();applyWidth(grid,index,0);const all=readWidths();delete all[index];try{localStorage.setItem(colKey,JSON.stringify(all));}catch{}};
         th.append(grip);
