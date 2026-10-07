@@ -65,5 +65,7 @@ assert.ok(!motion.isQuiet('/api/repo/pending?path=x'));
   // Repository list page: no leftover alerts without an open repository; cards stack branch/status below.
   assert.match(polish, /body:not\(\.workbench-mode\) \.repo-alerts \{ display: none !important; \}/, 'Alerts hide when no repository is open');
   assert.match(polish, /#repo-list \.repo > :is\(\.repo-main, \.repo-meta\) \{ grid-column: 1 \/ -1 !important;/, 'Repository card rows span the card');
+  // Dashboard table: small lines wrap inside their cell instead of running into the next column.
+  assert.match(polish, /\.multi-repo-table\.pending-table td small \{ white-space: normal !important;/, 'Small lines wrap in Dashboard cells');
   console.log('PASS: polish layer');
 }
