@@ -17,9 +17,14 @@ const app=fs.readFileSync(path.join(root,'web/app.js'),'utf8');assert.match(app,
 const release=fs.readFileSync(path.join(root,'Build-Release.ps1'),'utf8'),server=fs.readFileSync(path.join(root,'git-dashboard-server.ps1'),'utf8');assert.match(server,/Write-GitDeckStatic \$context \$route/);
 for(const file of ['startup.js','startup.css']){assert(html.includes('/'+file));assert(fs.existsSync(path.join(root,'web',file)));assert(release.includes("'"+path.extname(file)+"'"));}
 console.log('PASS: startup logo, status, completion, slow-load recovery, Escape and no reopening');
-// Splash is a brand card with the logo and the name (like Sourcetree); title and status stay for screen readers.
+// Splash is a brand card with the logo tile and the name; title and status stay for screen readers.
 const splashCss=fs.readFileSync(path.join(root,'web/startup.css'),'utf8');
-assert.match(html,/<div class="startup-card" aria-hidden="true"><img [^>]*><span class="startup-wordmark">Git Deck<\/span><\/div>/);
+assert.match(html,/<div class="startup-card" aria-hidden="true"><svg class="startup-logo" [^>]*>[\s\S]*?<\/svg><span class="startup-wordmark">Git Deck<\/span><\/div>/);
+// The logo is a white rounded-square tile (not the stacked diamond), drawn the same by GitDeck.exe.
+assert.match(html,/<rect class="startup-tile" x="2" y="2" width="68" height="68" rx="18"\/>/);
+assert.match(splashCss,/\.startup-tile \{ fill:#fff; \}/);
+// While "Taking longer than expected" shows, the progress line steps aside instead of crossing the buttons.
+assert.match(splashCss,/#startup-splash\[open\]:has\(#startup-actions:not\(\[hidden\]\)\)::after \{ display:none; \}/);
 assert.match(splashCss,/\.startup-card \{[^}]*background:var\(--brand\)/);
 // The whole window is brand green: no light page around the logo (user screenshot), and no white flash first.
 assert.match(splashCss,/#startup-splash \{ --brand:#0b6e47;[^}]*background:var\(--brand\);/);
@@ -29,7 +34,7 @@ assert(script.includes("document.getElementById('startup-background')?.remove();
 assert(!html.includes('startup-spinner'),'No spinner: the card alone, like Sourcetree');
 // GitDeck.exe paints the same card natively until the app window appears.
 const launcher=fs.readFileSync(path.join(root,'launcher/GitDeckLauncher.cs'),'utf8');
-assert.match(launcher,/class SplashForm : Form/);assert.match(launcher,/Color\.FromArgb\(0x0B, 0x6E, 0x47\)/,'Same green as --brand');
+assert.match(launcher,/class SplashForm : Form/);assert.match(launcher,/DrawTile\(g, left,/,'The native card draws the same logo tile');assert.match(launcher,/g\.DrawBezier\(pen, X\(22\), Y\(21\), X\(22\), Y\(37\), X\(36\), Y\(35\), X\(36\), Y\(51\)\)/);assert.match(launcher,/Color\.FromArgb\(0x0B, 0x6E, 0x47\)/,'Same green as --brand');
 assert.match(splashCss,/--brand:#0b6e47/);
 assert.match(html,/<h1 id="startup-title" class="startup-sr">/);assert.match(html,/<p id="startup-status" class="startup-sr" role="status"/);
 assert.match(splashCss,/\.startup-sr \{ position:absolute; width:1px; height:1px;/);

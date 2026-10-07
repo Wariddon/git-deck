@@ -214,7 +214,7 @@ internal static class GitDeckLauncher
     }
 }
 
-// The startup card: brand green, logo and name, nothing else (web/startup.css draws the same card).
+// The startup card: brand green, the logo tile and the name (web/index.html + startup.css draw the same).
 internal sealed class SplashForm : Form
 {
     private readonly Image logo;
@@ -252,8 +252,37 @@ internal sealed class SplashForm : Form
             float icon = logo != null ? 72 * scale : 0;
             float gap = logo != null ? 16 * scale : 0;
             float left = (ClientSize.Width - (icon + gap + text.Width)) / 2f;
-            if (logo != null) g.DrawImage(logo, left, (ClientSize.Height - icon) / 2f, icon, icon);
+            if (logo != null) DrawTile(g, left, (ClientSize.Height - icon) / 2f, icon);
             g.DrawString(name, font, white, left + icon + gap, (ClientSize.Height - text.Height) / 2f, StringFormat.GenericTypographic);
+        }
+    }
+
+    // The logo tile from web/index.html (72x72 viewBox): a white rounded square with two branches
+    // merging into one, in the brand green, so the web splash continues from exactly this picture.
+    private void DrawTile(Graphics g, float x, float y, float size)
+    {
+        float k = size / 72f;
+        Func<float, float> X = v => x + v * k;
+        Func<float, float> Y = v => y + v * k;
+        var green = Color.FromArgb(0x0B, 0x6E, 0x47);
+        using (var tile = new GraphicsPath())
+        using (var white = new SolidBrush(Color.White))
+        using (var fill = new SolidBrush(green))
+        using (var pen = new Pen(green, 5 * k))
+        {
+            float r = 18 * k * 2, left = X(2), top = Y(2), w = 68 * k;
+            tile.AddArc(left, top, r, r, 180, 90);
+            tile.AddArc(left + w - r, top, r, r, 270, 90);
+            tile.AddArc(left + w - r, top + w - r, r, r, 0, 90);
+            tile.AddArc(left, top + w - r, r, r, 90, 90);
+            tile.CloseFigure();
+            g.FillPath(white, tile);
+            pen.StartCap = LineCap.Round; pen.EndCap = LineCap.Round;
+            g.DrawBezier(pen, X(22), Y(21), X(22), Y(37), X(36), Y(35), X(36), Y(51));
+            g.DrawBezier(pen, X(50), Y(21), X(50), Y(37), X(36), Y(35), X(36), Y(51));
+            g.FillEllipse(fill, X(22 - 6), Y(21 - 6), 12 * k, 12 * k);
+            g.FillEllipse(fill, X(50 - 6), Y(21 - 6), 12 * k, 12 * k);
+            g.FillEllipse(fill, X(36 - 7), Y(51 - 7), 14 * k, 14 * k);
         }
     }
 

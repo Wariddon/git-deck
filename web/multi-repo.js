@@ -476,7 +476,11 @@
     const summary=()=>{
       const pending=results.filter(item=>pendingMatches(item,'any')).length;
       const time=checkedAt?checkedAt.toLocaleString([],{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
-      status.textContent=t('{pending} of {total} repositories have something pending',{pending,total:results.length})+(time?' · '+t('checked at {time}',{time}):'');
+      // Say plainly that every repository was checked: "52 of 129" read like only 52 were fetched.
+      const failed=results.filter(item=>item.error).length;
+      const parts=[t('Checked {total} repositories',{total:results.length}),t('{pending} with pending work',{pending}),t('{clean} up to date',{clean:results.length-pending})];
+      if(failed)parts.push(t('{failed} could not be checked',{failed}));
+      status.textContent=parts.join(' · ')+(time?' · '+t('at {time}',{time}):'');
     };
     let timer=0;const schedule=()=>{if(timer)return;timer=setTimeout(()=>{timer=0;drawChips();draw();},250);};
     const start=async()=>{

@@ -21,9 +21,9 @@
 </head>
 <body>
   <dialog id="startup-splash" aria-labelledby="startup-title" aria-describedby="startup-status">
-    <!-- Like Sourcetree's splash: a brand-coloured card with the logo and the name, nothing else.
-         GitDeck.exe shows the same card natively until this window appears. -->
-    <div class="startup-card" aria-hidden="true"><img src="/favicon.svg?v=deck-2" alt="" width="72" height="72" fetchpriority="high"><span class="startup-wordmark">Git Deck</span></div>
+    <!-- The brand green window with the logo (a white rounded-square tile with two branches merging)
+         and the name. GitDeck.exe draws the same picture natively until this window appears. -->
+    <div class="startup-card" aria-hidden="true"><svg class="startup-logo" viewBox="0 0 72 72" width="72" height="72"><rect class="startup-tile" x="2" y="2" width="68" height="68" rx="18"/><g class="startup-edges"><path d="M22 21C22 37 36 35 36 51"/><path d="M50 21C50 37 36 35 36 51"/></g><g class="startup-flow"><path pathLength="40" d="M22 21C22 37 36 35 36 51"/><path pathLength="40" d="M50 21C50 37 36 35 36 51"/></g><circle class="startup-node n1" cx="22" cy="21" r="6"/><circle class="startup-node n2" cx="50" cy="21" r="6"/><circle class="startup-node n3" cx="36" cy="51" r="7"/></svg><span class="startup-wordmark">Git Deck</span></div>
     <!-- Title and progress text stay for screen readers. -->
     <h1 id="startup-title" class="startup-sr">Git Deck</h1>
     <p id="startup-status" class="startup-sr" role="status" aria-live="polite">Starting Git Deck…</p>

@@ -1,12 +1,17 @@
-    /* Startup splash (like Sourcetree): the whole window is brand green with only the logo and the name in
-       the middle, exactly where GitDeck.exe's native splash card sits, so the hand-over looks like one image. */
+    /* Startup splash: the whole window is brand green with the logo tile and the name in the middle,
+       exactly where GitDeck.exe's native splash card sits, so the hand-over looks like one image. */
     #startup-splash { --brand:#0b6e47;
       display:grid; place-items:center; align-content:center; gap:20px; width:100vw; max-width:none; height:100vh; max-height:none; margin:0; padding:0;
       border:0; background:var(--brand); color:#fff; font:13px/1.5 "Segoe UI Variable Text","Segoe UI",Arial,sans-serif; text-align:center; }
     #startup-splash:not([open]) { display:none; }
     #startup-splash::backdrop { background:#0b6e47; }
     #startup-splash .startup-card { display:flex; align-items:center; justify-content:center; gap:16px; background:var(--brand); color:#fff; animation:startup-reveal .3s ease-out both; }
-    #startup-splash .startup-card img { display:block; width:72px; height:72px; margin:0; }
+    #startup-splash .startup-logo { display:block; width:72px; height:72px; margin:0; overflow:visible; }
+    /* The logo: a white rounded-square tile with two branches merging into one (drawn the same in GitDeck.exe). */
+    #startup-splash .startup-tile { fill:#fff; }
+    #startup-splash :is(.startup-edges, .startup-flow) path { fill:none; stroke-width:5; stroke-linecap:round; }
+    #startup-splash .startup-edges path { stroke:var(--brand); }
+    #startup-splash .startup-node { fill:var(--brand); transform-box:fill-box; transform-origin:center; }
     /* !important: a legacy rule forces one font size on every element. */
     #startup-splash .startup-wordmark { font-family:"Segoe UI Variable Display","Segoe UI Semilight","Segoe UI",Arial,sans-serif !important; font-size:42px !important; font-weight:300 !important; line-height:1; letter-spacing:-.01em; white-space:nowrap; }
     /* Visually hidden, still announced by screen readers. */
@@ -18,15 +23,25 @@
     #startup-splash button:focus-visible { outline:2px solid #fff; outline-offset:3px; }
     #startup-actions[hidden] { display:none; }
     @keyframes startup-reveal { from { opacity:0; } to { opacity:1; } }
-    /* While loading: the logo breathes with a soft glow, a light sweeps across the name and a thin line
-       runs under them. Nothing moves from where GitDeck.exe's native card drew it: every effect starts
-       from the still picture after the hand-over (delay), and the line sits below without pushing the card. */
-    #startup-splash .startup-card img { animation:startup-breathe 1.8s ease-in-out .45s infinite alternate; }
+    /* While loading: everything starts from the still picture GitDeck.exe drew, then comes alive.
+       The tile floats gently, a light pulse runs down both branches into the merge point, the nodes
+       blink in that order, a light sweeps across the name, and a thin progress line runs under them. */
+    #startup-splash .startup-logo { animation:startup-float 2.4s ease-in-out .45s infinite alternate; }
+    #startup-splash .startup-flow path { stroke:#6ee7b7; stroke-dasharray:8 48; stroke-dashoffset:8; opacity:0; animation:startup-flow 1.8s cubic-bezier(.45,0,.25,1) .5s infinite; }
+    #startup-splash .startup-flow path + path { animation-delay:.62s; }
+    #startup-splash .startup-node.n1 { animation:startup-node 1.8s ease-in-out .5s infinite; }
+    #startup-splash .startup-node.n2 { animation:startup-node 1.8s ease-in-out .62s infinite; }
+    #startup-splash .startup-node.n3 { animation:startup-merge 1.8s ease-in-out .5s infinite; }
     #startup-splash .startup-wordmark { background:linear-gradient(100deg,#fff 0 40%,#b9f2d4 50%,#fff 60% 100%) 0 0 / 250% 100% repeat-x; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; animation:startup-sweep 2.4s ease-in-out .6s infinite; }
     #startup-splash[open]::after { content:""; position:fixed; left:50%; top:calc(50% + 62px); width:132px; height:3px; margin-left:-66px; border-radius:3px;
       background:linear-gradient(90deg,transparent,#ffffffd9,transparent) -60% 0 / 45% 100% no-repeat,#ffffff26; opacity:0; animation:startup-line-in .4s ease-out .7s forwards, startup-line 1.3s ease-in-out .7s infinite; }
-    @keyframes startup-breathe { from { transform:scale(1); filter:drop-shadow(0 0 0 #ffffff00); } to { transform:scale(1.06); filter:drop-shadow(0 0 14px #ffffff59); } }
+    /* "Taking longer than expected": the message and buttons take that spot, so the line steps aside. */
+    #startup-splash[open]:has(#startup-actions:not([hidden]))::after { display:none; }
+    @keyframes startup-float { from { transform:translateY(0); filter:drop-shadow(0 4px 10px #00000026); } to { transform:translateY(-4px); filter:drop-shadow(0 10px 18px #00000033); } }
+    @keyframes startup-flow { 0% { stroke-dashoffset:8; opacity:0; } 10% { opacity:1; } 72% { stroke-dashoffset:-34; opacity:1; } 82%,100% { stroke-dashoffset:-40; opacity:0; } }
+    @keyframes startup-node { 0%,100% { transform:scale(1); } 12% { transform:scale(1.22); } 30% { transform:scale(1); } }
+    @keyframes startup-merge { 0%,55%,100% { transform:scale(1); fill:var(--brand); } 70% { transform:scale(1.28); fill:#10a86b; } 85% { transform:scale(1); } }
     @keyframes startup-sweep { 0% { background-position:0 0; } 70%,100% { background-position:100% 0; } }
     @keyframes startup-line { from { background-position:-60% 0,0 0; } to { background-position:160% 0,0 0; } }
     @keyframes startup-line-in { to { opacity:1; } }
-    @media(prefers-reduced-motion:reduce) { #startup-splash .startup-card, #startup-splash .startup-card img, #startup-splash .startup-wordmark, #startup-splash[open]::after { animation:none; } #startup-splash[open]::after { opacity:1; } }
+    @media(prefers-reduced-motion:reduce) { #startup-splash .startup-card, #startup-splash .startup-logo, #startup-splash .startup-logo *, #startup-splash .startup-wordmark, #startup-splash[open]::after { animation:none; } #startup-splash[open]::after { opacity:1; } }
