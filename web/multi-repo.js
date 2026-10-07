@@ -17,11 +17,18 @@
   }
   const query=(params)=>new URLSearchParams(params).toString();
   const usable=(repo)=>repo&&repo.valid!==false&&!repo.pending;
-  function inFolder(repo,folder){if(!folder||folder==='all')return true;const path=repo.path.toLowerCase(),root=folder.toLowerCase();return path===root||path.startsWith(root+'\\');}
+  // A folder, or a saved workset ("set:<name>": a named group of repositories, see workflow-ui.js).
+  const worksets=()=>typeof readWorksets==='function'?readWorksets():[];
+  function inFolder(repo,folder){
+    if(!folder||folder==='all')return true;
+    if(folder.startsWith('set:')){const set=worksets().find(item=>item.name===folder.slice(4));return Boolean(set&&set.paths.some(path=>String(path).toLowerCase()===repo.path.toLowerCase()));}
+    const path=repo.path.toLowerCase(),root=folder.toLowerCase();return path===root||path.startsWith(root+'\\');
+  }
   // The folder choice is shared by every panel and the Work report, and remembered.
   const folderKey='gitdeck.folder';
   function folderSelect(){
     const select=document.createElement('select');select.className='workflow-input';select.setAttribute('aria-label',t('Folder'));select.append(new Option(t('All folders'),'all'));(state.scanLocations||[]).forEach(root=>select.append(new Option(root,root)));
+    const sets=worksets();if(sets.length){const group=document.createElement('optgroup');group.label=t('Worksets');sets.forEach(set=>group.append(new Option(`${set.name} (${set.paths.length})`,'set:'+set.name)));select.append(group);}
     try{const saved=localStorage.getItem(folderKey);if(saved&&[...select.options].some(option=>option.value===saved))select.value=saved;}catch{}
     select.addEventListener('change',()=>{try{localStorage.setItem(folderKey,select.value);}catch{}});return select;
   }
@@ -156,11 +163,19 @@
     if(c.merged)steps.push({tone:'muted',text:t('Delete {count} merged branch(es)',{count:c.merged})});
     return steps;
   }
+  // Tags that appeared since you last looked (a release tag pushed by a colleague or a bot, then fetched).
+  // The first check only remembers the tags; later checks mark newer ones until "Mark tags as seen".
+  const seenTagsKey='gitdeck.seenTags';
+  const readSeenTags=()=>{try{return JSON.parse(localStorage.getItem(seenTagsKey)||'{}')||{};}catch{return {};}};
+  const saveSeenTags=(seen)=>{try{localStorage.setItem(seenTagsKey,JSON.stringify(seen));}catch{}};
+  let seenTags=readSeenTags();
+  const isNewTag=(item)=>{const tag=item.pending?.latestTag;const seen=seenTags[item.repo.path];return Boolean(tag&&seen&&seen!==tag);};
   // Whether a checked repository belongs under a filter chip.
   function pendingMatches(item,filter){
     const c=item.counts||pendingCounts(item.pending);
     switch(filter){
       case 'all':return true;
+      case 'newtag':return isNewTag(item);
       case 'changes':return c.changes>0;
       case 'push':return c.push>0;
       case 'pull':return c.pull>0;
@@ -192,6 +207,12 @@
       const item=panels[view];if(!item.built){item.built=true;item.build(item.panel);}
     };
   }
+
+  // More Dashboard views live in web/fleet.js and use these helpers.
+  let lastPending=[];
+  window.GitDeckFleet={addPanel,folderSelect,reposIn,repoLink,openRepo,table,row,mapLimit,runQuiet,query,parseTerms,whenOf,ageOf,pendingResults:()=>lastPending,
+    // Tags you create yourself (Tag many) are not news: remember them as seen.
+    markTagSeen:(path,tag)=>{seenTags[path]=tag;saveSeenTags(seenTags);}};
 
   // Pending work.
   // Pending work as a table: one row per repository, one number per kind of pending work.
@@ -234,7 +255,7 @@
     let view=recall('gitdeck.pendingView','tasks')==='table'?'table':'tasks';
     tagFilter.value=[...tagFilter.options].some(option=>option.value===recall('gitdeck.pendingTag',''))?recall('gitdeck.pendingTag',''):'any';
     // Tag name, with its date and the commits since it in the tooltip.
-    const tagBadge=(item)=>{const p=item.pending;const badge=el('span','pending-tag-badge','🏷 '+p.latestTag);badge.title=[t('Latest tag: {tag}',{tag:p.latestTag}),p.latestTagDate?String(p.latestTagDate).slice(0,10)+' ('+ageOf(p.latestTagDate)+')':'',Number(p.commitsSinceTag)>0?t('{count} commit(s) on {branch} after this tag',{count:p.commitsSinceTag,branch:p.branch||'HEAD'}):t('Nothing new since this tag'),t('{count} tag(s) in total',{count:p.tagCount||1})].filter(Boolean).join('\n');return badge;};
+    const tagBadge=(item)=>{const p=item.pending;const badge=el('span','pending-tag-badge','🏷 '+p.latestTag);if(isNewTag(item)){badge.classList.add('pending-tag-new');badge.append(el('b','pending-tag-new-mark',t('new')));}badge.title=[t('Latest tag: {tag}',{tag:p.latestTag}),p.latestTagDate?String(p.latestTagDate).slice(0,10)+' ('+ageOf(p.latestTagDate)+')':'',Number(p.commitsSinceTag)>0?t('{count} commit(s) on {branch} after this tag',{count:p.commitsSinceTag,branch:p.branch||'HEAD'}):t('Nothing new since this tag'),t('{count} tag(s) in total',{count:p.tagCount||1})].filter(Boolean).join('\n');return badge;};
     // Columns can be widened to read long names in full: drag the edge of a column name.
     // Widths are remembered; double-click the edge to go back to the automatic width.
     const colKey='gitdeck.pendingColumns';
@@ -297,7 +318,7 @@
     const check=async(repo)=>{try{const pending=(await api('/api/repo/pending?'+query({path:repo.path}))).pending;return {repo,pending,counts:pendingCounts(pending),error:''};}catch(error){return {repo,pending:null,counts:pendingCounts(null),error:firstLine(error.message)};}};
     const kinds=[
       ['any',()=>t('Anything pending')],['changes',()=>t('Uncommitted')],['push',()=>t('To push')],['pull',()=>t('To pull')],
-      ['unpublished',()=>t('Not published')],['localOnly',()=>t('Unpushed branches')],['stashes',()=>t('Stashes')],['merged',()=>t('Merged branches')],['problems',()=>t('Conflicts / errors')],['all',()=>t('All')]];
+      ['unpublished',()=>t('Not published')],['localOnly',()=>t('Unpushed branches')],['stashes',()=>t('Stashes')],['merged',()=>t('Merged branches')],['problems',()=>t('Conflicts / errors')],['newtag',()=>t('New tags')],['all',()=>t('All')]];
     const drawChips=()=>{
       chips.replaceChildren();
       for(const [id,label] of kinds){
@@ -493,6 +514,7 @@
       if(rows.length>300)out.append(el('p','multi-repo-note',t('Showing the first 300. Narrow the folder or filter.')));
     };
     const summary=()=>{
+      lastPending=results;
       const pending=results.filter(item=>pendingMatches(item,'any')).length;
       const time=checkedAt?checkedAt.toLocaleString([],{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
       // Say plainly that every repository was checked: "52 of 129" read like only 52 were fetched.
@@ -506,8 +528,23 @@
       const id=++runId;const repos=reposIn(folder.value);results=[];expanded.clear();seenRows.clear();let done=0;checking=repos.length>0;setMeter(0,repos.length);drawChips();draw();
       status.textContent=t('Checking {done} of {total}…',{done:0,total:repos.length});
       await mapLimit(repos,4,async repo=>{if(id!==runId)return;const item=await check(repo);if(id!==runId)return;results.push(item);status.textContent=t('Checking {done} of {total}…',{done:++done,total:repos.length});setMeter(done,repos.length);schedule();});
-      if(id!==runId)return;checking=false;setMeter(0,0);checkedAt=new Date();summary();drawChips();draw();
+      if(id!==runId)return;checking=false;setMeter(0,0);checkedAt=new Date();
+      let added=false;for(const item of results){const tag=item.pending?.latestTag;if(tag&&!seenTags[item.repo.path]){seenTags[item.repo.path]=tag;added=true;}}if(added)saveSeenTags(seenTags);
+      summary();drawChips();draw();
     };
+    const markSeen=el('button','',t('Mark tags as seen'));markSeen.type='button';markSeen.title=t('Remember the current latest tags; only tags after this are marked new');
+    markSeen.onclick=()=>{more.removeAttribute('open');for(const item of results)if(item.pending?.latestTag)seenTags[item.repo.path]=item.pending.latestTag;saveSeenTags(seenTags);if(filter==='newtag')filter='any';drawChips();draw();};
+    // The repositories shown right now become a workset: pick them again from the folder list later.
+    const saveSet=el('button','',t('Save shown repositories as a workset'));saveSet.type='button';
+    saveSet.onclick=()=>{
+      more.removeAttribute('open');const shownRepos=(view==='tasks'?results.filter(shown):visible()).map(item=>item.repo.path);
+      if(!shownRepos.length){showActionFeedback(t('No repositories are shown.'));return;}
+      const name=(prompt(t('Workset name for {count} repositories',{count:shownRepos.length}))||'').trim().slice(0,60);if(!name)return;
+      try{const sets=worksets().filter(set=>set.name!==name);sets.unshift({name,paths:shownRepos});localStorage.setItem('git-deck-worksets-v1',JSON.stringify(sets.slice(0,30)));}catch{}
+      showActionFeedback(t('Workset {name} saved. Choose it in the folder list.',{name}));
+      document.querySelectorAll('.multi-repo-panel select[aria-label]').forEach(select=>{if(select.options[0]?.value==='all'&&!select.querySelector(`option[value="set:${CSS.escape(name)}"]`)){let group=select.querySelector('optgroup');if(!group){group=document.createElement('optgroup');group.label=t('Worksets');select.append(group);}group.append(new Option(`${name} (${shownRepos.length})`,'set:'+name));}});
+    };
+    menu.append(markSeen,saveSet);
     run.onclick=start;folder.addEventListener('change',start);sort.onchange=()=>{remember('gitdeck.pendingSort',sort.value);draw();};tagFilter.onchange=()=>{remember('gitdeck.pendingTag',tagFilter.value);drawChips();draw();};search.oninput=()=>{drawChips();draw();};
     const bulk=async(kind)=>{
       more.removeAttribute('open');

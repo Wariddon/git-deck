@@ -211,6 +211,12 @@ The **Dashboard** button in the toolbar (or *All repos* on the left rail) opens 
 - **Update all**: fetch, or pull with autostash, every repository, with one result list.
 - **Switch branch**: put every repository of a ticket on the same branch. Preview first, then switch, track or create.
 - **Search all**: commit messages, ticket keys, branch names or changed code in every repository.
+- **Tag many**: the next tag for many repositories at once. Each row suggests the tag after the latest one (`…-poc04` → `…-poc05`, `v1.0.9` → `v1.0.10`); filter by branch, edit names, tick rows and create them, pushed to origin if you like. Rows with commits after their latest tag are ticked.
+- **Ticket**: type a ticket key (`AP2365-3319`) to see, per repository, its branches, its commits (marked when not pushed yet) and the tags that already contain it. *Copy as Markdown* for a status update.
+- **Compare files**: one file across sibling repositories against a reference repository, from disk or from a branch or tag. `pom.xml` is compared by parent, properties and dependency versions; YAML, `.properties` and JSON by key; other files line by line. *Compare one setting* lists one key's value in every repository, grouped, to spot the odd one out.
+- **CI status**: the latest GitLab pipeline of each repository's current branch or latest tag (needs `bin\glab.exe` signed in: `bin\glab.exe auth login --hostname <host>`). Failed pipelines come first.
+- **New tags**: Pending work remembers each repository's latest tag; a newer one (fetched from a colleague or a bot) is marked *new* and has its own filter chip until *Bulk actions → Mark tags as seen*. Tags made with Tag many are not counted as new.
+- **Worksets as groups**: saved worksets appear in every folder picker, so a view can run on a named group of repositories. *Bulk actions → Save shown repositories as a workset* makes one from the current Pending work filter.
 - **Report** (left rail): the work report. Pick a date range to see what was committed in each repository, oldest first, with tickets, push/merge status and the most changed files. Copy or save it as Markdown or CSV, or ask AI for a summary.
 - **Clean up branches** (More menu or branch menu): merged, gone or old branches, local and remote. main, master, develop and the current branch are protected.
 

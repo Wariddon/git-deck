@@ -14,6 +14,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Export.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Activity.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.MultiRepo.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Fleet.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
@@ -1654,6 +1655,10 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/pending' { Write-Json $context @{pending=(Get-GitDeckPendingWork $query['path'])} }
         '/api/repo/branch-cleanup' { Write-Json $context @{cleanup=(Get-GitDeckBranchCleanup $query['path'])} }
         '/api/repo/search' { Write-Json $context (Search-GitDeckRepository $query['path'] $query['q'] $query['mode']) }
+        '/api/repo/ticket' { Write-Json $context @{ticket=(Get-GitDeckTicket $query['path'] $query['key'])} }
+        '/api/repo/file' { Write-Json $context @{file=(Get-GitDeckRepoFile $query['path'] $query['file'] $query['ref'])} }
+        '/api/repo/files' { Write-Json $context @{files=@(Find-GitDeckRepoFiles $query['path'] $query['q'])} }
+        '/api/repo/ci' { Write-Json $context @{ci=(Get-GitDeckCiStatus $query['path'] $query['ref'])} }
         '/api/repo/find-branch' { Write-Json $context @{branch=(Find-GitDeckBranch $query['path'] $query['name'])} }
         '/api/activity/me' { Write-Json $context @{identity=(Get-GitDeckIdentity)} }
         '/api/repo/activity' { $activityPath=$query['path'];$activity=@(Get-GitDeckActivity $activityPath $query['since'] $query['until'] $query['author'] ($query['merges'] -eq 'true'));Write-Json $context @{commits=$activity;mainline=$(if($activity.Count){Get-GitDeckMainline $activityPath}else{''})} }
