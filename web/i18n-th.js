@@ -964,4 +964,6 @@ GitDeckI18n.register('th',{
   "{clean} up to date":"ไม่มีอะไรค้าง {clean}",
   "{failed} could not be checked":"ตรวจไม่ได้ {failed}",
   "at {time}":"เมื่อ {time}",
+  "Nothing pending":"ไม่มีงานค้าง",
+  "Committed, pushed and up to date.":"commit แล้ว push แล้ว และอัปเดตล่าสุดแล้ว",
 });

@@ -319,7 +319,10 @@
       return (b.error?1e6:cb.score)-(a.error?1e6:ca.score)||a.repo.name.localeCompare(b.repo.name);
     };
     const shown=(item)=>{const terms=parseTerms(search.value);return (!terms.length||termRank(item,terms)>=0)&&tagMatches(item,tagFilter.value);};
-    const visible=()=>results.filter(item=>pendingMatches(item,filter)&&shown(item)).sort(order);
+    // Typing a name means "show me that repository": with the default "Anything pending" filter a
+    // repository with nothing pending (say, only a new tag) used to vanish from the search.
+    const activeFilter=()=>filter==='any'&&parseTerms(search.value).length?'all':filter;
+    const visible=()=>results.filter(item=>pendingMatches(item,activeFilter())&&shown(item)).sort(order);
 
     // One click per fix: the button does the safe step or opens the right view.
     const act=async(item,id,button)=>{
@@ -421,7 +424,23 @@
         }
         out.append(section);
       }
-      const tidy=pool.filter(item=>!pendingMatches(item,'any')).length;
+      const tidyItems=pool.filter(item=>!pendingMatches(item,'any'));const tidy=tidyItems.length;
+      // Searched repositories with nothing pending are still listed, so a search always finds them.
+      if(terms.length&&tidy){
+        const section=el('section','pending-group pending-group-clean');const head=el('div','pending-group-head');
+        const title=el('div','pending-group-toggle');title.append(el('span','pending-group-icon','✓'),el('strong','',t('Nothing pending')),el('b','pending-group-count',String(tidy)));head.append(title);
+        const list=el('div','pending-group-list');
+        for(const item of tidyItems.sort(byTyped)){
+          const line=el('div','pending-line');const what=el('div','pending-line-what');what.append(repoLink(item.repo));
+          if(item.pending?.latestTag)what.append(tagBadge(item));
+          what.append(el('span','pending-line-text',item.error?t('Could not check: {error}',{error:item.error}):item.pending?.branch||''));
+          if(item.pending?.lastCommitDate){const when=el('small','pending-line-date',t('last commit {when}',{when:whenOf(item.pending.lastCommitDate)}));when.title=item.pending.lastCommitSubject||'';what.append(when);}
+          const open=el('button','',t('Open'));open.type='button';open.onclick=()=>{document.getElementById('operations-close')?.click();openWorkspace(item.repo,'history',null);};
+          line.append(what,open);list.append(line);
+        }
+        section.append(head,el('p','pending-group-hint',t('Committed, pushed and up to date.')),list);out.append(section);
+        return;
+      }
       if(!shownAny&&checkedAt){const empty=el('div','multi-repo-empty');empty.append(el('strong','',t('🎉 Everything is tidy')),el('p','',t('Every repository in this folder is committed, pushed and up to date.')));out.append(empty);}
       else if(tidy)out.append(el('p','pending-tidy',t('✓ {count} repositories need nothing',{count:tidy})));
     };

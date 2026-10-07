@@ -129,3 +129,13 @@ assert.match(web('modern.js'), /backdrop'\)&&!change\.target\.classList\.contain
 assert.match(web('modern.css'), /body\.theme-dark :is\(\.scan-locations, \.gitlab-search, \.modal-actions\)/);
 for (const route of ['/api/repo/pending', '/api/repo/branch-cleanup', '/api/repo/search', '/api/repo/find-branch']) assert.ok(fs.readFileSync(path.join(__dirname, '../git-dashboard-server.ps1'), 'utf8').includes(`'${route}'`), route);
 console.log('PASS: multi-repository pending labels, switch plans, cleanup, ticket prefix and GitLab news');
+
+// Searching a name finds the repository even when it has nothing pending (only a new tag, say):
+// the default "Anything pending" filter steps aside while terms are typed, and By task lists them.
+{
+  const source = require('node:fs').readFileSync(require('node:path').join(__dirname, '../web/multi-repo.js'), 'utf8');
+  require('node:assert/strict').match(source, /const activeFilter=\(\)=>filter==='any'&&parseTerms\(search\.value\)\.length\?'all':filter;/);
+  require('node:assert/strict').match(source, /if\(terms\.length&&tidy\)\{/);
+  require('node:assert/strict').match(source, /t\('Checked \{total\} repositories',\{total:results\.length\}\)/);
+  console.log('PASS: search shows repositories with nothing pending; summary says all were checked');
+}
