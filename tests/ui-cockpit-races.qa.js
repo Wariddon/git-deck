@@ -1,0 +1,40 @@
+// Run only against the owned synthetic test package, after ui-cockpit.qa.js.
+async page => {
+  if(!page.url().startsWith('http://127.0.0.1:12507/'))throw new Error('Owned fixture required');
+  await page.setViewportSize({width:1487,height:1058});
+  await page.getByRole('button',{name:'Dashboard',exact:true}).click();
+  const panel=page.locator('[data-operations-panel="my-work"]'),key=panel.getByRole('searchbox',{name:'Ticket key, for example PAY-123'});
+  await key.fill('PAY-123');await panel.getByRole('button',{name:'Find ticket',exact:true}).click();await panel.getByText(/3 matches/).waitFor();
+  const items=(await(await page.request.get(new URL('/api/catalog',page.url()).href)).json()).services;
+  const snap=(await(await page.request.get(new URL('/api/repo/task-snapshot?path='+encodeURIComponent(items[0].path),page.url()).href)).json()).snapshot;
+  let remoteRelease,envRelease;
+  const remoteGate=new Promise(resolve=>remoteRelease=resolve),envGate=new Promise(resolve=>envRelease=resolve);
+  await page.route('**/api/repo/ci?*',async route=>{await remoteGate;await route.fulfill({json:{ci:{sha:snap.head,status:'failed',ref:'feature/PAY-123'}}});});
+  await page.route('**/api/repo/observed-env?*',async route=>{await envGate;await route.fulfill({json:{observed:{revision:snap.head,reconciledAt:new Date().toISOString(),health:'Healthy',sync:'Synced'}}});});
+  await panel.getByRole('button',{name:'Check remote evidence'}).click();
+  await panel.getByRole('button',{name:'Check environment',exact:true}).click();
+  envRelease();await panel.getByText('Source revision observed',{exact:true}).first().waitFor();
+  remoteRelease();await panel.getByText('Failed',{exact:true}).first().waitFor();
+  if(!await panel.getByText('Source revision observed',{exact:true}).count())throw new Error('Remote result overwrote environment');
+  await page.route('**/api/repo/mrs?*',route=>route.fulfill({status:503,json:{error:'Fixture provider unavailable'}}));
+  await page.route('**/api/repo/ci?*',route=>route.fulfill({status:503,json:{error:'Fixture provider unavailable'}}));
+  await panel.getByRole('button',{name:'Check remote evidence'}).click();await panel.getByText('Some remote evidence is unavailable; unknown states are shown.').waitFor();
+  await panel.locator('.cockpit-trail li').nth(2).getByText('Unknown',{exact:true}).waitFor();
+  if(await panel.getByText('Failed',{exact:true}).count())throw new Error('Old failed CI survived unavailable response');
+  await page.route('**/api/repo/observed-env?*',route=>route.fulfill({status:503,json:{error:'Fixture controller unavailable'}}));
+  await panel.getByRole('button',{name:'Check environment',exact:true}).click();await panel.getByText(/Fixture controller unavailable/).waitFor();
+  if(await panel.getByText('Source revision observed',{exact:true}).count())throw new Error('Old controller evidence survived error');
+  await page.screenshot({path:'output/playwright/24-cockpit-error.png'});
+  await panel.getByRole('button',{name:items[1].service,exact:true}).click();await panel.getByRole('button',{name:'Inspect failure',exact:true}).click();
+  const failure=page.locator('[data-operations-panel="failure-lens"]');
+  await failure.getByRole('combobox',{name:'Failure repository'}).locator('option:checked').waitFor({state:'attached'});
+  if(await failure.getByRole('combobox',{name:'Failure repository'}).inputValue()!==items[1].path||await failure.getByRole('searchbox',{name:'Branch or tag for failure check'}).inputValue()!=='feature/PAY-123')throw new Error('Failure selection lost');
+  await page.getByRole('searchbox',{name:'Find dashboard tool'}).fill('capsule');await page.getByRole('searchbox',{name:'Find dashboard tool'}).press('Enter');
+  await page.getByRole('heading',{name:'Task capsules',exact:true}).waitFor();
+  await page.getByRole('searchbox',{name:'Find dashboard tool'}).fill('');
+  await page.locator('[data-operations-panel="capsules"]').getByRole('button',{name:'Resume '+items[0].service,exact:true}).first().click();
+  await page.locator('.commit-file-main.active').first().waitFor();
+  const visiblePath=await page.locator('.commit-file-main.active').first().getAttribute('data-path');
+  if(visiblePath!=='README.md')throw new Error('Capsule reading file not restored');
+  return {concurrentEvidence:true,unavailableClearsOldEvidence:true,failureSelection:true,toolSearchEnter:true,capsuleResume:true,integrations:'MOCK only'};
+}

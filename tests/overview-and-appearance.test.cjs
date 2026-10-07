@@ -98,7 +98,7 @@ assert.equal(loadAppearance({ 'gitdeck.textSize': '8' }).context.GitDeckAppearan
 assert.equal(loadAppearance({ 'gitdeck.look': 'classic' }).classes.has('ui-clean'), false, 'Saved Classic look applies before first paint');
 assert(html.indexOf('/appearance.js') < html.indexOf('id="startup-controller"'), 'Applied before the splash and workspace render');
 const links = [...html.matchAll(/rel="stylesheet" href="([^"]+)"/g)].map((m) => m[1]);
-assert.deepEqual(links.slice(-5), ['/clean.css', '/modern.css', '/motion.css', '/polish.css', '/catalog.css'], 'Modern, motion and polish keep their ordering; the scoped catalog layout loads last');
+assert.deepEqual(links.slice(-6), ['/clean.css', '/modern.css', '/motion.css', '/polish.css', '/catalog.css', '/cockpit.css'], 'Modern, motion and polish keep their ordering; scoped catalog and cockpit layouts load last');
 for (const [file, scope] of [['clean.css', 'html.ui-clean'], ['modern.css', 'html.ui-modern']]) {
   const css = web(file).replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/@keyframes[^{]*\{(?:[^{}]*\{[^}]*\})*\s*\}/g, '')

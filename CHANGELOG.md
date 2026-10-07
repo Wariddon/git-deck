@@ -2,6 +2,20 @@
 
 What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
+## Unreleased
+
+- Clear a Dashboard tool filter when external navigation would otherwise hide the active destination, and identify the current view for assistive technology.
+
+- Make All repositories a primary Dashboard destination and route the All repos rail button to the complete inventory, not Pending work; keep legacy health/search aliases discoverable.
+- Prevent the inventory header from covering the first repository, and keep all six columns aligned with local horizontal scrolling on narrow screens.
+
+- Compact Workbench / Release Trail directions: three primary Dashboard destinations, searchable More tools, stacked responsive evidence panels, 13px defaults and reduced-motion-safe short fades.
+- Keep Copy path visible beside the diff filename, bound to the repository that supplied the file rather than whichever tab is active later.
+- My work and Release proof: exact ticket boundaries, branch SHA evidence, explicit GitLab MR/CI and Argo checks, unknown states for mismatched SHA or stale controller data. Provider results cannot overwrite newer ticket selections or concurrently checked evidence.
+- Needs attention uses fresh registered catalog scope, including newly cloned repositories not yet in the status cache, plus previously checked same-SHA CI/reviews.
+- Change impact traverses declared catalog consumers with cycle guards. Failure lens reads failed jobs without collecting raw logs; handle JSON arrays correctly in Windows PowerShell 5.1.
+- Local task capsules with base checks and reviewed handoff copying; read-only Fleet recipe previews, approval, tracked-content fingerprints, resumable steps and version guards. No automated branch switching, arbitrary scripts, commits, pushes or deployments.
+
 ## 1.4.0 — 2026-10-07
 
 Git Deck now talks to the tools around Git.

@@ -113,7 +113,8 @@ function Get-GitDeckMergeRequests([string]$Path) {
         if ($text -match '404|401|authenticat|Unauthorized') { throw $notSignedIn }
         throw $text
     }
-    $items = if ($result.Output) { @($result.Output | ConvertFrom-Json) } else { @() }
+    $parsedItems = if ($result.Output) { $result.Output | ConvertFrom-Json } else { @() }
+    $items = @($parsedItems)
     return @($items | ForEach-Object {
         [ordered]@{
             iid = $_.iid; title = [string]$_.title; source = [string]$_.source_branch; target = [string]$_.target_branch

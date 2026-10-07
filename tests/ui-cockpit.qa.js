@@ -1,0 +1,68 @@
+// Disposable fixture only. Mock integrations are identified explicitly, never deployment proof.
+async page => {
+  if(!page.url().startsWith('http://127.0.0.1:12507/'))throw new Error('Use the owned fixture only');
+  await page.setViewportSize({width:1487,height:1058});
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  const read=async path=>(await (await page.request.get(new URL(path,page.url()).href)).json());
+  const services=(await read('/api/catalog')).services;
+  const snapshot=(await read('/api/repo/task-snapshot?path='+encodeURIComponent(services[0].path))).snapshot;
+  let ciSha=snapshot.head,environmentReads=0,remoteReads=0;
+  await page.route('**/api/repo/mrs?*',route=>{remoteReads++;return route.fulfill({json:{mergeRequests:[{iid:42,title:'PAY-123 Fix checkout retry',source:'feature/PAY-123',target:'main'}]}});});
+  await page.route('**/api/repo/mr-readiness?*',route=>route.fulfill({json:{readiness:{iid:42,title:'PAY-123 Fix checkout retry',source:'feature/PAY-123',target:'main',url:'https://gitlab.example.test/mr/42',sha:snapshot.head,state:'opened',draft:false,pipeline:'failed',approval:{status:'waiting'},merge:'mergeable',checkedAt:new Date().toISOString()}}}));
+  await page.route('**/api/repo/ci?*',route=>route.fulfill({json:{ci:{ref:'feature/PAY-123',sha:ciSha,status:'failed',url:'https://gitlab.example.test/pipeline/12'}}}));
+  await page.route('**/api/repo/observed-env?*',route=>{environmentReads++;return route.fulfill({json:{observed:{env:'uat',source:'Argo CD',revision:snapshot.head,revisions:[],health:'Healthy',sync:'Synced',images:['registry.example.test/billing:1.2.3'],reconciledAt:new Date().toISOString(),checkedAt:new Date().toISOString()}}});});
+  await page.route('**/api/repo/failure-lens?*',route=>route.fulfill({json:{failure:{ci:{ref:'feature/PAY-123',sha:snapshot.head,status:'failed',url:'https://gitlab.example.test/pipelines/12'},jobs:[{name:'retry.spec.ts',stage:'test',status:'failed',reason:'script_failure',url:'https://gitlab.example.test/jobs/12'}],matchesLocalRef:true,limited:false,checkedAt:new Date().toISOString()}}}));
+  await page.getByRole('button',{name:'Dashboard',exact:true}).click();
+  await page.getByRole('heading',{name:'My work',exact:true}).waitFor();
+  const myWork=page.locator('[data-operations-panel="my-work"]');
+  await myWork.getByRole('searchbox',{name:'Ticket key, for example PAY-123'}).fill('PAY-123');
+  await myWork.getByRole('button',{name:'Find ticket',exact:true}).click();await myWork.getByText(/3 matches/).waitFor();
+  if(remoteReads||environmentReads)throw new Error('Remote evidence read automatically');
+  await myWork.getByRole('button',{name:'Check remote evidence'}).click();await myWork.getByText('Failed',{exact:true}).first().waitFor();
+  await myWork.getByRole('button',{name:'Check environment',exact:true}).click();await myWork.getByText('Source revision observed',{exact:true}).first().waitFor();
+  if(environmentReads!==1)throw new Error('Duplicate environment read');
+  const dismiss=page.getByRole('button',{name:'Dismiss',exact:true});if(await dismiss.isVisible())await dismiss.click();
+  await page.screenshot({path:'output/playwright/20-cockpit-desktop.png'});
+  ciSha='b'.repeat(40);await myWork.getByRole('button',{name:'Check remote evidence'}).click();
+  await myWork.locator('.cockpit-trail li').nth(2).getByText('Unknown',{exact:true}).waitFor();
+  await myWork.getByRole('button',{name:'Save task capsule'}).click();await myWork.getByText('Capsule saved locally. Branches were not changed.').waitFor();
+  const taskData=await read('/api/tasks');if(!taskData.capsules.length||taskData.capsules[0].repos.length!==3)throw new Error('Capsule scope lost');
+  await myWork.getByRole('searchbox',{name:'Ticket key, for example PAY-123'}).fill('PAY-999');
+  if(await myWork.getByRole('button',{name:'Check remote evidence'}).count())throw new Error('Old ticket remains actionable');
+  if(!await page.getByRole('button',{name:'Task capsules',exact:true}).isVisible())await page.getByText('More tools',{exact:true}).click();await page.getByRole('button',{name:'Task capsules',exact:true}).click();
+  const capsule=page.locator('[data-operations-panel="capsules"]');
+  await capsule.getByRole('button',{name:'Check saved bases'}).first().click();await capsule.getByText('Same base',{exact:true}).first().waitFor();
+  await capsule.getByRole('button',{name:'Review handoff'}).first().click();await page.getByRole('dialog',{name:'Review task handoff'}).waitFor();
+  const report=page.getByRole('textbox',{name:'Editable handoff'});const handoff=await report.inputValue();if(!handoff.includes('# PAY-123')||handoff.includes('Fixture User')||handoff.includes('script_failure'))throw new Error('Unexpected raw evidence in handoff');
+  await report.fill(handoff.replaceAll(services[0].path,'[redacted path]'));if(!(await report.inputValue()).includes('[redacted path]'))throw new Error('Handoff could not be redacted');
+  await page.getByRole('dialog',{name:'Review task handoff'}).getByRole('button',{name:'Close',exact:true}).click();
+  await page.getByRole('button',{name:'Change impact',exact:true}).click();await page.getByRole('combobox',{name:'Changed service'}).selectOption({label:'shared-payments-library'});await page.getByText(/1 declared consumers/).waitFor();
+  await page.getByRole('button',{name:'Fleet recipes',exact:true}).click();const recipes=page.locator('[data-operations-panel="recipes"]');
+  await recipes.locator('.cockpit-picker input[type=checkbox]').first().check();await recipes.getByRole('button',{name:'Preview review plan'}).click();
+  await recipes.getByRole('button',{name:'Approve and run checks'}).waitFor();
+  // Native confirmation is exercised separately through CLI dialog handling.
+  // Here use the owned fixture's public action API to verify plan execution without pausing this script.
+  await page.evaluate(async()=>{const plan=(await api('/api/tasks')).recipes[0];await api('/api/action',{method:'POST',body:JSON.stringify({action:'recipe-run',id:plan.id,expectedUpdatedAt:plan.updatedAt,approved:true})});});
+  await recipes.getByRole('button',{name:'Refresh plans'}).click();await recipes.getByRole('heading',{name:'Review changes · completed'}).first().waitFor();
+  await page.getByRole('button',{name:'Failure lens',exact:true}).click();const failure=page.locator('[data-operations-panel="failure-lens"]');
+  await failure.getByRole('button',{name:'Check failed jobs'}).click();await failure.getByText('script_failure',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'Release proof',exact:true}).click();const release=page.locator('[data-operations-panel="release-proof"]');
+  await release.getByRole('searchbox',{name:'Ticket key, for example PAY-123'}).fill('PAY-123');await release.getByRole('button',{name:'Find ticket'}).click();await release.getByText(/3 matches/).waitFor();
+  await page.getByRole('button',{name:'Needs attention',exact:true}).click();const inbox=page.locator('[data-operations-panel="focus-inbox"]');await inbox.getByRole('button',{name:'Check local work'}).click();await inbox.getByRole('button',{name:'Review pending',exact:true}).first().waitFor();
+  await page.getByRole('button',{name:'My work',exact:true}).click();
+  await myWork.getByRole('searchbox',{name:'Ticket key, for example PAY-123'}).fill('PAY-123');await myWork.getByRole('button',{name:'Find ticket'}).click();await myWork.getByText(/3 matches/).waitFor();
+  await page.setViewportSize({width:1024,height:768});await page.screenshot({path:'output/playwright/21-cockpit-compact.png'});
+  await page.evaluate(()=>GitDeckAppearance.setTextSize(16));await page.setViewportSize({width:700,height:800});
+  await page.getByRole('combobox',{name:'Dashboard view'}).selectOption('my-work');await page.screenshot({path:'output/playwright/22-cockpit-large-text.png'});
+  if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw new Error('Horizontal page overflow');
+  await page.emulateMedia({reducedMotion:'reduce'});const duration=await myWork.evaluate(element=>getComputedStyle(element).animationDuration);if(duration!=='0s')throw new Error('Reduced motion not respected');
+  await page.setViewportSize({width:1487,height:1058});await page.evaluate(()=>GitDeckAppearance.setTextSize(13));
+  await page.getByRole('button',{name:'My work',exact:true}).click();
+  await myWork.getByRole('searchbox',{name:'Ticket key, for example PAY-123'}).fill('PAY-123');await myWork.getByRole('button',{name:'Find ticket'}).click();await myWork.getByText(/3 matches/).waitFor();
+  await myWork.getByRole('button',{name:'Open workspace'}).click();await page.locator('.commit-row').first().waitFor();await page.locator('.commit-file-main').first().waitFor();
+  await page.screenshot({path:'output/playwright/23-workbench-desktop.png'});
+  const after=(await read('/api/repo/task-snapshot?path='+encodeURIComponent(services[0].path))).snapshot;
+  if(after.head!==snapshot.head||after.branch!==snapshot.branch||after.changed)throw new Error('Workflow changed fixture repository');
+  if(errors.length)throw new Error('Browser errors: '+errors.join('; '));
+  return {localTicket:true,remoteOptIn:true,sourceShaGuard:true,environmentReads,capsule:true,impact:true,recipe:true,failureLens:true,releaseProof:true,unchangedRepositories:true,responsive:true,reducedMotion:true,consoleErrors:errors.length,integrations:'MOCK only; no external services contacted'};
+}

@@ -1,0 +1,69 @@
+/* Selected concepts: compact Git Workbench and ticket Release Trail. Existing tokens and brand. */
+body { --cockpit-danger-ink:#b42318; }
+body.theme-dark { --cockpit-danger-ink:#ffb4ab; }
+.cockpit-panel { padding:16px!important;font-size:var(--ui-text-size,13px);line-height:1.5; }
+.cockpit-head { display:block;margin-bottom:12px; }
+.cockpit-head h2 { font-size:calc(var(--ui-text-size,13px) + 2px)!important;font-weight:600;margin:0 0 4px; }
+.cockpit-head p { margin:0;max-width:90ch; }
+.cockpit-panel h3,.cockpit-panel h4 { font-size:inherit!important;font-weight:600;margin:12px 0 8px; }
+.cockpit-panel :is(button,input,select) { font:inherit;border:1px solid var(--border-default,var(--line));border-radius:5px;background:var(--surface,var(--paper));color:var(--text-primary,var(--ink));min-height:28px;padding:3px 8px; }
+.cockpit-panel button { cursor:pointer; }
+.cockpit-panel button:hover:not(:disabled) { background:var(--surface-hover); }
+.cockpit-panel button.primary { background:var(--green);color:var(--accent-contrast,#fff);border-color:var(--green); }
+.cockpit-panel button:disabled { cursor:default;opacity:.55; }
+.cockpit-panel .operations-toolbar { display:flex;flex-wrap:wrap;gap:8px;align-items:center; }
+.cockpit-panel .operations-toolbar input { flex:1;min-width:150px;max-width:500px; }
+.cockpit-panel .operations-toolbar select { max-width:min(100%,320px);min-width:120px; }
+.cockpit-status { color:var(--text-secondary);margin:8px 0;min-height:20px;overflow-wrap:anywhere; }
+.cockpit-empty { padding:24px 0;color:var(--text-secondary); }
+.cockpit-evidence-layout { display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,330px);gap:24px; }
+.cockpit-evidence-layout > * { min-width:0; }
+.cockpit-inspector { border-left:1px solid var(--border-default);padding-left:20px;overflow-wrap:anywhere; }
+.cockpit-inspector > :is(button,select) { display:block;margin:8px 0;max-width:100%; }
+.cockpit-inspector .cockpit-link { display:block;margin:6px 0; }
+.cockpit-link { color:var(--green);text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere; }
+.cockpit-trail { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));list-style:none;gap:8px;padding:12px 0;margin:8px 0 20px;border-top:1px solid var(--border-default);border-bottom:1px solid var(--border-default); }
+.cockpit-trail li { display:flex;flex-direction:column;gap:4px;padding:4px 8px;border-right:1px solid var(--border-default);overflow-wrap:anywhere; }
+.cockpit-trail li:last-child { border:0; }
+.cockpit-trail span { color:var(--text-secondary); }
+.cockpit-trail .cockpit-failed span { color:var(--cockpit-danger-ink);font-weight:600; }
+.cockpit-panel .cockpit-ticket-title { font-size:calc(var(--ui-text-size,13px) + 5px)!important;margin:0 0 8px;font-weight:600; }
+.cockpit-attention { padding:10px;border-left:3px solid var(--danger,#b42318);background:var(--surface-subtle);margin-bottom:16px; }
+.cockpit-attention strong { color:var(--cockpit-danger-ink); }
+.cockpit-attention h3 { margin-top:0; }
+.cockpit-attention p { margin:6px 0; }
+.diff-viewer-toolbar .diff-copy-path { flex:none; }
+.cockpit-table-scroll { overflow:auto;max-width:100%; }
+.cockpit-panel .multi-repo-table { width:100%;font-size:inherit;border-collapse:collapse; }
+.cockpit-panel .multi-repo-table :is(th,td) { padding:4px 8px;min-height:28px;vertical-align:middle;white-space:normal;overflow-wrap:anywhere;border-bottom:1px solid var(--border-default); }
+.cockpit-panel .multi-repo-table th { background:var(--surface-subtle);text-align:left;font-weight:600; }
+.cockpit-panel .multi-repo-table button { background:transparent;border:0;min-height:22px;text-align:left;padding:0;color:var(--green); }
+.cockpit-panel .multi-repo-table button[aria-pressed=true] { font-weight:600;text-decoration:underline; }
+.cockpit-picker { max-height:180px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px;margin:12px 0; }
+.cockpit-pick { display:flex;align-items:center;gap:8px;min-width:0;overflow-wrap:anywhere;padding:3px; }
+.cockpit-panel input[type=checkbox] { min-height:0;padding:0;flex:none; }
+.cockpit-capsule { border-top:1px solid var(--border-default);padding:12px 0; }
+.cockpit-capsule > button { margin:8px 6px 0 0; }
+.cockpit-report { white-space:pre-wrap;overflow-wrap:anywhere;max-height:50vh;overflow:auto;padding:8px; }
+textarea.cockpit-report { width:100%;min-height:240px;box-sizing:border-box;font:inherit;resize:vertical; }
+.cockpit-tools { display:flex;flex-direction:column; }
+.cockpit-tools summary { cursor:pointer;padding:8px;color:var(--text-secondary); }
+.cockpit-tools[open] > button { display:block;width:100%;text-align:left;padding:5px 8px;min-height:28px; }
+.cockpit-tools:not([open]) > button { display:none!important; }
+.cockpit-primary button { min-height:32px!important; }
+.cockpit-nav-empty { margin:0;padding:8px;color:var(--text-secondary);overflow-wrap:anywhere; }
+.cockpit-dashboard #fleet-table { overflow:auto; }
+.cockpit-dashboard #fleet-table .fleet-head { top:0; }
+.cockpit-dashboard #fleet-table .fleet-row { min-width:max(880px,calc(240px + 42.5em + 56px));grid-template-columns:minmax(240px,2fr) 8em 6.5em 6em minmax(140px,10em) 12em; }
+.cockpit-dashboard #fleet-table .fleet-health { display:flex; }
+/* The graph/diff stays the hero. Do not animate reflow, scroll or repository replacement. */
+html.ui-modern body .commit-list.dense .commit-row { min-height:26px; }
+html.ui-modern body .repo-list .repo-main strong { font-size:var(--ui-text-size,13px)!important; }
+.gd-view-enter,.workbench-body > .operations-modal { animation:none!important; }
+.operations-view:not(.hidden),.backdrop:not(.hidden) > :first-child { animation:gd-fade .14s ease-out; }
+.gd-skeleton-row,.gd-skeleton-row i { animation:none; }
+.pending-tile:hover,.pending-filter:not(.active):hover,.modern-rail-item:hover svg,.modern-rail-item.active svg,#dashboard-button:hover svg,button:not(:disabled):active { transform:none!important; }
+.pending-tile:hover,.pending-group:hover { box-shadow:none; }
+@media(max-width:1050px){.cockpit-evidence-layout{grid-template-columns:minmax(0,1fr)}.cockpit-inspector{border-left:0;border-top:1px solid var(--border-default);padding:12px 0;}.cockpit-inspector>button{display:inline-block;margin-right:6px}}
+@media(max-width:760px){.cockpit-dashboard .cockpit-tools{display:none}.cockpit-panel{padding:12px!important}.cockpit-trail{grid-template-columns:repeat(2,minmax(0,1fr))}.cockpit-panel .operations-toolbar>*{max-width:100%;min-width:0;flex:1 1 180px}.cockpit-picker{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.cockpit-panel *,.operations-view:not(.hidden),.backdrop:not(.hidden)>:first-child{animation:none!important;transition:none!important}}

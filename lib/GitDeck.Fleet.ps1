@@ -15,17 +15,19 @@ function Get-GitDeckTicket([string]$Path, [string]$Key) {
     $Key = ([string]$Key).Trim()
     Assert-GitDeckTicketKey $Key
     $branches = New-Object 'System.Collections.Generic.List[object]'
-    $format = '%(refname)%09%(refname:short)%09%(upstream:short)%09%(upstream:track)%09%(committerdate:iso-strict)'
+    $format = '%(refname)%09%(refname:short)%09%(upstream:short)%09%(upstream:track)%09%(committerdate:iso-strict)%09%(objectname)'
+    $boundary = '(?i)(^|[^A-Z0-9])' + [regex]::Escape($Key) + '(?![A-Z0-9])'
     foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', "--format=$format", 'refs/heads', 'refs/remotes'))) {
         $f = $line -split "`t"
         if ($f[0] -match '/HEAD$' -or $f.Count -lt 2) { continue }
-        if ($f[1].IndexOf($Key, [StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
+        if ($f[1] -notmatch $boundary) { continue }
         $ahead = 0; $behind = 0
         if ($f.Count -gt 3 -and $f[3] -match 'ahead (\d+)') { $ahead = [int]$Matches[1] }
         if ($f.Count -gt 3 -and $f[3] -match 'behind (\d+)') { $behind = [int]$Matches[1] }
         $branches.Add([ordered]@{
             name = $f[1]; remote = $f[0].StartsWith('refs/remotes/'); upstream = $(if ($f.Count -gt 2) { $f[2] } else { '' })
             ahead = $ahead; behind = $behind; date = $(if ($f.Count -gt 4) { $f[4] } else { '' })
+            sha = $(if ($f.Count -gt 5) { $f[5] } else { '' })
         })
         if ($branches.Count -ge 30) { break }
     }
@@ -37,13 +39,13 @@ function Get-GitDeckTicket([string]$Path, [string]$Key) {
     foreach ($hash in Get-GitDeckLines (Invoke-GitCapture $Path @('log', '--branches', '--not', '--remotes', '--regexp-ignore-case', '--fixed-strings', "--grep=$Key", '--format=%H', '-200'))) {
         $unpushed[$hash.Trim()] = $true
     }
-    $list = @($commits | ForEach-Object { $item = [ordered]@{}; foreach ($k in $_.Keys) { $item[$k] = $_[$k] }; $item.pushed = -not $unpushed.ContainsKey([string]$_.fullHash); $item })
+    $list = @($commits | Where-Object { $_.subject -match $boundary } | ForEach-Object { $item = [ordered]@{}; foreach ($k in $_.Keys) { $item[$k] = $_[$k] }; $item.pushed = -not $unpushed.ContainsKey([string]$_.fullHash); $item })
     # Tags named after the ticket, and the tags that already contain its newest commit (it was released).
     $tags = New-Object 'System.Collections.Generic.List[object]'
     $seen = @{}
     foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--sort=-creatordate', '--format=%(refname:short)%09%(creatordate:iso-strict)', 'refs/tags'))) {
         $f = $line -split "`t"
-        if ($f[0].IndexOf($Key, [StringComparison]::OrdinalIgnoreCase) -ge 0 -and -not $seen.ContainsKey($f[0])) { $seen[$f[0]] = $true; $tags.Add([ordered]@{ name = $f[0]; date = $(if ($f.Count -gt 1) { $f[1] } else { '' }); contains = $false }) }
+        if ($f[0] -match $boundary -and -not $seen.ContainsKey($f[0])) { $seen[$f[0]] = $true; $tags.Add([ordered]@{ name = $f[0]; date = $(if ($f.Count -gt 1) { $f[1] } else { '' }); contains = $false }) }
     }
     if ($list.Count) {
         $newest = [string]$list[0].fullHash
@@ -53,7 +55,7 @@ function Get-GitDeckTicket([string]$Path, [string]$Key) {
         }
     }
     $current = ([string](Invoke-GitCapture $Path @('branch', '--show-current')).Output).Trim()
-    return [ordered]@{ key = $Key; current = $current; branches = $branches.ToArray(); commits = @($list); tags = @($tags | Select-Object -First 12) }
+    return [ordered]@{ key = $Key; current = $current; branches = $branches.ToArray(); commits = @($list); tags = @($tags | Select-Object -First 12); checkedAt = [DateTime]::UtcNow.ToString('o'); limited = ($branches.Count -ge 30 -or $commits.Count -ge 60 -or $tags.Count -gt 12) }
 }
 
 # A path inside the repository: no drive, no "..", no switches, forward or back slashes.
@@ -118,7 +120,8 @@ function Get-GitDeckCiStatus([string]$Path, [string]$Ref) {
         if ($text -match '404|401|authenticat|Unauthorized') { throw $notSignedIn }
         throw $text
     }
-    $pipelines = if ($result.Output) { @($result.Output | ConvertFrom-Json) } else { @() }
+    $parsedPipelines = if ($result.Output) { $result.Output | ConvertFrom-Json } else { @() }
+    $pipelines = @($parsedPipelines)
     if (-not $pipelines.Count) { return [ordered]@{ ref = $Ref; status = 'none'; url = ''; updated = ''; sha = '' } }
     $p = $pipelines[0]
     return [ordered]@{ ref = $Ref; status = [string]$p.status; url = [string]$p.web_url; updated = [string]$p.updated_at; sha = [string]$p.sha; id = $p.id }

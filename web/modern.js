@@ -322,12 +322,12 @@
     button.title=label()+(railHelp[tab]?' — '+railHelp[tab]():'');button.append(icon(name,18),el('span','modern-rail-label',label()),el('b','modern-rail-badge'));
     button.addEventListener('click',()=>tab==='repos'?toggleLibrary():tab==='focus'?toggleFocus():globalViews[tab]?globalViews[tab]():selectWorkspaceTab(tab));return button;
   }
-  // Views over every repository, not the open one: Pending work (Operations Center) and Work report.
+  // All repos opens the complete inventory, not only repositories with pending work.
   const globalViews={
-    'all-repos':()=>{if(typeof showOperationsCenter==='function')showOperationsCenter('pending');},
+    'all-repos':()=>{if(typeof showOperationsCenter==='function')showOperationsCenter('fleet');},
     report:()=>window.GitDeckWorkReport?.openWorkReport(),
   };
-  railHelp['all-repos']=()=>t('Pending work, update, switch branch and search in every repository');
+  railHelp['all-repos']=()=>t('All repositories');
   railHelp.report=()=>t('What changed across repositories in a date range');
   function buildRail(){
     const body=document.querySelector('.workbench-body');if(!body||body.querySelector('.modern-rail'))return;

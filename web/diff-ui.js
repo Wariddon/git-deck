@@ -40,7 +40,8 @@ function enhancedDiffViewer(diff,title='Diff',options={}){
   const raw=diff||'No textual diff.',rows=diffRows(raw),pairs=diffPairs(rows);
   const viewer=el('section','diff-viewer improved-diff'),toolbar=el('div','diff-viewer-toolbar'),body=el('div','diff-viewer-body');
   const label=el('strong','',title);label.title=title;
-  if(title!=='Diff'&&state.workspaceRepo)bindDiffPathMenu(label,title,{path:state.workspaceRepo.path});
+  const pathRepo=title!=='Diff'&&state.workspaceRepo?{path:state.workspaceRepo.path}:null;
+  if(pathRepo)bindDiffPathMenu(label,title,pathRepo);
   const button=(name,run)=>{const b=el('button','',name);b.type='button';b.onclick=run;return b;};
   const mode=el('select');mode.setAttribute('aria-label','Diff layout');mode.append(new Option('Unified','unified'),new Option('Side by side','split'));mode.value=preferences.mode;
   const search=el('input');search.type='search';search.placeholder='Find in diff';search.setAttribute('aria-label','Find in diff');
@@ -62,6 +63,7 @@ function enhancedDiffViewer(diff,title='Diff',options={}){
   const controls=el('div','diff-navigation');controls.append(button('Previous change',()=>jump('hunk',-1)),button('Next change',()=>jump('hunk',1)),status,foldButton);
   if(options.navigate){controls.append(el('span','diff-file-position',options.filePosition||'File navigation'),button('Previous file',()=>options.navigate(-1,viewer.classList.contains('diff-fullscreen'))),button('Next file',()=>options.navigate(1,viewer.classList.contains('diff-fullscreen'))));}
   toolbar.append(label,mode,search,button('Previous match',()=>jump('match',-1)),button('Next match',()=>jump('match',1)),wrap,button('A−',()=>font(-1)),button('A+',()=>font(1)),button('Copy',async()=>{try{await navigator.clipboard.writeText(raw);setNotice('Diff copied');}catch{setNotice('Copy failed');}}),fullButton);
+  if(pathRepo){const copyPath=button('Copy path',()=>copyRepositoryValue(fileFullPath(pathRepo,title),'full file path'));copyPath.classList.add('diff-copy-path');copyPath.title=fileFullPath(pathRepo,title);copyPath.setAttribute('aria-label','Copy full file path');label.after(copyPath);}
   viewer.append(toolbar,controls,body);
   const lineNode=row=>{
     const node=el('div','diff-line diff-'+row.kind);node.dataset.row=String(row.index);if(row.kind==='hunk')node.dataset.hunk=String(row.hunk);

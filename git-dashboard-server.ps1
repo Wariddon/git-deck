@@ -17,6 +17,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Fleet.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Integrations.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Catalog.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Cockpit.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
@@ -37,7 +38,7 @@ $script:BaseUrl = "http://127.0.0.1:$Port/"
 [void](New-Item -ItemType Directory -Path $script:JobsRoot -Force)
 [void](New-Item -ItemType Directory -Path $script:ExportsRoot -Force)
 # Script variables copied into each parallel request runspace.
-$script:SharedVariableNames = @('Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile')
+$script:SharedVariableNames = @('Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }
@@ -1211,6 +1212,11 @@ function Invoke-Action($Body) {
         'custom-actions-save' { return Save-GitDeckCustomActions $Body.actions }
         # A work report spans many repositories; each one's AI policy is checked inside.
         'ai-work-summary' { return Get-GitDeckAiWorkSummary @($Body.paths) ([string]$Body.report) }
+        'capsule-save' { return Save-GitDeckTaskCapsule $Body }
+        'capsule-remove' { return Remove-GitDeckTaskCapsule $Body }
+        'recipe-preview' { return New-GitDeckFleetRecipe $Body }
+        'recipe-run' { return Invoke-GitDeckFleetRecipe $Body }
+        'recipe-remove' { return Remove-GitDeckFleetRecipe $Body }
         default { Assert-Registered $path }
     }
     switch ($action) {
@@ -1680,6 +1686,9 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/mrs' { Write-Json $context @{mergeRequests=@(Get-GitDeckMergeRequests $query['path'])} }
         '/api/editors' { Write-Json $context @{editors=(Get-GitDeckEditors)} }
         '/api/catalog' { Write-Json $context @{services=@(Get-GitDeckServiceCatalog)} }
+        '/api/tasks' { Write-Json $context (Get-GitDeckTaskStore) }
+        '/api/repo/task-snapshot' { Write-Json $context @{snapshot=(Get-GitDeckTaskSnapshot $query['path'])} }
+        '/api/repo/failure-lens' { Write-Json $context @{failure=(Get-GitDeckFailureLens $query['path'] $query['ref'])} }
         '/api/repo/observed-env' { Write-Json $context @{observed=(Get-GitDeckObservedEnvironment $query['path'] $query['env'])} }
         '/api/repo/mr-readiness' { Write-Json $context @{readiness=(Get-GitDeckMrReadiness $query['path'] $query['iid'])} }
         '/api/repo/latest-tag' { Assert-Registered $query['path']; Write-Json $context @{tag=(Get-GitDeckLatestTag $query['path'])} }
