@@ -384,7 +384,7 @@ function Get-SetupReadiness {
         $name=[bool]([string](& git config --global --get user.name 2>$null)).Trim()
         $email=[bool]([string](& git config --global --get user.email 2>$null)).Trim()
     }
-    return @{appVersion='1.1.0';gitAvailable=[bool]$git;gitVersion=$version;powerShellVersion=$PSVersionTable.PSVersion.ToString();globalIdentityReady=($name -and $email);gitlabCliAvailable=(Test-Path -LiteralPath $script:Glab -PathType Leaf);serviceReady=$true;port=$Port}
+    return @{appVersion='1.2.0';gitAvailable=[bool]$git;gitVersion=$version;powerShellVersion=$PSVersionTable.PSVersion.ToString();globalIdentityReady=($name -and $email);gitlabCliAvailable=(Test-Path -LiteralPath $script:Glab -PathType Leaf);serviceReady=$true;port=$Port}
 }
 
 function Get-PushPreview([string]$Path,[string]$Remote,[string]$Local,[string]$Target) {
