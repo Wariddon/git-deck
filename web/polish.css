@@ -262,6 +262,17 @@ html.ui-modern body .multi-repo-table.pending-table .pending-step.tone-ok::befor
 html.ui-modern body.theme-dark .multi-repo-table.pending-table .pending-step.tone-ok { color: #6bc46d !important; }
 html.ui-modern body .multi-repo-table.pending-table tr + tr > td { border-top-color: var(--border-muted) !important; }
 
+/* ---- Dashboard "Update all": two choice cards (Fetch all, Pull all), each explaining its button --- */
+html.ui-modern body .update-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 4px 0 14px; padding: 0 !important; border: 0 !important; background: none !important; }
+html.ui-modern body .update-choice { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--border-default); border-radius: 12px;
+  background: var(--surface); box-shadow: 0 1px 2px rgb(0 0 0 / 4%); transition: border-color .15s, box-shadow .15s; }
+html.ui-modern body .update-choice:hover { border-color: color-mix(in srgb, var(--green) 40%, var(--border-default)); box-shadow: 0 4px 14px -6px rgb(0 0 0 / 18%); }
+html.ui-modern body .update-choice-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: var(--modern-accent-soft); color: var(--green); }
+html.ui-modern body .update-choice-text { display: grid; gap: 2px; min-width: 0; }
+html.ui-modern body .update-choice-text strong { font-size: 1.05em; }
+html.ui-modern body .update-choice-text p { margin: 0 !important; color: var(--text-secondary); line-height: 1.5; }
+html.ui-modern body .update-choice > button { min-height: 32px; padding: 0 16px !important; border-radius: 8px !important; white-space: nowrap; }
+
 /* ---- Primary buttons: a touch of depth so the one thing to press stands out ------------------------ */
 html.ui-modern body button.primary:not(:disabled) { background-image: linear-gradient(180deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 0%)) !important; }
 

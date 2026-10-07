@@ -67,5 +67,8 @@ assert.ok(!motion.isQuiet('/api/repo/pending?path=x'));
   assert.match(polish, /#repo-list \.repo > :is\(\.repo-main, \.repo-meta\) \{ grid-column: 1 \/ -1 !important;/, 'Repository card rows span the card');
   // Dashboard table: small lines wrap inside their cell instead of running into the next column.
   assert.match(polish, /\.multi-repo-table\.pending-table td small \{ white-space: normal !important;/, 'Small lines wrap in Dashboard cells');
+  // Update all: Fetch all and Pull all are choice cards that explain their button.
+  assert.match(web('multi-repo.js'), /explain\.append\(choice\('fetch',t\('Fetch all'\),/, 'Fetch all is a choice card');
+  assert.match(polish, /\.update-choice \{ display: grid; grid-template-columns: 40px minmax\(0, 1fr\) auto;/, 'Choice card layout');
   console.log('PASS: polish layer');
 }

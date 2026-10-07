@@ -554,10 +554,17 @@
     const fetch=el('button','',t('Fetch all'));fetch.type='button';
     const pull=el('button','primary',t('Pull all'));pull.type='button';pull.title=t('Pull the current branch of each repository; uncommitted changes are stashed and restored');
     const status=el('small','multi-repo-status');const out=el('div','multi-repo-body');
-    const explain=el('div','multi-repo-explain');
-    explain.append(el('p','',t('Fetch only asks the remote what is new. It changes none of your files: safe any time.')),
-      el('p','',t('Pull brings the new commits into the branch you are on. Uncommitted changes are put aside and put back. Uses your pull setting ({strategy}).',{strategy:state.meta?.pullStrategy||'ff-only'})));
-    bar.append(folder,fetch,pull);panel.append(bar,explain,status,out);
+    // Two choices side by side, each saying what it does next to its button.
+    const explain=el('div','multi-repo-explain update-choices');
+    const choice=(icon,title,text,button)=>{
+      const card=el('div','update-choice');const mark=el('span','update-choice-icon');
+      if(window.GitDeckIcons?.svg)mark.append(window.GitDeckIcons.svg(icon,20));
+      const body=el('div','update-choice-text');body.append(el('strong','',title),el('p','',text));
+      card.append(mark,body,button);return card;
+    };
+    explain.append(choice('fetch',t('Fetch all'),t('Fetch only asks the remote what is new. It changes none of your files: safe any time.'),fetch),
+      choice('pull',t('Pull all'),t('Pull brings the new commits into the branch you are on. Uncommitted changes are put aside and put back. Uses your pull setting ({strategy}).',{strategy:state.meta?.pullStrategy||'ff-only'}),pull));
+    bar.append(folder);panel.append(bar,explain,status,out);
     const go=async(mode)=>{
       const repos=reposIn(folder.value).filter(repo=>repo.remote!==''&&repo.remote!==null);
       if(!repos.length){status.textContent=t('No repositories with a remote in this folder.');return;}
