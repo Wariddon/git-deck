@@ -1063,4 +1063,12 @@ GitDeckI18n.register('th',{
   "No repositories are shown.":"ไม่มี repository ที่แสดงอยู่",
   "Workset name for {count} repositories":"ชื่อ workset สำหรับ {count} repository",
   "Workset {name} saved. Choose it in the folder list.":"บันทึก workset {name} แล้ว เลือกได้จากรายการโฟลเดอร์",
+  "Tag many repositories":"ติด tag หลาย repository",
+  "The next tag in many repositories at once":"tag ถัดไปในหลาย repository พร้อมกัน",
+  "Ticket across repositories":"Ticket ข้าม repository",
+  "Branches, commits and tags of one ticket":"branch, commit และ tag ของ ticket เดียว",
+  "Compare files across repositories":"เทียบไฟล์ข้าม repository",
+  "pom.xml, application.yml… against a reference":"pom.xml, application.yml… เทียบกับต้นแบบ",
+  "Latest GitLab pipeline of every repository":"pipeline ล่าสุดบน GitLab ของทุก repository",
+  "All repositories":"ทุก repository",
 });

@@ -333,5 +333,23 @@
   // Place the new views after Search all, before Repository health and the job queue.
   const nav=document.querySelector('.operations-tabs');const anchor=nav?.querySelector('[data-operations-view="search-all"]');
   if(anchor){let after=anchor;for(const id of ['tag-all','ticket','compare-files','ci']){const tab=nav.querySelector(`[data-operations-view="${id}"]`);if(tab){after.after(tab);after=tab;}}}
+  // The same views in the More menu, next to the other Dashboard entries (modern.js adds the icons).
+  const more=document.querySelector('.sync-more > div');
+  if(more&&!more.querySelector('[data-multi-repo="tag-all"]')){
+    const anchor=more.querySelector('[data-multi-repo="cleanup"]');
+    for(const [view,label,hint] of [['tag-all',t('Tag many repositories'),t('The next tag in many repositories at once')],['ticket',t('Ticket across repositories'),t('Branches, commits and tags of one ticket')],['compare-files',t('Compare files across repositories'),t('pom.xml, application.yml… against a reference')],['ci',t('CI status'),t('Latest GitLab pipeline of every repository')]]){
+      const item=el('button','');item.type='button';item.dataset.multiRepo=view;item.append(el('strong','',label),el('small','',hint));
+      item.onclick=()=>{more.parentElement?.removeAttribute('open');if(typeof showOperationsCenter==='function')showOperationsCenter(view);};
+      if(anchor)anchor.before(item);else more.append(item);
+    }
+  }
+  // Views over every repository get their own group in More, after the open repository's tools.
+  if(more&&!more.querySelector('.fleet-more-group')){
+    const heading=el('p','sync-more-group fleet-more-group',t('All repositories'));
+    const cleanup=more.querySelector('[data-multi-repo="cleanup"]');const custom=more.querySelector('[data-custom-actions]');
+    if(cleanup&&custom)custom.after(cleanup);
+    const fleetItems=[more.querySelector('[data-work-report]'),...['pending','switch-all','search-all','tag-all','ticket','compare-files','ci'].map(id=>more.querySelector(`[data-multi-repo="${id}"]`))].filter(Boolean);
+    more.append(heading,...fleetItems);
+  }
   window.GitDeckFleet.nextTag=nextTag;window.GitDeckFleet.flattenYaml=flattenYaml;window.GitDeckFleet.flattenPom=flattenPom;window.GitDeckFleet.lineDiff=lineDiff;
 })();

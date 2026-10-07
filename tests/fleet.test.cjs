@@ -51,3 +51,15 @@ assert.match(multi, /case 'newtag':return isNewTag\(item\);/);
 assert.match(multi, /if\(folder\.startsWith\('set:'\)\)/);
 assert.match(multi, /window\.GitDeckFleet=\{addPanel,folderSelect,reposIn/);
 console.log('PASS: tag suggestions, YAML keys, line diff, new tags and worksets wiring');
+
+// More menu: every item has an icon (Dashboard views, Work report, Custom actions too), drop-down
+// menus close on a press elsewhere or Escape, and "Tags" opens the Tags view without the create dialog.
+{
+  const modern = web('modern.js');
+  assert.match(modern, /extra\[button\.dataset\.multiRepo\]\|\|\(button\.dataset\.workReport\?'report':button\.dataset\.customActions\?'sparkles':''\)/);
+  assert.match(modern, /document\.addEventListener\('pointerdown',\(event\)=>\{document\.querySelectorAll\(popupMenus\)/);
+  assert.match(modern, /const popupMenus='\.sync-more\[open\], \.history-options\[open\]/);
+  assert.match(web('index.html'), /<button type="button" data-workbench-nav="tags"><strong>◇ Tags<\/strong>/);
+  assert.match(web('fleet.js'), /el\('p','sync-more-group fleet-more-group',t\('All repositories'\)\)/);
+  console.log('PASS: More menu icons, grouping and closing');
+}

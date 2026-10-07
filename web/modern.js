@@ -384,8 +384,15 @@
     if(secondary&&event.target.closest('button')&&!event.target.closest('select'))secondary.open=false;
     document.querySelectorAll('.workbench-secondary[open]').forEach(menu=>{if(isModern()&&!menu.contains(event.target))menu.open=false;});
   });
+  // Drop-down menus close when you press anywhere else or Escape, and after choosing an item in
+  // "More" (the menu stayed open over the page before). Capture phase: a click that another
+  // handler stops still counts as "elsewhere".
+  const popupMenus='.sync-more[open], .history-options[open], .commit-action-menu[open], .changes-view-options[open], .pending-more[open], .workspace-quick-menu[open], .clean-add-menu[open], .workbench-secondary[open]';
+  document.addEventListener('pointerdown',(event)=>{document.querySelectorAll(popupMenus).forEach(menu=>{if(!menu.contains(event.target))menu.open=false;});},true);
+  document.addEventListener('keydown',(event)=>{if(event.key!=='Escape')return;const open=[...document.querySelectorAll(popupMenus)];if(!open.length)return;open.forEach(menu=>{menu.open=false;});open.at(-1).querySelector(':scope > summary')?.focus();},true);
+  document.addEventListener('click',(event)=>{const item=event.target.closest('.sync-more > div > button');if(item)item.closest('.sync-more').open=false;});
   // "More" menu: icons instead of mixed glyphs (⇄ ◈ ⌕ ⑂ ≋ …); the words stay.
-  const moreIcons={'compare':'compare','gitlab-inbox':'inbox','search-history':'search','branches':'branch','rebase':'commit','conflicts':'conflict','health':'check','worktrees':'folder','stashes':'stash','tag-create':'tag','patches':'changes','remotes':'cloud','recovery':'recovery','tools':'tools','settings':'settings','toolbar-create-branch':'branch','toolbar-create-tag':'tag'};
+  const moreIcons={'compare':'compare','gitlab-inbox':'inbox','search-history':'search','branches':'branch','rebase':'commit','conflicts':'conflict','health':'check','worktrees':'folder','stashes':'stash','tag-create':'tag','tags':'tag','patches':'changes','remotes':'cloud','recovery':'recovery','tools':'tools','settings':'settings','toolbar-create-branch':'branch','toolbar-create-tag':'tag'};
   // Upper-case group labels ("REVIEW & GITLAB") read as sentence case, keeping product names.
   function sentenceCase(text){
     if(!/^[^a-z]*[A-Z][^a-z]*$/.test(text))return text;
@@ -398,7 +405,9 @@
     }
     for(const button of document.querySelectorAll('.sync-more > div > button')){
       if(button.querySelector(':scope > .modern-made'))continue;
-      const name=moreIcons[button.dataset.workbenchNav||button.id];if(!name)continue;
+      // Items added by other scripts (Dashboard views, Work report, Custom actions) get icons too.
+      const extra={pending:'repos','switch-all':'branch','search-all':'search',cleanup:'merge','tag-all':'tag',ticket:'flow','compare-files':'compare',ci:'check'};
+      const name=moreIcons[button.dataset.workbenchNav||button.id]||extra[button.dataset.multiRepo]||(button.dataset.workReport?'report':button.dataset.customActions?'sparkles':'');if(!name)continue;
       const label=button.querySelector(':scope > strong');
       if(label&&label.dataset.modernText===undefined){const text=label.textContent;const words=text.replace(/^[^\p{L}\p{N}]+/u,'');if(words!==text){label.dataset.modernText=text;label.textContent=words;}}
       const node=icon(name,16);node.classList.add('modern-made');button.prepend(node);
