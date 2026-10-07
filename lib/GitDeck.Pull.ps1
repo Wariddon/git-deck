@@ -67,7 +67,7 @@ function Invoke-GitDeckPull([string]$Path, [string]$Strategy, [bool]$Autostash, 
         throw $(if ($result.Output) { $result.Output } else { 'Git pull failed.' })
     }
     $output = if ($result.Output) { $result.Output } else { 'Already up to date.' }
-    $conflicts = @((Invoke-GitCapture $Path @('-c', 'core.quotepath=off', 'diff', '--name-only', '--diff-filter=U')).Output -split "`r?`n" | Where-Object { $_ })
+    $conflicts = @((Get-GitOperationState $Path).conflicts)
     if ($dirty -and $conflicts.Count) {
         return @{
             # Keep the key facts inside the 180-character feedback card.

@@ -8,6 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const html = read('web/index.html');
 const runtime = read('lib/GitDeck.Runtime.ps1');
 const release = read('Build-Release.ps1');
+assert.match(release, /'CHANGELOG\.md'/, 'Portable package includes release notes');
+assert(release.indexOf('Release ZIP already exists') < release.indexOf("'Build-GitDeck.ps1'"), 'Existing release is refused before rebuilding binaries');
 const served = new Set([...runtime.match(/\$script:StaticTypes = @\{([\s\S]*?)\n\}/)[1].matchAll(/'(\.[a-z0-9]+)'=/g)].map((m) => m[1]));
 const packaged = new Set([...release.match(/Get-ChildItem -LiteralPath \(Join-Path \$root 'web'\)[^\n]*Extension -in @\(([^)]*)\)/)[1].matchAll(/'(\.[a-z0-9]+)'/g)].map((m) => m[1]));
 const flatName = /^\/([A-Za-z0-9][A-Za-z0-9_-]*\.[a-z]{2,4})$/; // Get-GitDeckStaticPath

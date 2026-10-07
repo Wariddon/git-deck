@@ -11,6 +11,9 @@ $script:SecretRules = @(
     @{id='anthropic-key'; level='block'; label='Anthropic API key'; pattern='\bsk-ant-[A-Za-z0-9_-]{20,}'},
     @{id='api-secret-key'; level='block'; label='API secret key'; pattern='\bsk-(?:proj-|live-)?[A-Za-z0-9_-]{32,}'},
     @{id='google-key'; level='block'; label='Google API key'; pattern='\bAIza[0-9A-Za-z_-]{35}\b'},
+    @{id='azure-storage-key'; level='block'; label='Azure storage key'; pattern='(?i)\bAccountKey=[A-Za-z0-9+/]{40,}={0,2}'},
+    @{id='azure-sas'; level='warn'; label='Azure SAS token'; pattern='[?&]sig=[A-Za-z0-9%+/]{30,}'},
+    @{id='jwt'; level='warn'; label='JSON Web Token'; pattern='\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'},
     @{id='url-credentials'; level='warn'; label='Credentials in URL'; pattern='\b[a-z][a-z0-9+.-]*://[^/\s:@''"]+:[^/\s@''"]{3,}@'},
     @{id='assignment'; level='warn'; label='Hard-coded secret'; pattern='(?i)\b(?:password|passwd|pwd|secret|api[_-]?key|access[_-]?token|auth[_-]?token|client[_-]?secret)\b\s*[:=]\s*[''"][^''"\s]{8,}[''"]'}
 )
@@ -68,6 +71,12 @@ function Get-PushChecks([string]$Path, [string]$Remote, [string]$Local, [string]
     $truncated = $false
     if ($patch.Length -gt 8000000) { $patch = $patch.Substring(0, 8000000); $truncated = $true }
     $findings = @(Find-GitDeckSecrets $patch)
+    # gitleaks, when installed in bin\, adds its rules (hundreds of providers) to the same findings.
+    $leaks = Invoke-GitDeckGitleaks $Path $(if ($known) { "$remoteRef..$source" } else { "$source --not --remotes=$Remote" })
+    if ($leaks) {
+        if ($leaks.error) { $checks.Add([ordered]@{level='warn'; label='gitleaks'; detail="gitleaks could not run: $($leaks.error)"}) }
+        else { $findings = @($findings) + @($leaks.findings); if (-not @($leaks.findings).Count) { $checks.Add([ordered]@{level='ok'; label='gitleaks'; detail='gitleaks found nothing in outgoing commits.'}) } }
+    }
     $blocking = @($findings | Where-Object { $_.level -eq 'block' })
     if ($blocking.Count) { $checks.Add([ordered]@{level='block'; label='Possible secrets'; detail="$($blocking.Count) added line(s) look like keys or tokens. Remove them and rewrite the commit before pushing."}) }
     elseif ($findings.Count) { $checks.Add([ordered]@{level='warn'; label='Possible secrets'; detail="$($findings.Count) added line(s) look like hard-coded credentials. Review before pushing."}) }

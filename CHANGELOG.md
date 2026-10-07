@@ -2,6 +2,25 @@
 
 What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
+## 1.4.0 — 2026-10-07
+
+Git Deck now talks to the tools around Git.
+
+- **Releases**: which image tag is configured for DEV, SIT, UAT and PROD in your deploy repository (Kubernetes manifests, Helm values, Kustomize), next to the latest tag of the service's repository. Ticket environment hints use this Git configuration; they do not verify the live cluster.
+- **Merge requests**: open GitLab merge requests of every repository in one list, and one merge request per repository for a ticket branch.
+- **Dependencies**: Maven parent, dependency, plugin and `*.version` versions side by side across repositories, with the ones that differ first.
+- **Windows notifications** while Git Deck is in the background: new commits to pull and new tags after a background fetch, finished jobs and GitLab news. Turn them off or test them in *Dashboard → Automation & Windows*.
+- **Open in IntelliJ IDEA** for the repository (Open menu, command palette) and for a changed file (right-click), plus *Open in VS Code* for a file.
+- Pre-push checks also find Azure storage keys, SAS tokens and JSON Web Tokens, and run [gitleaks](https://github.com/gitleaks/gitleaks) when `bin\gitleaks.exe` is present.
+- Pending work refreshes the registered repository list on every check, including repositories whose first status check is still pending.
+- Conflict detection reads unmerged Git index entries, so LF/CRLF warnings no longer appear as conflicted filenames after a pull or stash restore.
+- **Service catalog**: local owner/system metadata, docs and CI links, explicit dependencies and opt-in Argo CD snapshots. Controller age and unknown/error states are shown separately from Git-configured image tags; no deployment or refresh is requested.
+- **MR readiness** in Merge requests and Ticket: approval rules and a pipeline matching the MR head SHA; missing permissions or unsupported approval APIs remain unknown.
+- Dashboard tools grouped into Work, Inspect and Manage with search, keyboard navigation and a narrow-screen picker. Service details stack and tables become cards on small windows; secondary toolbar actions stay available under Tools.
+- Fix Ticket copy using a newly edited key with old results, editor menus following the wrong repository, stash conflicts missing the primary resolution action, strict-CSP startup CSS and narrow-header overlap.
+- Catalog editing now confirms before discarding unsaved changes, prevents stale windows from overwriting newer metadata, preserves unavailable dependency references and refuses malformed catalog files without replacing them. Service details include Copy repository path; future controller timestamps are not treated as fresh.
+- Reject incompatible or differently indented image/tag pairs in Releases. Changing the source branch invalidates a bulk merge-request plan; title and draft settings stay fixed while requests are being created.
+
 ## 1.3.0 — 2026-10-07
 
 Work across many repositories at once, without opening them one by one.

@@ -24,7 +24,7 @@
     const files=data.files||[];const sync=data.sync||{};const op=data.operation||{};
     const conflicts=conflictCount(data);
     const staged=files.filter(file=>file.staged).length;
-    if(op.active&&conflicts)return {kind:'conflicts',icon:'conflict',label:t('Resolve {count} conflict(s)',{count:conflicts}),title:t('Open Conflict Center')};
+    if(conflicts)return {kind:'conflicts',icon:'conflict',label:t('Resolve {count} conflict(s)',{count:conflicts}),title:t('Open Conflict Center')};
     if(staged)return {kind:'commit',icon:'check',label:t('Commit {count}',{count:staged}),title:t('Write a message and commit the staged files')};
     if(files.length)return {kind:'review',icon:'changes',label:t('Review {count} change(s)',{count:files.length}),title:t('Open File Status to stage and commit')};
     if(sync.behind>0)return {kind:'pull',icon:'pull',label:t('Pull {count}',{count:sync.behind}),title:t('Bring {count} incoming commit(s) into this branch',{count:sync.behind})};
@@ -216,6 +216,9 @@
     const syncGroup=group();syncGroup.append(actionButtons.pull,actionButtons.push,actionButtons.fetch);
     group().append(actionButtons.branch,actionButtons.merge,actionButtons.stash,actionButtons.tag);
     const end=group();end.classList.add('modern-act-end');end.append(actionButtons.gitflow,actionButtons.terminal,actionButtons.explorer);
+    const tools=actionButton('other','more',t('Tools'),t('More actions'),()=>openPopover(tools,'modern-actions-menu',t('More actions'),menu=>{
+      for(const kind of ['gitflow','terminal','explorer','undo']){const target=actionButtons[kind];menu.append(menuItem(kind==='gitflow'?'flow':kind,target.querySelector('.modern-act-label').textContent,target.title,()=>target.click(),{disabled:target.disabled}));}
+    }));tools.classList.add('modern-toolbar-tools');strip.append(tools);
     return {strip,syncGroup};
   }
   function renderActions(data){
@@ -406,7 +409,7 @@
     for(const button of document.querySelectorAll('.sync-more > div > button')){
       if(button.querySelector(':scope > .modern-made'))continue;
       // Items added by other scripts (Dashboard views, Work report, Custom actions) get icons too.
-      const extra={pending:'repos','switch-all':'branch','search-all':'search',cleanup:'merge','tag-all':'tag',ticket:'flow','compare-files':'compare',ci:'check'};
+      const extra={pending:'repos','switch-all':'branch','search-all':'search',cleanup:'merge','tag-all':'tag',ticket:'flow','compare-files':'compare',ci:'check',releases:'cloud','merge-requests':'merge',dependencies:'tools'};
       const name=moreIcons[button.dataset.workbenchNav||button.id]||extra[button.dataset.multiRepo]||(button.dataset.workReport?'report':button.dataset.customActions?'sparkles':'');if(!name)continue;
       const label=button.querySelector(':scope > strong');
       if(label&&label.dataset.modernText===undefined){const text=label.textContent;const words=text.replace(/^[^\p{L}\p{N}]+/u,'');if(words!==text){label.dataset.modernText=text;label.textContent=words;}}

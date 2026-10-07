@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <style id="startup-background">html{background:#0b6e47}</style>
+  <link id="startup-background" rel="stylesheet" href="/startup-background.css">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="/modern.css">
   <link rel="stylesheet" href="/motion.css">
   <link rel="stylesheet" href="/polish.css">
+  <link rel="stylesheet" href="/catalog.css">
 </head>
 <body>
   <dialog id="startup-splash" aria-labelledby="startup-title" aria-describedby="startup-status">
@@ -204,7 +205,7 @@
       <header class="about-head"><div><p class="eyebrow">HELP</p><h2 id="about-title">About Git Deck</h2></div><button type="button" id="about-close" aria-label="Close About Git Deck">×</button></header>
       <div class="about-view" data-about-view="about">
         <div class="about-hero"><img src="/favicon.svg" alt="Git Deck icon"><div><h3>Git Deck</h3><p>Local Repository Manager</p><span>A compact, easy-to-use Git client for Windows</span></div></div>
-        <dl class="about-credits"><div><dt>Created by</dt><dd>Wariddon Rattanamalee</dd></div><div><dt>Development assistant</dt><dd>OpenAI Codex</dd></div><div><dt>Version</dt><dd>Git Deck Desktop · v1.3.0</dd></div></dl>
+        <dl class="about-credits"><div><dt>Created by</dt><dd>Wariddon Rattanamalee</dd></div><div><dt>Development assistant</dt><dd>OpenAI Codex</dd></div><div><dt>Version</dt><dd>Git Deck Desktop · v1.4.0</dd></div></dl>
         <p class="about-note">Runs locally using Git CLI and is served on localhost</p>
       </div>
       <div class="about-view hidden" data-about-view="getting-started"><h3>Getting Started</h3><ol><li>Click <b>Scan</b> to find repositories in a selected folder</li><li>Select a repository and review changes in <b>File Status</b></li><li>Use <b>Fetch</b> to check remotes before pulling or pushing</li><li>Right-click a branch or commit for more actions</li></ol></div>
@@ -240,7 +241,7 @@
           <button type="button" data-workspace-quick="favorite" title="Favorite">☆</button>
           <details class="theme-picker theme-picker-workspace"><summary title="Change color theme"><span class="theme-picker-icon">◐</span><span class="theme-picker-label">Theme</span></summary><div class="theme-menu"><strong>Color theme</strong><button type="button" data-theme-choice="system"><i class="theme-swatch swatch-system"></i><span>System<small>Follow Windows</small></span></button><button type="button" data-theme-choice="light"><i class="theme-swatch swatch-light"></i><span>Light<small>Bright and neutral</small></span></button><button type="button" data-theme-choice="dark"><i class="theme-swatch swatch-dark"></i><span>Dark<small>Low-light workspace</small></span></button><button type="button" data-theme-choice="midnight"><i class="theme-swatch swatch-midnight"></i><span>Midnight<small>Blue-black contrast</small></span></button><button type="button" data-theme-choice="paper"><i class="theme-swatch swatch-paper"></i><span>Paper<small>Warm, low glare for long sessions</small></span></button><label class="theme-custom"><span>Accent color</span><input class="theme-custom-color" type="color" aria-label="Custom accent color"></label></div></details>
           <details class="help-menu help-menu-workspace"><summary>Help</summary><div class="help-menu-panel"><button type="button" data-help-view="about">About Git Deck</button><hr><button type="button" data-help-view="getting-started">Getting Started</button><button type="button" data-help-view="shortcuts">Keyboard Shortcuts</button></div></details>
-          <details class="workspace-quick-menu"><summary>Open ▾</summary><div><button type="button" data-workspace-quick="open-folder">Explorer</button><button type="button" data-workspace-quick="open-terminal">Terminal</button><button type="button" data-workspace-quick="open-code">VS Code</button><button type="button" data-workspace-quick="open-remote">Remote URL</button></div></details>
+          <details class="workspace-quick-menu"><summary>Open ▾</summary><div><button type="button" data-workspace-quick="open-folder">Explorer</button><button type="button" data-workspace-quick="open-terminal">Terminal</button><button type="button" data-workspace-quick="open-code">VS Code</button><button type="button" data-workspace-quick="open-idea">IntelliJ IDEA</button><button type="button" data-workspace-quick="open-remote">Remote URL</button></div></details>
           <button class="create-mr-button" type="button" data-workspace-quick="create-mr" title="Create merge request from the current branch">＋ Merge Request</button>
           <button type="button" data-workbench-nav="settings">Settings</button>
           <button class="operations-open" type="button" title="Repository dashboard and job queue">Operations</button>
@@ -350,11 +351,13 @@
   <script src="/word-diff.js" defer></script>
   <script src="/multi-repo.js" defer></script>
   <script src="/fleet.js" defer></script>
+  <script src="/integrations.js" defer></script>
   <script src="/alerts.js" defer></script>
   <script src="/update-check.js" defer></script>
   <script src="/git-flow.js" defer></script>
   <script src="/icons.js" defer></script>
   <script src="/modern.js" defer></script>
   <script src="/motion.js" defer></script>
+  <script src="/catalog.js" defer></script>
 </body>
 </html>

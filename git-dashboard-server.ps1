@@ -15,6 +15,8 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Activity.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.MultiRepo.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Fleet.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Integrations.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Catalog.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
@@ -35,7 +37,7 @@ $script:BaseUrl = "http://127.0.0.1:$Port/"
 [void](New-Item -ItemType Directory -Path $script:JobsRoot -Force)
 [void](New-Item -ItemType Directory -Path $script:ExportsRoot -Force)
 # Script variables copied into each parallel request runspace.
-$script:SharedVariableNames = @('Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','SecretRules','ServerStamp','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide')
+$script:SharedVariableNames = @('Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile')
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }
@@ -361,7 +363,18 @@ function Get-GitOperationState([string]$Path) {
     elseif ((Test-Path -LiteralPath (Join-Path $gitDir 'rebase-merge')) -or (Test-Path -LiteralPath (Join-Path $gitDir 'rebase-apply'))) { $type='rebase' }
     elseif (Test-Path -LiteralPath (Join-Path $gitDir 'CHERRY_PICK_HEAD')) { $type='cherry-pick' }
     elseif (Test-Path -LiteralPath (Join-Path $gitDir 'REVERT_HEAD')) { $type='revert' }
-    $conflicts = @((Invoke-GitCapture $Path @('diff','--name-only','--diff-filter=U')).Output -split "`r?`n" | Where-Object { $_ })
+    # Read unmerged index stages, not diff output: LF/CRLF diagnostics on stderr
+    # are not filenames. NUL records also preserve spaces and quoted paths.
+    $unmerged = Invoke-GitCapture $Path @('ls-files','--unmerged','-z')
+    if ($unmerged.Code -ne 0) { throw "Could not read unmerged files.`n$($unmerged.Output)" }
+    $paths = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($record in ($unmerged.Output -split "`0")) {
+        if ($record -match '(?s)^[0-7]{6} [0-9a-fA-F]{40,64} [123]\t(.+)$') {
+            $file = $Matches[1]
+            if (-not $paths.Contains($file)) { $paths.Add($file) }
+        }
+    }
+    $conflicts = @($paths.ToArray())
     return [ordered]@{active=[bool]$type;type=$type;conflicts=$conflicts;resolved=($type -and -not $conflicts.Count)}
 }
 
@@ -385,7 +398,7 @@ function Get-SetupReadiness {
         $name=[bool]([string](& git config --global --get user.name 2>$null)).Trim()
         $email=[bool]([string](& git config --global --get user.email 2>$null)).Trim()
     }
-    return @{appVersion='1.3.0';gitAvailable=[bool]$git;gitVersion=$version;powerShellVersion=$PSVersionTable.PSVersion.ToString();globalIdentityReady=($name -and $email);gitlabCliAvailable=(Test-Path -LiteralPath $script:Glab -PathType Leaf);serviceReady=$true;port=$Port}
+    return @{appVersion='1.4.0';gitAvailable=[bool]$git;gitVersion=$version;powerShellVersion=$PSVersionTable.PSVersion.ToString();globalIdentityReady=($name -and $email);gitlabCliAvailable=(Test-Path -LiteralPath $script:Glab -PathType Leaf);serviceReady=$true;port=$Port}
 }
 
 function Get-PushPreview([string]$Path,[string]$Remote,[string]$Local,[string]$Target) {
@@ -1092,6 +1105,7 @@ function Invoke-Action($Body) {
             if ($result.Code -ne 0) { throw $result.Output }
             return @{message="Merge request created: $source → $target.";output=$result.Output}
         }
+        'notify-toast' { return Show-GitDeckToast ([string]$Body.title) ([string]$Body.text) }
         'open-url' {
             $url=([string]$Body.url).Trim();if($url -notmatch '^https?://'){throw 'Only HTTP or HTTPS URLs can be opened.'};Start-Process $url;return @{message='URL opened in your browser.';output=$url}
         }
@@ -1212,6 +1226,9 @@ function Invoke-Action($Body) {
             if ($terminal) { Start-Process $terminal.Source -ArgumentList @('-d',('"'+$path+'"')) } else { Start-Process powershell.exe -WorkingDirectory $path }
             return @{message='Terminal opened.'}
         }
+        'open-idea' { return Open-GitDeckEditor $path 'idea' '' $null }
+        'open-editor' { return Open-GitDeckEditor $path ([string]$Body.editor) ([string]$Body.file) $Body.line }
+        'catalog-save' { return Save-GitDeckServiceMetadata $path $Body }
         'open-code' {
             $code = Get-Command code.cmd -ErrorAction SilentlyContinue
             if (-not $code) { throw 'VS Code command was not found.' }
@@ -1659,6 +1676,13 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/file' { Write-Json $context @{file=(Get-GitDeckRepoFile $query['path'] $query['file'] $query['ref'])} }
         '/api/repo/files' { Write-Json $context @{files=@(Find-GitDeckRepoFiles $query['path'] $query['q'])} }
         '/api/repo/ci' { Write-Json $context @{ci=(Get-GitDeckCiStatus $query['path'] $query['ref'])} }
+        '/api/repo/deploy-map' { Write-Json $context @{deploy=(Get-GitDeckDeployMap $query['path'] $query['ref'])} }
+        '/api/repo/mrs' { Write-Json $context @{mergeRequests=@(Get-GitDeckMergeRequests $query['path'])} }
+        '/api/editors' { Write-Json $context @{editors=(Get-GitDeckEditors)} }
+        '/api/catalog' { Write-Json $context @{services=@(Get-GitDeckServiceCatalog)} }
+        '/api/repo/observed-env' { Write-Json $context @{observed=(Get-GitDeckObservedEnvironment $query['path'] $query['env'])} }
+        '/api/repo/mr-readiness' { Write-Json $context @{readiness=(Get-GitDeckMrReadiness $query['path'] $query['iid'])} }
+        '/api/repo/latest-tag' { Assert-Registered $query['path']; Write-Json $context @{tag=(Get-GitDeckLatestTag $query['path'])} }
         '/api/repo/find-branch' { Write-Json $context @{branch=(Find-GitDeckBranch $query['path'] $query['name'])} }
         '/api/activity/me' { Write-Json $context @{identity=(Get-GitDeckIdentity)} }
         '/api/repo/activity' { $activityPath=$query['path'];$activity=@(Get-GitDeckActivity $activityPath $query['since'] $query['until'] $query['author'] ($query['merges'] -eq 'true'));Write-Json $context @{commits=$activity;mainline=$(if($activity.Count){Get-GitDeckMainline $activityPath}else{''})} }

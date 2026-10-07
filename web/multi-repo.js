@@ -33,6 +33,13 @@
     select.addEventListener('change',()=>{try{localStorage.setItem(folderKey,select.value);}catch{}});return select;
   }
   const reposIn=(folder)=>(state.repos||[]).filter(repo=>usable(repo)&&inFolder(repo,folder));
+  // Pending work is a read-only discovery pass. Newly registered repositories
+  // may not have a cached status yet; check them instead of silently hiding them.
+  async function freshPendingRepos(folder){
+    const data=await api('/api/repos');
+    if(!Array.isArray(data?.repos))throw new Error('Repository list could not be loaded.');
+    return data.repos.filter(repo=>repo&&repo.valid!==false&&inFolder(repo,folder));
+  }
   function openRepo(repo){document.getElementById('operations-close')?.click();openWorkspace(repo,'history',null);}
   function repoLink(repo){const button=el('button','multi-repo-link',repo.name);button.type='button';button.title=repo.path;button.onclick=()=>openRepo(repo);return button;}
   // Placeholder rows that shimmer while the first results load (styles in motion.css).
@@ -525,7 +532,16 @@
     };
     let timer=0;const schedule=()=>{if(timer)return;timer=setTimeout(()=>{timer=0;drawChips();draw();},250);};
     const start=async()=>{
-      const id=++runId;const repos=reposIn(folder.value);results=[];expanded.clear();seenRows.clear();let done=0;checking=repos.length>0;setMeter(0,repos.length);drawChips();draw();
+      const id=++runId;const selectedFolder=folder.value;
+      checking=true;setMeter(0,0);
+      status.textContent=t('Checking {done} of {total}…',{done:0,total:0});
+      let repos;
+      try{repos=await freshPendingRepos(selectedFolder);}catch(error){
+        if(id!==runId)return;
+        checking=false;setMeter(0,0);status.textContent=firstLine(error.message);drawChips();draw();return;
+      }
+      if(id!==runId)return;
+      results=[];expanded.clear();seenRows.clear();let done=0;checking=repos.length>0;setMeter(0,repos.length);drawChips();draw();
       status.textContent=t('Checking {done} of {total}…',{done:0,total:repos.length});
       await mapLimit(repos,4,async repo=>{if(id!==runId)return;const item=await check(repo);if(id!==runId)return;results.push(item);status.textContent=t('Checking {done} of {total}…',{done:++done,total:repos.length});setMeter(done,repos.length);schedule();});
       if(id!==runId)return;checking=false;setMeter(0,0);checkedAt=new Date();

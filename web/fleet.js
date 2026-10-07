@@ -103,7 +103,8 @@
     bar.append(folder,key,find,copy);
     const status=el('small','multi-repo-status');const bar2=meter();const out=el('div','multi-repo-body fleet-ticket');
     panel.append(bar,el('p','multi-repo-explain',t('Every branch, commit and tag that mentions the ticket, in every repository: what is pushed, what is only on this computer, and which tags already contain it.')),status,bar2.box,out);
-    let found=[];
+    let found=[];let searchedKey='';let revision=0;
+    const invalidate=()=>{revision++;copy.disabled=true;};key.addEventListener('input',invalidate);folder.addEventListener('change',invalidate);
     const stateOf=(ticket)=>{
       const local=ticket.branches.filter(b=>!b.remote);
       const unpushed=ticket.commits.filter(c=>!c.pushed).length+local.filter(b=>!b.upstream).length+local.reduce((n,b)=>n+(b.ahead>0?1:0),0);
@@ -112,7 +113,7 @@
       return {tone:'info',text:t('Pushed, not tagged yet')};
     };
     find.onclick=async()=>{
-      const text=key.value.trim();if(!text){key.focus();return;}remember('gitdeck.ticketKey',text);
+      const text=key.value.trim();if(!text){key.focus();return;}remember('gitdeck.ticketKey',text);const request=++revision;
       const repos=reposIn(folder.value);if(!repos.length){status.textContent=t('No repositories in this folder.');return;}
       find.disabled=true;copy.disabled=true;out.replaceChildren();found=[];let done=0;
       status.textContent=t('Looking in {count} repositories…',{count:repos.length});
@@ -123,6 +124,7 @@
         bar2.set(++done,repos.length);
       });
       bar2.set(0,0);find.disabled=false;
+      if(request!==revision){out.replaceChildren(el('div','multi-repo-empty',t('Filters changed. Press Find to check again.')));status.textContent='';return;}searchedKey=text;
       found.sort((a,b)=>a.repo.name.localeCompare(b.repo.name));
       const hits=found.filter(item=>item.ticket);
       if(!found.length){out.append(el('div','multi-repo-empty',t('No branch, commit or tag mentions {key}.',{key:text})));status.textContent='';return;}
@@ -139,13 +141,19 @@
         if(tk.commits.length){const list=el('div','fleet-commits');tk.commits.slice(0,6).forEach(c=>{const line=el('div',`fleet-commit${c.pushed?'':' is-unpushed'}`);line.append(el('code','',c.hash),el('span','',c.subject),el('small','fleet-muted',c.date));if(!c.pushed)line.append(el('em','',t('not pushed')));list.append(line);});
           if(tk.commits.length>6)list.append(el('small','fleet-muted',t('and {count} more',{count:tk.commits.length-6})));card.append(list);}
         if(tk.tags.length){const line=el('div','fleet-chips');tk.tags.forEach(tag=>{const chip=el('span','pending-tag-badge','🏷 '+tag.name);chip.title=tag.contains?t('Contains the newest ticket commit'):t('Named after the ticket');line.append(chip);});card.append(line);}
+        // Environments running a tag that contains the ticket (from the last Releases load).
+        const envs=window.GitDeckIntegrations?.deployedIn(item.repo,tk.tags.filter(tag=>tag.contains).map(tag=>tag.name))||[];
+        if(envs.length){const line=el('div','fleet-chips fleet-deployed');line.append(el('small','fleet-muted',t('Configured in Git')));envs.forEach(env=>line.append(el('span','fleet-state tone-info',env.toUpperCase())));card.append(line);}
+        const readiness=button(t('Check MR readiness'));const details=el('div','catalog-readiness');
+        readiness.onclick=()=>window.GitDeckCatalog?.checkTicket(item.repo,text,details,readiness);
+        card.append(readiness,details);
         out.append(card);
       }
       copy.disabled=false;
     };
     key.addEventListener('keydown',event=>{if(event.key==='Enter')find.click();});
     copy.onclick=async()=>{
-      const lines=[`### ${key.value.trim()}`,'',`| ${t('Repository')} | ${t('Branches')} | ${t('Commits')} | ${t('State')} | ${t('Tags')} |`,'|---|---|---|---|---|'];
+      const lines=[`### ${searchedKey}`,'',`| ${t('Repository')} | ${t('Branches')} | ${t('Commits')} | ${t('State')} | ${t('Tags')} |`,'|---|---|---|---|---|'];
       for(const item of found.filter(entry=>entry.ticket)){const tk=item.ticket;lines.push(`| ${item.repo.name} | ${tk.branches.map(b=>b.name).join(', ')} | ${tk.commits.length} | ${stateOf(tk).text} | ${tk.tags.map(tag=>tag.name).join(', ')} |`);}
       try{await navigator.clipboard.writeText(lines.join('\n'));feedback(t('Copied'));}catch{feedback(t('Could not copy'),true);}
     };

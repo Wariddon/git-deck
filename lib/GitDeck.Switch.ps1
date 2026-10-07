@@ -42,7 +42,7 @@ function Invoke-GitDeckStashRestore([string]$Path, [string]$Mode, [string]$Stash
         $what = if ($Mode -eq 'pop') { 'applied and removed from the stash list' } else { 'applied and kept in the stash list' }
         return @{ message = "$StashRef $what."; output = $result.Output; conflicts = @(); stashKept = ($Mode -eq 'apply') }
     }
-    $conflicts = @((Invoke-GitCapture $Path @('-c', 'core.quotepath=off', 'diff', '--name-only', '--diff-filter=U')).Output -split "`r?`n" | Where-Object { $_ })
+    $conflicts = @((Get-GitOperationState $Path).conflicts)
     if ($conflicts.Count) {
         return @{ message = "$StashRef was applied with conflicts in $($conflicts.Count) file(s). Resolve them in File Status or Conflict Center; the stash was kept."; output = $result.Output; conflicts = $conflicts; stashKept = $true }
     }
@@ -79,7 +79,7 @@ function Invoke-GitDeckSwitch([string]$Path, [string[]]$SwitchArguments, [string
     if ($pop.Code -eq 0) {
         return @{ message = "Switched to $Label. Your changes were stashed and restored."; output = "$($result.Output)`n$($pop.Output)".Trim(); conflicts = @(); stashKept = $false }
     }
-    $conflicts = @((Invoke-GitCapture $Path @('-c', 'core.quotepath=off', 'diff', '--name-only', '--diff-filter=U')).Output -split "`r?`n" | Where-Object { $_ })
+    $conflicts = @((Get-GitOperationState $Path).conflicts)
     if ($conflicts.Count) {
         return @{ message = "Switched to $Label, but restoring your changes conflicted in $($conflicts.Count) file(s). Resolve them in File Status; a copy stays in the stash."; output = $pop.Output; conflicts = $conflicts; stashKept = $true }
     }

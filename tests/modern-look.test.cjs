@@ -30,6 +30,7 @@ assert.equal(kind({ ...base, sync: { ...base.sync, ahead: 2, behind: 1 } }), 'pu
 assert.equal(kind({ ...base, files: [{ staged: false }] }), 'review');
 assert.equal(modern.primaryAction({ ...base, files: [{ staged: true }, { staged: false }] }).label, 'Commit 1');
 assert.equal(kind({ ...base, files: [{ staged: true }], operation: { active: true, conflicts: ['a.txt'] } }), 'conflicts');
+assert.equal(kind({ ...base, files: [{ staged: true }], operation: { active: false, conflicts: ['stash-conflict.txt'] } }), 'conflicts', 'Stash conflicts need resolution even without an active merge');
 assert.equal(kind({ ...base, sync: {} }), 'push', 'A branch without upstream offers Publish');
 assert.equal(modern.primaryAction({ ...base, sync: {} }).label, 'Publish branch');
 assert.equal(kind({ ...base, sync: {}, remotes: [] }), 'fetch', 'No remote: nothing to publish');

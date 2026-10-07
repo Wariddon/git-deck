@@ -6,7 +6,7 @@ const GitDeckRelease=(()=>{
   function write(storage,key,value){try{storage.setItem(key,JSON.stringify(value));return true;}catch{return false;}}
   function report(info={}){
     // Allowlist only: never copy console output, URLs, paths, user identity or errors.
-    return JSON.stringify({app:'Git Deck',version:'1.3.0',platform:'Windows',gitAvailable:info.gitAvailable===true,gitlabCliAvailable:info.gitlabCliAvailable===true,serviceReady:info.serviceReady===true,powerShellVersion:/^\d+(\.\d+){1,3}$/.test(info.powerShellVersion||'')?info.powerShellVersion:'unknown',gitVersion:/^git version [\d.]+(?:\.windows\.\d+)?$/.test(info.gitVersion||'')?info.gitVersion:'unknown'},null,2);
+    return JSON.stringify({app:'Git Deck',version:'1.4.0',platform:'Windows',gitAvailable:info.gitAvailable===true,gitlabCliAvailable:info.gitlabCliAvailable===true,serviceReady:info.serviceReady===true,powerShellVersion:/^\d+(\.\d+){1,3}$/.test(info.powerShellVersion||'')?info.powerShellVersion:'unknown',gitVersion:/^git version [\d.]+(?:\.windows\.\d+)?$/.test(info.gitVersion||'')?info.gitVersion:'unknown'},null,2);
   }
   function githubProject(remote=''){
     const match=/^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([\w.-]+)\/([\w.-]+?)(?:\.git)?\/?$/i.exec(remote);

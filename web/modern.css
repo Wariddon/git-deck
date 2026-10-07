@@ -942,6 +942,11 @@ html.ui-modern body .modern-history-head .history-controls input:not([type="chec
 html.ui-modern body .modern-actions { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: var(--border-default) transparent; }
 html.ui-modern body .modern-actions::-webkit-scrollbar { height: 4px; }
 html.ui-modern body .modern-actions::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 4px; }
+/* Secondary commands remain discoverable when their labelled blocks no longer fit. */
+html.ui-modern body .modern-toolbar-tools { display:none;flex:none; }
+html.ui-modern body .modern-actions-menu { width:300px;max-width:calc(100vw - 16px); }
+@media(max-width:1500px){html.ui-modern body .modern-act-end{display:none}html.ui-modern body .modern-toolbar-tools{display:flex}}
+@media(max-width:1080px){html.ui-modern body .modern-act[data-act="undo"]{display:none}html.ui-modern body .modern-tb-repo{flex-basis:170px}html.ui-modern body .modern-tb-branch{flex-basis:160px}}
 html.ui-modern body .modern-act-group { flex: none; }
 @media (max-width: 980px) {
   html.ui-modern body .modern-act-group:nth-child(3) { display: none; }
@@ -1046,6 +1051,16 @@ html.ui-modern body .workspace-modal-head .toolbar-dashboard {
   color: var(--green) !important; font-weight: 600; cursor: pointer; white-space: nowrap;
 }
 html.ui-modern body .workspace-modal-head .toolbar-dashboard:hover { background: var(--surface-hover) !important; }
+/* Cancel Classic's full-width action row; it otherwise squeezes the breadcrumb to zero. */
+html.ui-modern body .workspace-modal-head .sync-actions { width:auto!important;order:0;flex:0 0 auto!important; }
+@media(max-width:760px){
+  html.ui-modern body .workspace-modal-head { display:grid!important;grid-template-columns:minmax(0,1fr) auto auto;grid-template-rows:48px 36px;height:84px;min-height:84px;gap:0 8px;padding-right:8px!important; }
+  html.ui-modern body .workspace-modal-head .modern-toolbar { grid-column:1/-1;grid-row:1;width:100%; }
+  html.ui-modern body .modern-tb { flex:1 1 50%;min-width:0;padding:0 10px; }
+  html.ui-modern body .workspace-modal-head .toolbar-dashboard { grid-column:1;grid-row:2;justify-self:start; }
+  html.ui-modern body .workspace-modal-head .workbench-secondary { grid-column:2;grid-row:2; }
+  html.ui-modern body .workspace-modal-head .sync-actions { grid-column:3;grid-row:2; }
+}
 html.ui-modern body :is(button.primary, .btn.primary, #push-submit):not(#gd-none):not(:disabled) { background: var(--green); border-color: var(--green); }
 /* Narrow windows: the one-row History header wraps instead of letting buttons overlap the selects. */
 @media (max-width: 1180px) {
