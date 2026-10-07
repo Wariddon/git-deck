@@ -52,5 +52,9 @@ assert.ok(!motion.isQuiet('/api/repo/pending?path=x'));
   assert.match(polish, /:is\(\.search, \.repo-switcher-search, \.tree-search, \.operations-search, \.command-palette-search, #gd-framed-field\) input \{ border-color: transparent !important; box-shadow: none !important; \}/, 'Framed search boxes glow as a whole, not a box inside a box');
   assert.match(web('app.js'), /node\.closest\('\.workspace-row'\)\?\.classList\.toggle\('selected',node===label\)/, 'The open stash is marked');
   assert.match(polish, /\.stash-layout \.workspace-row\.selected,/, 'The open stash is highlighted');
+  // Readiness check: one row per check with its own classes (readiness-row belongs to Compare/Push checks).
+  assert.match(web('release-ui.js'), /el\('div','gd-check-row '\+\(ok\?'is-ok':optional\?'is-optional':'is-warn'\)\)/, 'Readiness rows carry their status');
+  assert.ok(!/readiness-row/.test(web('release-ui.js')), 'Readiness dialog does not reuse the Compare/Push row class');
+  assert.match(polish, /\.gd-check-row\.is-ok \.gd-check-mark \{/, 'Ready checks get a green mark');
   console.log('PASS: polish layer');
 }

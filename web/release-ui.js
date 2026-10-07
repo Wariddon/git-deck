@@ -33,17 +33,24 @@ document.addEventListener('click',event=>{if(event.target.closest('.commit-row')
 function releaseDialog(title){
   const dialog=document.createElement('dialog');dialog.className='release-dialog';dialog.setAttribute('aria-label',title);
   const heading=el('h2','',title),body=el('div'),actions=el('div');actions.style.cssText='display:flex;gap:8px;justify-content:flex-end;margin-top:16px';
-  const close=el('button','','Close');close.addEventListener('click',()=>dialog.close());actions.append(close);dialog.append(heading,body,actions);document.body.append(dialog);
+  const close=el('button','',t('Close'));close.addEventListener('click',()=>dialog.close());actions.append(close);dialog.append(heading,body,actions);document.body.append(dialog);
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();return {dialog,body,actions};
 }
 async function showReadiness(){
-  const ui=releaseDialog('Readiness check · Git Deck');ui.body.textContent='Checking this computer…';
+  const ui=releaseDialog(t('Readiness check · Git Deck'));ui.dialog.classList.add('readiness-dialog');ui.body.textContent=t('Checking this computer…');
   try{const info=await api('/api/readiness');ui.body.replaceChildren();
-    const checks=[['Local service / port',info.serviceReady,'Connected to port '+info.port+' Successfully'],['Git',info.gitAvailable,'Install Git for Windows and restart the application'],['Global commit identity',info.globalIdentityReady,'Set git config --global user.name and user.email, or configure each repository separately'],['GitLab CLI (optional)',info.gitlabCliAvailable,'Place glab.exe in bin and sign in with your account']];
-    for(const [label,ok,hint] of checks){ui.body.append(el('p','',`${ok?'✓':'!'} ${label} — ${ok?'Ready':hint}`));}
-    ui.body.append(el('p','','Repository metadata and cache stay on this computer. No telemetry is sent.'));
-    const done=el('button','primary','Got it');done.onclick=()=>{try{localStorage.setItem('git-deck-onboarding-v1','done');}catch{}ui.dialog.close();};ui.actions.append(done);
-  }catch(error){ui.body.textContent='Could not check: '+error.message;}
+    const checks=[[t('Local service / port'),info.serviceReady,t('Connected to port {port}',{port:info.port}),false],['Git',info.gitAvailable,t('Install Git for Windows and restart the application'),false],[t('Global commit identity'),info.globalIdentityReady,t('Set git config --global user.name and user.email, or configure each repository separately'),false],['GitLab CLI',info.gitlabCliAvailable,t('Place glab.exe in bin and sign in with your account'),true]];
+    // One row per check: a round mark, the name, and either "Ready" or what to do about it.
+    const list=el('div','gd-check-list');
+    for(const [label,ok,hint,optional] of checks){
+      const row=el('div','gd-check-row '+(ok?'is-ok':optional?'is-optional':'is-warn'));
+      const text=el('div','gd-check-text');const name=el('strong','',label);if(optional)name.append(el('small','gd-check-optional',t('optional')));
+      text.append(name,el('span','',ok?t('Ready'):hint));
+      row.append(el('span','gd-check-mark',ok?'✓':'!'),text);list.append(row);
+    }
+    ui.body.append(list,el('p','gd-check-privacy',t('Repository metadata and cache stay on this computer. No telemetry is sent.')));
+    const done=el('button','primary',t('Got it'));done.onclick=()=>{try{localStorage.setItem('git-deck-onboarding-v1','done');}catch{}ui.dialog.close();};ui.actions.append(done);
+  }catch(error){ui.body.textContent=t('Could not check: {message}',{message:error.message});}
 }
 async function showSafeReport(){
   const ui=releaseDialog('Issue report · No repository data');
