@@ -62,5 +62,8 @@ assert.ok(!motion.isQuiet('/api/repo/pending?path=x'));
   // Dark themes: the history View popover is no longer white; its checkboxes are not stretched to 70px.
   assert.match(polish, /body\.theme-dark \.history-options-body \{[^}]*background: var\(--surface\) !important;/, 'View popover follows the dark surface');
   assert.match(web('modern.css'), /\.history-controls input:not\(\[type="checkbox"\]\):not\(\[type="radio"\]\) \{ min-width: 70px !important; \}/, 'Search min-width does not stretch checkboxes');
+  // Repository list page: no leftover alerts without an open repository; cards stack branch/status below.
+  assert.match(polish, /body:not\(\.workbench-mode\) \.repo-alerts \{ display: none !important; \}/, 'Alerts hide when no repository is open');
+  assert.match(polish, /#repo-list \.repo > :is\(\.repo-main, \.repo-meta\) \{ grid-column: 1 \/ -1 !important;/, 'Repository card rows span the card');
   console.log('PASS: polish layer');
 }
