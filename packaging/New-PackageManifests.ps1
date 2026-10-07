@@ -5,9 +5,9 @@ param(
     [string]$OutputDir = ''
 )
 # Generates Scoop and winget manifests for a published GitHub release.
-# 1. .\Build-Release.ps1 -Version 1.2.0
-# 2. Create GitHub release v1.2.0 and upload dist\GitDeck-1.2.0-windows.zip
-# 3. .\packaging\New-PackageManifests.ps1 -Version 1.2.0
+# 1. .\Build-Release.ps1 -Version 1.3.0
+# 2. Create GitHub release v1.3.0 and upload dist\GitDeck-1.3.0-windows.zip
+# 3. .\packaging\New-PackageManifests.ps1 -Version 1.3.0
 # The SHA256 is read from dist\GitDeck-<version>-windows.zip.sha256 so the
 # manifests always match the uploaded file.
 $ErrorActionPreference = 'Stop'

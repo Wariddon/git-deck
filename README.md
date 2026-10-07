@@ -28,7 +28,7 @@ cd git-deck
 
 Git Deck opens in its own app window (Microsoft Edge `--app` mode: no tabs or address bar) when Edge is installed, otherwise in your default browser. Open **http://127.0.0.1:8765/** if nothing opens automatically. Keep the server running while using the UI.
 
-Like Sourcetree there is one window: starting Git Deck again brings the open window to the front instead of opening another. When `GitDeck.exe` has been built, `git-dashboard.bat` simply starts it (hidden server, no console window); run `git-dashboard.bat --console` to see the server output while troubleshooting. While loading, Git Deck shows only its logo and name on brand green, like Sourcetree's splash. `GitDeck.exe` shows a green card the moment you start it and keeps it until the app window appears; the window is then green from edge to edge with the logo in the same place, until the workspace is ready.
+Like Sourcetree there is one window: starting Git Deck again brings the open window to the front instead of opening another. When `GitDeck.exe` has been built, `git-dashboard.bat` simply starts it (hidden server, no console window); run `git-dashboard.bat --console` to see the server output while troubleshooting. While loading, Git Deck shows its logo tile and name on brand green with a small merge animation. `GitDeck.exe` draws the same card the moment you start it and keeps it until the app window appears, so the hand-over looks like one picture.
 
 Use **Clone**, **Add** or **Scan** to register your own repositories. Scan can discover repositories nested inside the chosen folder. Start with a disposable repository to learn the workflow.
 
@@ -57,12 +57,15 @@ The build uses the Windows .NET Framework C# compiler. Keep the generated execut
 - GitHub pull requests, Actions runs, PR checkout and PR creation with optional GitHub CLI.
 - Optional AI helpers (explain errors and commits, PR/MR drafts, merge proposals, commit splitting, pre-push review, release notes, reflog questions, natural-language commands), controlled per repository.
 - Dashboard for every repository at once: pending work, update all, switch branch, search, latest tags, and a dated work report (see below).
+- Release and review helpers across repositories: tag many repositories at once with the next tag suggested, follow one ticket key through every repository, compare `pom.xml` / `application.yml` / any file between sibling services, and GitLab CI status for all of them.
+- Saved worksets (named groups of repositories) work in every Dashboard view; new tags fetched from colleagues or bots are marked.
 - Word-level highlight inside changed diff lines; Thai and spaced file names work end to end.
-- Modern look with a view rail, repo / branch switcher and a smart primary button; Classic layout still available.
+- Modern look with a view rail, repo / branch switcher and a smart primary button; loading feedback and gentle motion (off with Windows *reduce motion*); Classic layout still available.
+- English and Thai interface (Theme menu → Language).
 - Themes, resizable panels and saved UI preferences.
 - Bounded in-session workspace snapshots and on-demand LFS/submodule checks.
 
-Feature coverage is evolving; this is not a claim of complete Sourcetree or GitLab parity.
+Feature coverage is evolving; this is not a claim of complete Sourcetree or GitLab parity. See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
 ## Local data and safety
 
@@ -212,7 +215,7 @@ The **Dashboard** button in the toolbar (or *All repos* on the left rail) opens 
 - **Switch branch**: put every repository of a ticket on the same branch. Preview first, then switch, track or create.
 - **Search all**: commit messages, ticket keys, branch names or changed code in every repository.
 - **Tag many**: the next tag for many repositories at once. Each row suggests the tag after the latest one (`…-poc04` → `…-poc05`, `v1.0.9` → `v1.0.10`); filter by branch, edit names, tick rows and create them, pushed to origin if you like. Rows with commits after their latest tag are ticked.
-- **Ticket**: type a ticket key (`AP2365-3319`) to see, per repository, its branches, its commits (marked when not pushed yet) and the tags that already contain it. *Copy as Markdown* for a status update.
+- **Ticket**: type a ticket key (`PAY-1234`) to see, per repository, its branches, its commits (marked when not pushed yet) and the tags that already contain it. *Copy as Markdown* for a status update.
 - **Compare files**: one file across sibling repositories against a reference repository, from disk or from a branch or tag. `pom.xml` is compared by parent, properties and dependency versions; YAML, `.properties` and JSON by key; other files line by line. *Compare one setting* lists one key's value in every repository, grouped, to spot the odd one out.
 - **CI status**: the latest GitLab pipeline of each repository's current branch or latest tag (needs `bin\glab.exe` signed in: `bin\glab.exe auth login --hostname <host>`). Failed pipelines come first.
 - **New tags**: Pending work remembers each repository's latest tag; a newer one (fetched from a colleague or a bot) is marked *new* and has its own filter chip until *Bulk actions → Mark tags as seen*. Tags made with Tag many are not counted as new.
@@ -289,9 +292,9 @@ Preview reads the selected commit, or its first parent for a deleted file. Markd
 After publishing a GitHub release with the ZIP from `Build-Release.ps1`, generate package manifests that point at it:
 
 ```powershell
-.\Build-Release.ps1 -Version 1.2.0
-# upload dist\GitDeck-1.2.0-windows.zip to the GitHub release v1.2.0
-.\packaging\New-PackageManifests.ps1 -Version 1.2.0
+.\Build-Release.ps1 -Version 1.3.0
+# upload dist\GitDeck-1.3.0-windows.zip to the GitHub release v1.3.0
+.\packaging\New-PackageManifests.ps1 -Version 1.3.0
 ```
 
 This writes `dist\packaging\git-deck.json` (a Scoop bucket manifest with `checkver`/`autoupdate` and persisted local data) and `dist\packaging\winget\<version>\` (a portable-zip winget manifest). Run `winget validate` and a local install test on Windows before submitting to a Scoop bucket or `microsoft/winget-pkgs`.

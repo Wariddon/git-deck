@@ -98,7 +98,7 @@
   const ticketPattern=/\b[A-Z][A-Z0-9]{1,9}-\d+\b/;
   function buildTicket(panel){
     const bar=el('div','operations-toolbar');const folder=folderSelect();
-    const key=input(t('Ticket key, for example AP2365-3319'));key.value=recall('gitdeck.ticketKey','')||(String(state.workspace?.branch||'').match(ticketPattern)?.[0]||'');
+    const key=input(t('Ticket key, for example PAY-1234'));key.value=recall('gitdeck.ticketKey','')||(String(state.workspace?.branch||'').match(ticketPattern)?.[0]||'');
     const find=button(t('Find'),'primary');const copy=button(t('Copy as Markdown'));copy.disabled=true;
     bar.append(folder,key,find,copy);
     const status=el('small','multi-repo-status');const bar2=meter();const out=el('div','multi-repo-body fleet-ticket');

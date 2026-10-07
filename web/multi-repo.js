@@ -109,13 +109,13 @@
     c.score=(c.operation||c.conflicts?1000:0)+c.changes*3+c.push*3+unpublished*5+c.pull*2+c.stashes+c.localOnly+(c.merged?1:0);
     return c;
   }
-  // The filter box takes several names at once: "crs-svc, lns-deployment tonson". Each term matches
+  // The filter box takes several names at once: "billing-svc, deploy-config ledger". Each term matches
   // a repository name, branch or latest tag; the rank (which term matched first) keeps the typed order.
   const parseTerms=(text)=>String(text||'').toLowerCase().split(/[,\s]+/).map(term=>term.trim()).filter(Boolean);
   function termRank(item,terms){
     if(!terms.length)return 0;
     const name=item.repo.name.toLowerCase();const other=`${item.pending?.branch||''} ${item.pending?.latestTag||''}`.toLowerCase();
-    // An exact name beats a partial one, so "lns" lists lns before lns-deployment-2.
+    // An exact name beats a partial one, so "deploy" lists deploy before deploy-config-2.
     const exact=terms.indexOf(name);if(exact>=0)return exact;
     return terms.findIndex(term=>name.includes(term)||other.includes(term));
   }
@@ -220,7 +220,7 @@
   // under the row instead of filling it. Results appear as they arrive; a new check cancels the old.
   function buildPending(panel){
     const bar=el('div','operations-toolbar');const folder=folderSelect();
-    const search=el('input','workflow-input pending-search');search.type='search';search.placeholder=t('Names, branches or tags: several at once, separated by commas');search.setAttribute('aria-label',t('Filter by names, branches or tags'));search.title=t('Type several names to see only those repositories, in the order you typed them. Example: crs-svc-common, lns-deployment-2, tonson');
+    const search=el('input','workflow-input pending-search');search.type='search';search.placeholder=t('Names, branches or tags: several at once, separated by commas');search.setAttribute('aria-label',t('Filter by names, branches or tags'));search.title=t('Type several names to see only those repositories, in the order you typed them. Example: billing-svc-common, deploy-config-2, ledger');
     const sort=document.createElement('select');sort.className='workflow-input';sort.setAttribute('aria-label',t('Sort'));
     [['pending',t('Most pending first')],['name',t('Name A–Z')],['push',t('Most to push')],['changes',t('Most uncommitted')],['tag',t('Newest tag first')],['recent',t('Recently changed first')]].forEach(([value,label])=>sort.append(new Option(label,value)));
     const run=el('button','primary',t('Check'));run.type='button';
@@ -640,7 +640,7 @@
   // Put many repositories on the same branch.
   function buildSwitch(panel){
     const bar=el('div','operations-toolbar');const folder=folderSelect();
-    const name=el('input','workflow-input');name.placeholder=t('Branch name, e.g. feature/AP2365-3319');name.setAttribute('aria-label',t('Branch name'));
+    const name=el('input','workflow-input');name.placeholder=t('Branch name, e.g. feature/PAY-1234');name.setAttribute('aria-label',t('Branch name'));
     const mode=document.createElement('select');mode.className='workflow-input';mode.setAttribute('aria-label',t('Uncommitted changes'));
     [['stash',t('Changes: stash, switch, restore')],['carry',t('Changes: bring along')],['',t('Changes: skip that repository')]].forEach(([value,label])=>mode.append(new Option(label,value)));
     const create=document.createElement('input');create.type='checkbox';
@@ -687,7 +687,7 @@
     const form=el('form','operations-toolbar');form.append(folder,text,mode,run);
     const status=el('small','multi-repo-status');const out=el('div','multi-repo-body');
     const explain=el('div','multi-repo-explain');
-    explain.append(el('p','',t('Find which repositories have a ticket or a change. Examples: AP2365-3319, timeout, feature/login.')),
+    explain.append(el('p','',t('Find which repositories have a ticket or a change. Examples: PAY-1234, timeout, feature/login.')),
       el('p','',t('Click a result to open that repository at the commit.')));
     panel.append(form,explain,status,out);
     form.onsubmit=async(event)=>{
@@ -785,7 +785,7 @@
   }
 
   // ---- daily helpers ---------------------------------------------------------------------------
-  // Commit message starts with the ticket key from the branch name (feature/AP2365-3319 -> "AP2365-3319: ").
+  // Commit message starts with the ticket key from the branch name (feature/PAY-1234 -> "PAY-1234: ").
   if(typeof document!=='undefined')document.addEventListener('focusin',event=>{
     const box=event.target;if(!(box instanceof HTMLTextAreaElement)||!box.closest('.commit-editor')||box.value)return;
     const prefix=ticketPrefix(state.workspace?.branch);if(!prefix)return;

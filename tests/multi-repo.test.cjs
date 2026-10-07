@@ -54,12 +54,12 @@ assert.equal(m.nextSteps(failed)[0].text, 'Push failed: rejected');
 assert.equal(m.pendingMatches(failed, 'problems'), true, 'A failed push shows under Fix these first');
 
 // Several names in the filter, in the order typed; tag filter; ages.
-assert.deepEqual(plain(m.parseTerms(' crs-svc, lns  tonson,,')), ['crs-svc', 'lns', 'tonson']);
+assert.deepEqual(plain(m.parseTerms(' billing-svc, deploy  ledger,,')), ['billing-svc', 'deploy', 'ledger']);
 const repoItem = (name, p = {}) => ({ repo: { name }, pending: { branch: 'main', ...p } });
-const typed = m.parseTerms('tonson, lns, crs');
-assert.equal(m.termRank(repoItem('crs-svc-common'), typed), 2);
-assert.equal(m.termRank(repoItem('lns'), typed), 1, 'Exact name');
-assert.equal(m.termRank(repoItem('lns-deployment-2'), typed), 1);
+const typed = m.parseTerms('ledger, deploy, billing');
+assert.equal(m.termRank(repoItem('billing-svc-common'), typed), 2);
+assert.equal(m.termRank(repoItem('deploy'), typed), 1, 'Exact name');
+assert.equal(m.termRank(repoItem('deploy-config-2'), typed), 1);
 assert.equal(m.termRank(repoItem('other'), typed), -1);
 assert.equal(m.termRank(repoItem('api', { latestTag: 'v2.1.0' }), m.parseTerms('v2.1')), 0, 'Tags are searchable');
 assert.equal(m.tagMatches(repoItem('a', { latestTag: 'v1', commitsSinceTag: 3 }), 'since'), true);
@@ -95,7 +95,7 @@ assert.deepEqual(plain(m.cleanupReasons({ gone: true, date: '2026-01-01T00:00:00
 assert.deepEqual(plain(m.cleanupReasons({ merged: true, protected: true, date: '2020-01-01' }, now)), [], 'Protected branches are never suggested');
 assert.deepEqual(plain(m.cleanupReasons({ merged: true, current: true, date: '2020-01-01' }, now)), []);
 
-assert.equal(m.ticketPrefix('feature/AP2365-3319-login'), 'AP2365-3319: ');
+assert.equal(m.ticketPrefix('feature/PAY-1234-login'), 'PAY-1234: ');
 assert.equal(m.ticketPrefix('main'), '');
 
 const first = m.gitlabNews(undefined, { pipelines: [{ id: 1, status: 'failed', ref: 'main' }], mergeRequests: [{ iid: 7, user_notes_count: 2, title: 'Login' }] });
