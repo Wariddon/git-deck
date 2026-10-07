@@ -207,6 +207,27 @@ html.ui-modern body .workspace > header :is(.theme-picker > summary, .help-menu 
 html.ui-modern body .workspace > header details[open] > summary { border-color: color-mix(in srgb, var(--green) 55%, var(--border-default)) !important; background: var(--surface-hover) !important; }
 html.ui-modern body .workspace > header .theme-picker-icon { color: var(--green); }
 
+/* ---- Dark and Midnight: legacy panels that still painted light backgrounds ----------------------
+   Found by scanning every element's computed background on the dark themes: the history "View"
+   options popover was white, and the repository switcher, merge-request drawer, bulk bar and
+   repository icons kept light green tints. They use the theme surfaces now. */
+html.ui-modern body.theme-dark .history-options-body { border-color: var(--border-default) !important; background: var(--surface) !important; color: var(--text-primary) !important; box-shadow: var(--modern-shadow-pop) !important; }
+html.ui-modern body.theme-dark .history-options-body :is(span, small) { color: var(--text-secondary) !important; }
+html.ui-modern body.theme-dark :is(.repo-icon, .repo-icon.large) { background: var(--surface-muted) !important; color: var(--text-secondary) !important; }
+html.ui-modern body.theme-dark .primary-action { border-color: color-mix(in srgb, var(--green) 40%, var(--border-default)) !important; background: var(--modern-accent-soft) !important; color: color-mix(in srgb, var(--green) 55%, var(--text-primary)) !important; }
+html.ui-modern body.theme-dark .repo-switcher-search kbd { border-color: var(--border-default) !important; background: var(--surface-subtle) !important; color: var(--text-tertiary) !important; }
+html.ui-modern body.theme-dark :is(.repo-switcher-head, .commit-bulk, .mr-source, .mr-advanced) { border-color: var(--border-default) !important; background: var(--surface-subtle) !important; color: var(--text-primary) !important; }
+html.ui-modern body.theme-dark :is(.workspace-tabs, .mr-drawer-head, .modal-actions) { border-color: var(--border-default) !important; background: var(--surface) !important; color: var(--text-primary) !important; }
+/* The connection line on the repository list ("2 repositories ready…") was a fixed grey-green. */
+html.ui-modern body .status > span { color: var(--text-secondary); }
+
+html.ui-modern body.theme-dark kbd { border-color: var(--border-default) !important; background: var(--surface-subtle) !important; color: var(--text-secondary) !important; }
+/* History "View" options: checkbox and its name on one line (a width rule stretched the boxes to 70px). */
+html.ui-modern body .history-options-body label:has(> input[type="checkbox"]) { display: flex !important; align-items: center; gap: 8px; min-height: 26px; color: var(--text-primary) !important; cursor: pointer; }
+html.ui-modern body .history-options-body input[type="checkbox"] { flex: none; width: 15px !important; height: 15px !important; min-width: 0; margin: 0 !important; }
+html.ui-modern body .history-options-body { width: auto !important; min-width: 220px; padding: 10px 12px !important; border-radius: 12px !important; }
+html.ui-modern body .history-options-body select { width: 100% !important; max-width: none !important; }
+
 /* ---- Primary buttons: a touch of depth so the one thing to press stands out ------------------------ */
 html.ui-modern body button.primary:not(:disabled) { background-image: linear-gradient(180deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 0%)) !important; }
 

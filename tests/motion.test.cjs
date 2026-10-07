@@ -59,5 +59,8 @@ assert.ok(!motion.isQuiet('/api/repo/pending?path=x'));
   // Repository list header: Theme, Help, Operations, Refresh and the search box share the theme surfaces.
   assert.match(polish, /\.workspace > header :is\(\.theme-picker > summary, \.help-menu > summary, \.btn\) \{[^}]*background: var\(--surface\) !important;/, 'Header buttons use the theme surface');
   assert.match(polish, /\.workspace > header \.search kbd \{[^}]*background: var\(--surface-subtle\) !important;/, 'Ctrl K key follows the theme');
+  // Dark themes: the history View popover is no longer white; its checkboxes are not stretched to 70px.
+  assert.match(polish, /body\.theme-dark \.history-options-body \{[^}]*background: var\(--surface\) !important;/, 'View popover follows the dark surface');
+  assert.match(web('modern.css'), /\.history-controls input:not\(\[type="checkbox"\]\):not\(\[type="radio"\]\) \{ min-width: 70px !important; \}/, 'Search min-width does not stretch checkboxes');
   console.log('PASS: polish layer');
 }

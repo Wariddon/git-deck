@@ -936,7 +936,7 @@ html.ui-modern body .modern-history-head .history-controls > div { display: flex
 html.ui-modern body .modern-history-head .history-controls > div > select { flex: none; }
 html.ui-modern body .modern-history-head .history-controls > div > input { flex: 1 1 140px; min-width: 70px; width: auto; }
 html.ui-modern body .modern-history-head select { width: auto !important; max-width: 140px; }
-html.ui-modern body .modern-history-head .history-controls input { min-width: 70px !important; }
+html.ui-modern body .modern-history-head .history-controls input:not([type="checkbox"]):not([type="radio"]) { min-width: 70px !important; }
 
 /* Narrow windows: the action bar never slides under More / View & tools. */
 html.ui-modern body .modern-actions { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: var(--border-default) transparent; }
