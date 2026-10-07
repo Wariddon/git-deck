@@ -56,5 +56,8 @@ assert.ok(!motion.isQuiet('/api/repo/pending?path=x'));
   assert.match(web('release-ui.js'), /el\('div','gd-check-row '\+\(ok\?'is-ok':optional\?'is-optional':'is-warn'\)\)/, 'Readiness rows carry their status');
   assert.ok(!/readiness-row/.test(web('release-ui.js')), 'Readiness dialog does not reuse the Compare/Push row class');
   assert.match(polish, /\.gd-check-row\.is-ok \.gd-check-mark \{/, 'Ready checks get a green mark');
+  // Repository list header: Theme, Help, Operations, Refresh and the search box share the theme surfaces.
+  assert.match(polish, /\.workspace > header :is\(\.theme-picker > summary, \.help-menu > summary, \.btn\) \{[^}]*background: var\(--surface\) !important;/, 'Header buttons use the theme surface');
+  assert.match(polish, /\.workspace > header \.search kbd \{[^}]*background: var\(--surface-subtle\) !important;/, 'Ctrl K key follows the theme');
   console.log('PASS: polish layer');
 }
