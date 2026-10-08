@@ -49,6 +49,8 @@ async function showReadiness(){
       row.append(el('span','gd-check-mark',ok?'✓':'!'),text);list.append(row);
     }
     ui.body.append(list,el('p','gd-check-privacy',t('Repository metadata and cache stay on this computer. No telemetry is sent.')));
+    // Closing it any way counts as seen once everything required is ready; a missing Git or identity shows it again next start.
+    if(checks.filter(check=>!check[3]).every(check=>check[1]))ui.dialog.addEventListener('close',()=>{try{localStorage.setItem('git-deck-onboarding-v1','done');}catch{}},{once:true});
     const done=el('button','primary',t('Got it'));done.onclick=()=>{try{localStorage.setItem('git-deck-onboarding-v1','done');}catch{}ui.dialog.close();};ui.actions.append(done);
   }catch(error){ui.body.textContent=t('Could not check: {message}',{message:error.message});}
 }

@@ -13,11 +13,14 @@
       // The splash fades out instead of vanishing (no fade for reduced motion or without Web Animations).
       const finish=()=>{
         if(finished)return;finished=true;clearTimeout(timer);
-        const done=()=>{splash.close();document.getElementById('startup-background')?.remove();};
+        let closed=false;
+        const done=()=>{if(closed)return;closed=true;if(splash.open)splash.close();document.getElementById('startup-background')?.remove();};
         const still=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if(typeof splash.animate!=='function'||still)return done();
         document.getElementById('startup-background')?.remove();
         splash.animate([{opacity:1},{opacity:0}],{duration:220,easing:'ease-out',fill:'forwards'}).onfinish=done;
+        // A hidden or minimized window does not run animations; close anyway shortly after.
+        setTimeout(done,400);
       };
       window.GitDeckStartup={update(message){if(!finished)status.textContent=message;},finish};
       document.getElementById('startup-reload').onclick=()=>location.reload();

@@ -4,6 +4,7 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- Start-up: the readiness check is remembered when you close it (not only with *Got it*) once Git, the identity and the local service are ready, so it no longer opens at every start; the splash also closes when the window is minimized while loading (the fade did not run there).
 - Faster with many repositories (measured with 164):
   - Repository status refresh checks six repositories at a time: about 30 s → 10–13 s.
   - Pending work needs about half the Git commands per repository (unpushed branches counted from one list, mainline and stash found in one lookup, the work-tree check reused for a minute) and checks six at a time: about 57 s → 24–30 s.
