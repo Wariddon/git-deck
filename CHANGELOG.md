@@ -9,6 +9,7 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
   - Pending work needs about half the Git commands per repository (unpushed branches counted from one list, mainline and stash found in one lookup, the work-tree check reused for a minute) and checks six at a time: about 57 s → 24–30 s.
   - Needs attention asks Git two questions per repository instead of five, six at a time: about 19 s → 10 s.
   - Ticket answers repositories that never mention the ticket after three Git lookups, and every local Dashboard view checks six repositories at a time: a ticket search over 164 repositories takes about 14 s instead of 30 s.
+  - The main branch of a repository (origin/HEAD, origin/main, origin/master, main, master) is found with one Git lookup instead of up to five; the Work report reads a repository in about 0.25 s instead of 0.6 s.
   - Pending work shows the last check at once while the new one runs, and replaces each row as its answer arrives.
 - The status refresh no longer leaves repositories on *Waiting for first status check* when one progress poll fails, and job progress writes retry instead of failing the job while the server reads the file.
 - Dark and Midnight themes: the *Annotated* tag mark and the *CURRENT* / *↑ n* marks in the Push dialog follow the theme instead of staying light chips.

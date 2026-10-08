@@ -7,6 +7,7 @@ $script:remote='origin'
 function Invoke-GitCapture($Path,$Arguments){
  if($Arguments[0] -eq 'remote'){return @{Code=0;Output=$script:remote}}
  if($Arguments[0] -eq 'symbolic-ref'){return @{Code=0;Output="origin/main`n"}}
+ if($Arguments[0] -eq 'for-each-ref' -and $Arguments -contains 'refs/remotes/origin/HEAD'){return @{Code=0;Output="refs/remotes/origin/HEAD`torigin/main`nrefs/remotes/origin/main`t`n"}}
  if($Arguments[0] -eq 'log' -and $Arguments -contains '--remotes'){return @{Code=0;Output=('a'*40)}}
  if($Arguments[0] -eq 'log' -and $Arguments[1] -eq 'origin/main'){$script:mainArgs=$Arguments;return @{Code=0;Output=""}}
  if($Arguments -contains '--numstat'){$script:lastArgs=$Arguments}

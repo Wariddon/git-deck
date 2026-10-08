@@ -41,10 +41,14 @@ function Get-GitDeckHashSet([string]$Path, [string[]]$Arguments) {
 
 # The branch finished work lands on: origin/HEAD, else origin/main, origin/master, main, master.
 function Get-GitDeckMainline([string]$Path) {
-    $head = Invoke-GitCapture $Path @('symbolic-ref', '--quiet', '--short', 'refs/remotes/origin/HEAD')
-    if ($head.Code -eq 0 -and ([string]$head.Output).Trim()) { return ([string]$head.Output).Trim() }
-    foreach ($ref in @('origin/main', 'origin/master', 'main', 'master')) {
-        if ((Invoke-GitCapture $Path @('rev-parse', '--verify', '--quiet', "$ref^{commit}")).Code -eq 0) { return $ref }
+    # origin/HEAD's target, else the first of origin/main, origin/master, main, master: one Git lookup.
+    $refs = @{}
+    foreach ($line in (([string](Invoke-GitCapture $Path @('for-each-ref', '--format=%(refname)%09%(symref:short)', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main', 'refs/remotes/origin/master', 'refs/heads/main', 'refs/heads/master')).Output) -split "`r?`n" | Where-Object { $_ })) {
+        $f = $line -split "`t", 2; $refs[$f[0]] = $(if ($f.Count -gt 1) { $f[1] } else { '' })
+    }
+    if ($refs['refs/remotes/origin/HEAD']) { return [string]$refs['refs/remotes/origin/HEAD'] }
+    foreach ($pair in @(@('refs/remotes/origin/main', 'origin/main'), @('refs/remotes/origin/master', 'origin/master'), @('refs/heads/main', 'main'), @('refs/heads/master', 'master'))) {
+        if ($refs.ContainsKey($pair[0])) { return $pair[1] }
     }
     return ''
 }
