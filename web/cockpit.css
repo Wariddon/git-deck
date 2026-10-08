@@ -41,6 +41,11 @@ body.theme-dark { --cockpit-danger-ink:#ffb4ab; }
 .cockpit-panel .multi-repo-table button[aria-pressed=true] { font-weight:600;text-decoration:underline; }
 .cockpit-picker { max-height:180px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px;margin:12px 0; }
 .cockpit-pick { display:flex;align-items:center;gap:8px;min-width:0;overflow-wrap:anywhere;padding:3px; }
+.cockpit-picker-wrap { margin:12px 0; }
+.cockpit-picker-wrap > .cockpit-picker { margin:6px 0 0; }
+.cockpit-picker-bar { display:flex;flex-wrap:wrap;align-items:center;gap:8px; }
+.cockpit-picker-bar > input { flex:1 1 220px;max-width:320px; }
+.cockpit-pick[hidden] { display:none; }
 .cockpit-panel input[type=checkbox] { min-height:0;padding:0;flex:none; }
 .cockpit-capsule { border-top:1px solid var(--border-default);padding:12px 0; }
 .cockpit-capsule > button { margin:8px 6px 0 0; }

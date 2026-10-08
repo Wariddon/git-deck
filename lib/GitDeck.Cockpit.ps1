@@ -122,6 +122,23 @@ function New-GitDeckFleetRecipe($Body) {
     }
 }
 
+function Get-GitDeckRecipeSummary([string]$Name, $Result) {
+    $lines=@(([string]$Result.Output) -split "`r?`n" | Where-Object { $_ })
+    switch($Name){
+        'status' {
+            $untracked=@($lines|Where-Object {$_.StartsWith('?? ')}).Count
+            return "$($lines.Count - $untracked) changed $([char]0x00B7) $untracked untracked"
+        }
+        'diff-summary' { $text=([string]$Result.Output).Trim(); if(-not $text){return 'No tracked changes'}; return ($text -replace '[^0-9a-zA-Z ,()+-]','') }
+        'whitespace' {
+            $found=@($lines|ForEach-Object { if(-not $_.StartsWith('+') -and $_ -match '^(.+?):(\d+): ') { "$($Matches[1]):$($Matches[2])" } })
+            if(-not $found.Count){return 'No whitespace problems'}
+            return "$($found.Count) whitespace problem(s): " + (($found|Select-Object -First 5) -join ', ') + $(if($found.Count -gt 5){' ...'}else{''})
+        }
+    }
+    return ''
+}
+
 function Invoke-GitDeckFleetRecipe($Body) {
     if([string]$Body.id -notmatch '^[0-9a-f-]{36}$' -or $Body.approved -ne $true){throw 'Preview and explicitly approve the plan first.'}
     return Update-GitDeckTaskStore {param($data)
@@ -136,9 +153,12 @@ function Invoke-GitDeckFleetRecipe($Body) {
                     if($step.state -eq 'completed'){continue}
                     $stepArguments=switch($step.name){'status'{@('status','--porcelain=v1')};'diff-summary'{@('diff','--no-ext-diff','--shortstat','HEAD','--')};'whitespace'{@('diff','--no-ext-diff','--check','HEAD','--')};default{throw 'Unknown recipe step'}}
                     $result=Invoke-GitCapture $repo.path $stepArguments
-                    # Never persist command output (a failing check can include source lines).
-                    $step.state=if($result.Code -eq 0){'completed'}else{'failed'}
-                    if($result.Code -ne 0){throw 'A read-only check failed. Open the repository to review it.'}
+                    # `diff --check` answers 2 when it finds whitespace problems: a finding, not a failure.
+                    $ok=$result.Code -eq 0 -or ($step.name -eq 'whitespace' -and $result.Code -eq 2)
+                    $step.state=if($ok){'completed'}else{'failed'}
+                    if(-not $ok){throw 'A read-only check failed. Open the repository to review it.'}
+                    # Never persist command output (a failing check can include source lines): only counts and file:line.
+                    $step | Add-Member -NotePropertyName summary -NotePropertyValue (Get-GitDeckRecipeSummary $step.name $result) -Force
                 }
                 $after=Get-GitDeckTaskSnapshot $repo.path -IncludeDiff
                 if($after.basis -cne $repo.basis){throw 'Repository changed during checks. Create a new plan.'}

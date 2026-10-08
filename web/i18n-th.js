@@ -1348,4 +1348,9 @@ GitDeckI18n.register('th',{
   "Git Deck":"Git Deck",
   "Other":"อื่นๆ",
   "showing the last check from {time} until then":"ระหว่างนี้แสดงผลรอบก่อนจาก {time}",
+  "{count} selected":"เลือกแล้ว {count}",
+  "Filter repositories":"กรอง repository",
+  "Select repositories with changes":"เลือก repository ที่มีไฟล์แก้",
+  "Whitespace":"ช่องว่าง",
+  "Waiting":"รอ",
 });

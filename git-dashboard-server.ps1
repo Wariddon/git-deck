@@ -577,7 +577,7 @@ function Get-WorkingDiff([string]$Path,[string]$File,[bool]$Staged) {
     $result=Invoke-GitCapture $Path $args
     if($result.Code -ne 0){throw $result.Output}
     $text=$result.Output;if(-not $text){$text='No diff in this area. The file may be staged or unstaged in the other section.'}
-    if($text.Length -gt 500000){$text=$text.Substring(0,500000)+"`r`n… diff truncated at 500 KB …"}
+    if($text.Length -gt 500000){$text=$text.Substring(0,500000)+"`r`n... diff truncated at 500 KB ..."}
     return [ordered]@{diff=$text;binary=$false}
 }
 
@@ -621,14 +621,14 @@ function Get-CommitDiff([string]$Path,[string]$Hash,[string]$File,[bool]$IgnoreW
     $whitespace=if($IgnoreWhitespace){@('-w')}else{@()}
     $output=Invoke-GitOrThrow $Path (@('diff-tree','--root','--first-parent','-m','--no-commit-id','-r','-p','--find-renames','--unified=4')+$whitespace+@($Hash,'--')+$filePaths)
     $truncated=$false
-    if($output.Length -gt 500000){$output=$output.Substring(0,500000)+"`r`n… diff truncated at 500 KB …";$truncated=$true}
+    if($output.Length -gt 500000){$output=$output.Substring(0,500000)+"`r`n... diff truncated at 500 KB ...";$truncated=$true}
     return [ordered]@{diff=$output;truncated=$truncated}
 }
 
 function Get-StashDiff([string]$Path,[string]$Ref) {
     Assert-Registered $Path;Assert-StashRef $Ref
     $output=Invoke-GitOrThrow $Path @('stash','show','--stat','--patch','--find-renames',$Ref)
-    if($output.Length -gt 500000){$output=$output.Substring(0,500000)+"`r`n… diff truncated at 500 KB …"}
+    if($output.Length -gt 500000){$output=$output.Substring(0,500000)+"`r`n... diff truncated at 500 KB ..."}
     return [ordered]@{diff=$output}
 }
 
@@ -643,7 +643,7 @@ function Get-FileHistory([string]$Path,[string]$File) {
 function Get-FileBlame([string]$Path,[string]$File) {
     Assert-Registered $Path;if(-not $File -or $File -match "[`r`n]"){throw 'File path is required.'}
     $output=Invoke-GitOrThrow $Path @('blame','--date=short','--line-porcelain','--',$File)
-    if($output.Length -gt 700000){$output=$output.Substring(0,700000)+"`r`n… blame truncated …"}
+    if($output.Length -gt 700000){$output=$output.Substring(0,700000)+"`r`n... blame truncated ..."}
     return [ordered]@{text=$output}
 }
 
@@ -701,7 +701,7 @@ function Get-BranchCompare([string]$Path,[string]$Source,[string]$Target,[string
 function Get-CompareDiff([string]$Path,[string]$Source,[string]$Target,[string]$File) {
     if(-not $File -or $File -match "[`r`n]"){throw 'File path is required.'};$compare=Get-BranchCompare $Path $Source $Target 'origin'
     $allowed=@($compare.files|ForEach-Object{@($_.path,$_.oldPath)}|Where-Object{$_});if(-not ($allowed -contains $File)){throw 'File is not part of this comparison.'}
-    $result=Invoke-GitCapture $Path @('diff','--find-renames','--unified=4',($compare.targetHash+'...'+$compare.sourceHash),'--',$File);if($result.Code -ne 0){throw $result.Output};$text=$result.Output;if($text.Length -gt 500000){$text=$text.Substring(0,500000)+"`r`n… diff truncated …"};return [ordered]@{diff=$text}
+    $result=Invoke-GitCapture $Path @('diff','--find-renames','--unified=4',($compare.targetHash+'...'+$compare.sourceHash),'--',$File);if($result.Code -ne 0){throw $result.Output};$text=$result.Output;if($text.Length -gt 500000){$text=$text.Substring(0,500000)+"`r`n... diff truncated ..."};return [ordered]@{diff=$text}
 }
 
 function Search-HistoryContent([string]$Path,[string]$Query,[string]$Mode) {
@@ -1112,7 +1112,7 @@ function Invoke-Action($Body) {
             try { $result = Invoke-GlabCapture $mrArgs.ToArray() }
             finally { Pop-Location }
             if ($result.Code -ne 0) { throw $result.Output }
-            return @{message="Merge request created: $source → $target.";output=$result.Output}
+            return @{message="Merge request created: $source -> $target.";output=$result.Output}
         }
         'notify-toast' { return Show-GitDeckToast ([string]$Body.title) ([string]$Body.text) }
         'open-url' {

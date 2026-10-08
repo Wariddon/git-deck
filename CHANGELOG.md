@@ -4,6 +4,9 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- Fleet recipes: each step shows what it found (changed and untracked files, the diff size, and whitespace problems as file:line, never source lines). Whitespace problems are a finding, not "Check failed".
+- Choosing repositories for recipes and task capsules: a filter box, *Select repositories with changes*, *Clear* and a selected count (164 checkboxes were hard to use).
+- Starting Git Deck again brings the open window to the front again: the title match used an em dash that Windows PowerShell 5.1 read wrongly. Truncated diff/blame notes and the merge request message no longer show "â€¦"/"â†’"; a test keeps PowerShell strings ASCII.
 - Start-up: the readiness check is remembered when you close it (not only with *Got it*) once Git, the identity and the local service are ready, so it no longer opens at every start; the splash also closes when the window is minimized while loading (the fade did not run there).
 - Faster with many repositories (measured with 164):
   - Repository status refresh checks six repositories at a time: about 30 s → 10–13 s.

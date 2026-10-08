@@ -248,7 +248,7 @@ public static class GitDeckWindowFinder {
         EnumWindows((w, p) => {
             if (!IsWindowVisible(w)) return true;
             var s = new StringBuilder(512); GetWindowText(w, s, s.Capacity); string t = s.ToString();
-            if (t.StartsWith("Git Deck —", StringComparison.Ordinal) && t.IndexOf("Microsoft", StringComparison.OrdinalIgnoreCase) < 0 && t.IndexOf("Chrome", StringComparison.OrdinalIgnoreCase) < 0) { found = w; return false; }
+            if (t.StartsWith("Git Deck \u2014", StringComparison.Ordinal) && t.IndexOf("Microsoft", StringComparison.OrdinalIgnoreCase) < 0 && t.IndexOf("Chrome", StringComparison.OrdinalIgnoreCase) < 0) { found = w; return false; }
             return true;
         }, IntPtr.Zero);
         if (found == IntPtr.Zero) return false;
