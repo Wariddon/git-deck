@@ -4,6 +4,7 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- Dark and Midnight themes: the *Annotated* tag mark and the *CURRENT* / *↑ n* marks in the Push dialog follow the theme instead of staying light chips.
 - *More tools* in the Dashboard is grouped: Many repositories, Tickets and releases, Code, Git Deck. Search hides empty groups.
 - Systems shows the image tag each environment runs (from the last Releases load) when no environment is configured.
 - Task capsule next steps have readable names (Review the code, Ask for review…) in English and Thai.
