@@ -82,7 +82,7 @@
   const usableRepos=()=>(state.repos||[]).filter(repo=>repo.valid!==false&&!repo.pending);
   async function latestTags(repos,progress,fresh=false){
     const known=new Map((fresh?[]:F.pendingResults()||[]).filter(item=>item.pending).map(item=>[item.repo.path,item.pending.latestTag||'']));let done=0;
-    const list=await mapLimit(repos,4,async repo=>{let tag=known.get(repo.path);if(tag===undefined){try{tag=(await api('/api/repo/latest-tag?'+query({path:repo.path}))).tag.name||'';}catch{tag='';}}progress?.(++done,repos.length);return [repo.path,tag];});
+    const list=await mapLimit(repos,6,async repo=>{let tag=known.get(repo.path);if(tag===undefined){try{tag=(await api('/api/repo/latest-tag?'+query({path:repo.path}))).tag.name||'';}catch{tag='';}}progress?.(++done,repos.length);return [repo.path,tag];});
     return new Map(list);
   }
   // Errors that are the same everywhere (GitLab CLI not signed in) are said once.
@@ -200,7 +200,7 @@
     find.onclick=async()=>{
       const branch=source.value.trim();if(!branch){source.focus();return;}const request=++planRevision;
       const repos=reposIn(folder.value).filter(gitlabRepo);find.disabled=true;make.disabled=true;plan.replaceChildren(el('small','multi-repo-status',t('Looking in {count} repositories…',{count:repos.length})));
-      const found=await mapLimit(repos,4,async repo=>{try{return {repo,found:(await api('/api/repo/find-branch?'+query({path:repo.path,name:branch}))).branch};}catch(error){return {repo,error:error.message};}});
+      const found=await mapLimit(repos,6,async repo=>{try{return {repo,found:(await api('/api/repo/find-branch?'+query({path:repo.path,name:branch}))).branch};}catch(error){return {repo,error:error.message};}});
       find.disabled=false;
       if(request!==planRevision)return;plannedBranch=branch;
       targets=found.filter(item=>item.found&&(item.found.local||item.found.remote)).map(item=>{
@@ -255,7 +255,7 @@
       const repos=reposIn(folder.value);if(!repos.length){status.textContent=t('No repositories in this folder.');return;}
       remember('gitdeck.depsRef',ref.value.trim());load.disabled=true;copy.disabled=true;out.replaceChildren();let done=0;
       status.textContent=t('Reading {file} in {count} repositories…',{file:'pom.xml',count:repos.length});
-      const files=await mapLimit(repos,4,async repo=>{let file;try{file=(await api('/api/repo/file?'+query({path:repo.path,file:'pom.xml',ref:ref.value.trim()}))).file;}catch(error){file={exists:false,error:error.message};}bar2.set(++done,repos.length);return {repo,...file};});
+      const files=await mapLimit(repos,6,async repo=>{let file;try{file=(await api('/api/repo/file?'+query({path:repo.path,file:'pom.xml',ref:ref.value.trim()}))).file;}catch(error){file={exists:false,error:error.message};}bar2.set(++done,repos.length);return {repo,...file};});
       bar2.set(0,0);load.disabled=false;
       const poms=[];const broken=[];
       for(const item of files.filter(file=>file.exists)){try{poms.push({repo:item.repo,map:F.flattenPom(item.content)});}catch{broken.push(item.repo.name);}}

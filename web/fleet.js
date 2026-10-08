@@ -20,7 +20,7 @@
   async function pendingFor(repos,progress){
     const known=new Map((F.pendingResults()||[]).filter(item=>item.pending).map(item=>[item.repo.path,item.pending]));
     let done=0;
-    return mapLimit(repos,4,async repo=>{
+    return mapLimit(repos,6,async repo=>{
       let pending=known.get(repo.path);let error='';
       if(!pending){try{pending=(await api('/api/repo/pending?'+query({path:repo.path}))).pending;}catch(problem){error=problem.message;}}
       progress?.(++done,repos.length);return {repo,pending,error};
@@ -117,7 +117,7 @@
       const repos=reposIn(folder.value);if(!repos.length){status.textContent=t('No repositories in this folder.');return;}
       find.disabled=true;copy.disabled=true;out.replaceChildren();found=[];let done=0;
       status.textContent=t('Looking in {count} repositories…',{count:repos.length});
-      await mapLimit(repos,4,async repo=>{
+      await mapLimit(repos,6,async repo=>{
         try{const ticket=(await api('/api/repo/ticket?'+query({path:repo.path,key:text}))).ticket;
           if(ticket.branches.length||ticket.commits.length||ticket.tags.length)found.push({repo,ticket});}
         catch(error){found.push({repo,error:error.message});}
@@ -238,7 +238,7 @@
       const name=file.value.trim();if(!name){file.focus();return;}remember('gitdeck.compareFile',name);remember('gitdeck.compareRef',ref.value.trim());
       const repos=reposIn(folder.value);if(repos.length<2){status.textContent=t('Choose a folder with at least two repositories.');return;}
       go.disabled=true;out.replaceChildren();let done=0;status.textContent=t('Reading {file} in {count} repositories…',{file:name,count:repos.length});
-      const files=await mapLimit(repos,4,async repo=>{let answer;try{answer=(await api('/api/repo/file?'+query({path:repo.path,file:name,ref:ref.value.trim()}))).file;}catch(error){answer={exists:false,error:error.message};}bar2.set(++done,repos.length);return {repo,...answer};});
+      const files=await mapLimit(repos,6,async repo=>{let answer;try{answer=(await api('/api/repo/file?'+query({path:repo.path,file:name,ref:ref.value.trim()}))).file;}catch(error){answer={exists:false,error:error.message};}bar2.set(++done,repos.length);return {repo,...answer};});
       bar2.set(0,0);go.disabled=false;
       const present=files.filter(item=>item.exists);const missing=files.filter(item=>!item.exists);
       if(!present.length){out.append(el('div','multi-repo-empty',t('{file} was not found in these repositories.',{file:name})));status.textContent='';return;}

@@ -682,7 +682,7 @@
       const branch=name.value.trim();if(!branch){name.focus();return;}
       preview.disabled=run.disabled=true;out.replaceChildren();status.textContent=t('Checking…');
       const repos=reposIn(folder.value);
-      plans=await mapLimit(repos,4,async repo=>{try{const found=(await api('/api/repo/find-branch?'+query({path:repo.path,name:branch}))).branch;return {repo,found,plan:switchPlan(branch,found,{create:create.checked,localChanges:mode.value})};}catch(error){return {repo,plan:{kind:'skip',label:firstLine(error.message)}};}});
+      plans=await mapLimit(repos,6,async repo=>{try{const found=(await api('/api/repo/find-branch?'+query({path:repo.path,name:branch}))).branch;return {repo,found,plan:switchPlan(branch,found,{create:create.checked,localChanges:mode.value})};}catch(error){return {repo,plan:{kind:'skip',label:firstLine(error.message)}};}});
       const grid=table([t('Repository'),t('Now on'),t('Plan')]);
       plans.forEach(item=>{item.cell=el('span',`multi-repo-result tone-${item.plan.action?'info':'muted'}`,item.plan.label);grid.append(row([repoLink(item.repo),item.found?.current||'',item.cell]));});
       out.append(grid);const count=plans.filter(item=>item.plan.action).length;
@@ -719,7 +719,7 @@
       event.preventDefault();const q=text.value.trim();if(!q)return;
       run.disabled=true;out.replaceChildren();const repos=reposIn(folder.value);let done=0;
       const list=(value)=>Array.isArray(value)?value:value?[value]:[];
-      const results=await mapLimit(repos,4,async repo=>{let answer={commits:[],branches:[]};try{const raw=await api('/api/repo/search?'+query({path:repo.path,q,mode:mode.value}));answer={commits:list(raw.commits),branches:list(raw.branches)};}catch(error){answer.error=explainError(error.message);}status.textContent=t('Searched {done} of {total}',{done:++done,total:repos.length});return {repo,...answer};});
+      const results=await mapLimit(repos,6,async repo=>{let answer={commits:[],branches:[]};try{const raw=await api('/api/repo/search?'+query({path:repo.path,q,mode:mode.value}));answer={commits:list(raw.commits),branches:list(raw.branches)};}catch(error){answer.error=explainError(error.message);}status.textContent=t('Searched {done} of {total}',{done:++done,total:repos.length});return {repo,...answer};});
       const hits=results.filter(item=>(item.commits||[]).length||(item.branches||[]).length);
       status.textContent=t('{count} repositories match',{count:hits.length});run.disabled=false;
       if(!hits.length){out.append(el('p','multi-repo-empty',t('No matches.')));return;}

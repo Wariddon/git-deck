@@ -34,19 +34,24 @@ function Get-GitDeckTicket([string]$Path, [string]$Key) {
     $log = Invoke-GitCapture $Path @('log', '--exclude=refs/stash', '--all', '--date=short', '--regexp-ignore-case', '--fixed-strings', "--grep=$Key",
         '--format=%h%x1f%H%x1f%ad%x1f%an%x1f%s%x1f%D', '-60')
     $commits = if ($log.Code -eq 0) { @(Convert-LogLines $log.Output) } else { @() }
-    # Commits that are on a local branch but on no remote yet.
-    $unpushed = @{}
-    foreach ($hash in Get-GitDeckLines (Invoke-GitCapture $Path @('log', '--branches', '--not', '--remotes', '--regexp-ignore-case', '--fixed-strings', "--grep=$Key", '--format=%H', '-200'))) {
-        $unpushed[$hash.Trim()] = $true
-    }
-    $list = @($commits | Where-Object { $_.subject -match $boundary } | ForEach-Object { $item = [ordered]@{}; foreach ($k in $_.Keys) { $item[$k] = $_[$k] }; $item.pushed = -not $unpushed.ContainsKey([string]$_.fullHash); $item })
-    # Tags named after the ticket, and the tags that already contain its newest commit (it was released).
+    # Tags named after the ticket.
     $tags = New-Object 'System.Collections.Generic.List[object]'
     $seen = @{}
     foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--sort=-creatordate', '--format=%(refname:short)%09%(creatordate:iso-strict)', 'refs/tags'))) {
         $f = $line -split "`t"
         if ($f[0] -match $boundary -and -not $seen.ContainsKey($f[0])) { $seen[$f[0]] = $true; $tags.Add([ordered]@{ name = $f[0]; date = $(if ($f.Count -gt 1) { $f[1] } else { '' }); contains = $false }) }
     }
+    # Most repositories never mention the ticket: answer them now, before the slower lookups.
+    if (-not $branches.Count -and -not $tags.Count -and -not @($commits | Where-Object { $_.subject -match $boundary }).Count) {
+        return [ordered]@{ key = $Key; current = ''; branches = @(); commits = @(); tags = @(); checkedAt = [DateTime]::UtcNow.ToString('o'); limited = $false }
+    }
+    # Commits that are on a local branch but on no remote yet.
+    $unpushed = @{}
+    foreach ($hash in Get-GitDeckLines (Invoke-GitCapture $Path @('log', '--branches', '--not', '--remotes', '--regexp-ignore-case', '--fixed-strings', "--grep=$Key", '--format=%H', '-200'))) {
+        $unpushed[$hash.Trim()] = $true
+    }
+    $list = @($commits | Where-Object { $_.subject -match $boundary } | ForEach-Object { $item = [ordered]@{}; foreach ($k in $_.Keys) { $item[$k] = $_[$k] }; $item.pushed = -not $unpushed.ContainsKey([string]$_.fullHash); $item })
+    # Tags that already contain the ticket's newest commit (it was released).
     if ($list.Count) {
         $newest = [string]$list[0].fullHash
         foreach ($line in @(Get-GitDeckLines (Invoke-GitCapture $Path @('tag', '--contains', $newest, '--sort=-creatordate', '--format=%(refname:short)%09%(creatordate:iso-strict)')) | Select-Object -First 8)) {

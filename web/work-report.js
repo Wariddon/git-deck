@@ -193,7 +193,7 @@
       run.disabled=true;exports.forEach(button=>button.disabled=true);let done=0,failed=0;
       const query=(repo)=>new URLSearchParams({path:repo.path,since:since.value,until:until.value,author:mine.checked?me:author.value.trim(),merges:String(merges.checked)});
       status.textContent=t('Reading {done} of {total} repositories…',{done:0,total:repos.length});
-      const results=await mapLimit(repos,4,async(repo)=>{
+      const results=await mapLimit(repos,6,async(repo)=>{
         let commits=[],mainline='';try{const answer=await api('/api/repo/activity?'+query(repo));commits=answer.commits||[];mainline=answer.mainline||'';}catch{failed++;}
         done++;status.textContent=t('Reading {done} of {total} repositories…',{done,total:repos.length});return {repo,commits,mainline};
       });
