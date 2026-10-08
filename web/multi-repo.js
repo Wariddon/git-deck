@@ -902,7 +902,7 @@
     // The health view is one of the Dashboard's tabs, so it is not called a dashboard itself.
     const fleetTab=nav?.querySelector('[data-operations-view="fleet"]');if(fleetTab)fleetTab.textContent=t('Repository health');
     const heading=document.getElementById('operations-title');
-    if(heading){heading.textContent=t('Dashboard');const eyebrow=heading.parentElement?.querySelector('.eyebrow');if(eyebrow)eyebrow.textContent=t('ALL REPOSITORIES');const line=heading.nextElementSibling;if(line?.tagName==='P')line.textContent=t('What is pending everywhere, update or switch many repositories at once, search them all. Background jobs and automation are here too.');}
+    if(heading){heading.textContent=t('Dashboard');const eyebrow=heading.parentElement?.querySelector('.eyebrow');if(eyebrow)eyebrow.textContent=t('ALL REPOSITORIES');const line=heading.nextElementSibling;if(line?.tagName==='P')line.textContent=t('Every repository in one place: pending work, what needs attention, tickets, releases and background jobs.');}
     const openView=(view)=>{if(typeof showOperationsCenter==='function')showOperationsCenter(view);};
     // Always-visible way in: a Dashboard button in the top toolbar, next to View & tools.
     const head=document.querySelector('.workspace-modal-head');
