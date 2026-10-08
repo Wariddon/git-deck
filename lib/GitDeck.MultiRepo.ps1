@@ -9,6 +9,24 @@ function Get-GitDeckLines($Result) {
     return @(([string]$Result.Output) -split "`r?`n" | Where-Object { $_ })
 }
 
+# Branch name from a `git status --branch` header: "main...origin/main [ahead 1]",
+# "No commits yet on main", "HEAD (no branch)". Same text as `git branch --show-current`.
+function Get-GitDeckHeaderBranch([string]$Header) {
+    if ($Header -match '^(?:No commits yet on|Initial commit on) (\S+)') { return $Matches[1] }
+    if ($Header -match '^HEAD \(no branch\)') { return '' }
+    return ($Header -split '\.\.\.', 2)[0].Split(' ')[0]
+}
+
+# Unfinished merge, rebase, cherry-pick or revert, from marker files in the Git folder.
+function Get-GitDeckOperationType([string]$GitDir) {
+    if (-not $GitDir -or -not (Test-Path -LiteralPath $GitDir -PathType Container)) { return '' }
+    if (Test-Path -LiteralPath (Join-Path $GitDir 'MERGE_HEAD')) { return 'merge' }
+    if ((Test-Path -LiteralPath (Join-Path $GitDir 'rebase-merge')) -or (Test-Path -LiteralPath (Join-Path $GitDir 'rebase-apply'))) { return 'rebase' }
+    if (Test-Path -LiteralPath (Join-Path $GitDir 'CHERRY_PICK_HEAD')) { return 'cherry-pick' }
+    if (Test-Path -LiteralPath (Join-Path $GitDir 'REVERT_HEAD')) { return 'revert' }
+    return ''
+}
+
 # Everything still open in one repository: uncommitted files, unpushed commits, stashes,
 # merged branches nobody deleted, and an unfinished merge/rebase.
 function Get-GitDeckPendingWork([string]$Path) {
@@ -21,7 +39,7 @@ function Get-GitDeckPendingWork([string]$Path) {
     $conflicts = @($files | Where-Object { $_ -match '^(UU|AA|DD|AU|UA|DU|UD) ' }).Count
     $untracked = @($files | Where-Object { $_.StartsWith('?? ') }).Count
     # "## main...origin/main [ahead 1]", "## No commits yet on main", "## HEAD (no branch)".
-    $branch = if ($head -match '^(?:No commits yet on|Initial commit on) (\S+)') { $Matches[1] } elseif ($head -match '^HEAD \(no branch\)') { '' } else { ($head -split '\.\.\.', 2)[0].Split(' ')[0] }
+    $branch = Get-GitDeckHeaderBranch $head
     $ahead = 0; $behind = 0; $upstream = ''
     if ($head -match '\.\.\.(\S+)') { $upstream = $Matches[1] }
     if ($head -match 'ahead (\d+)') { $ahead = [int]$Matches[1] }
@@ -72,15 +90,7 @@ function Get-GitDeckPendingWork([string]$Path) {
         $merged = @(Get-GitDeckLines (Invoke-GitCapture $Path @('branch', '--format=%(refname:short)', '--merged', $mainline)) |
             Where-Object { $_ -ne $branch -and $script:ProtectedBranches -notcontains $_ -and "origin/$_" -ne $mainline })
     }
-    # Unfinished merge, rebase, cherry-pick or revert: marker files in the Git folder.
-    $operation = ''
-    $gitDir = ([string](Invoke-GitCapture $Path @('rev-parse', '--absolute-git-dir')).Output).Trim()
-    if ($gitDir -and (Test-Path -LiteralPath $gitDir -PathType Container)) {
-        if (Test-Path -LiteralPath (Join-Path $gitDir 'MERGE_HEAD')) { $operation = 'merge' }
-        elseif ((Test-Path -LiteralPath (Join-Path $gitDir 'rebase-merge')) -or (Test-Path -LiteralPath (Join-Path $gitDir 'rebase-apply'))) { $operation = 'rebase' }
-        elseif (Test-Path -LiteralPath (Join-Path $gitDir 'CHERRY_PICK_HEAD')) { $operation = 'cherry-pick' }
-        elseif (Test-Path -LiteralPath (Join-Path $gitDir 'REVERT_HEAD')) { $operation = 'revert' }
-    }
+    $operation = Get-GitDeckOperationType ([string](Invoke-GitCapture $Path @('rev-parse', '--absolute-git-dir')).Output).Trim()
     $tag = Get-GitDeckLatestTag $Path
     # When the current branch last changed, and with what.
     $last = ([string](Invoke-GitCapture $Path @('log', '-1', '--format=%cI%x09%s')).Output).Trim() -split "`t", 2

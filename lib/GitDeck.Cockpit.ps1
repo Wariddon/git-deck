@@ -51,10 +51,13 @@ function Get-GitDeckTaskSnapshot([string]$Path, [switch]$IncludeDiff) {
     Assert-Registered $Path
     $status=Invoke-GitCapture $Path @('status','--porcelain=v1','--branch','--untracked-files=normal')
     if ($status.Code -ne 0) { throw 'Cannot read repository status. No action was performed.' }
-    $branch=Invoke-GitCapture $Path @('branch','--show-current')
-    if ($branch.Code -ne 0) { throw 'Cannot read the working branch.' }
-    $head=Invoke-GitCapture $Path @('rev-parse','--verify','HEAD')
     $lines=@(([string]$status.Output)-split "`r?`n"|Where-Object { $_ })
+    # Branch from the status header, and the Git folder plus HEAD in one rev-parse (HEAD is empty before the first commit).
+    $branch=@{Output=(Get-GitDeckHeaderBranch $(if($lines.Count -and $lines[0].StartsWith('## ')){$lines[0].Substring(3)}else{''}))}
+    $both=Invoke-GitCapture $Path @('rev-parse','--absolute-git-dir','--verify','-q','HEAD')
+    $parts=@(([string]$both.Output)-split "`r?`n"|Where-Object { $_ })
+    if($both.Code -eq 0 -and $parts.Count -ge 2){$gitDir=$parts[0];$head=@{Code=0;Output=$parts[1]}}
+    else{$gitDir=([string](Invoke-GitCapture $Path @('rev-parse','--absolute-git-dir')).Output).Trim();$head=@{Code=1;Output=''}}
     $files=@($lines|Where-Object {-not $_.StartsWith('## ')});$ahead=0;$behind=0
     $header=if($lines.Count){$lines[0]}else{''}
     if($header -match 'ahead (\d+)'){$ahead=[int]$Matches[1]};if($header -match 'behind (\d+)'){$behind=[int]$Matches[1]}
@@ -67,8 +70,8 @@ function Get-GitDeckTaskSnapshot([string]$Path, [switch]$IncludeDiff) {
     }
     $digest=[Security.Cryptography.SHA256]::Create()
     try { $basis=[BitConverter]::ToString($digest.ComputeHash([Text.Encoding]::UTF8.GetBytes(([string]$head.Output)+"`n"+([string]$branch.Output)+"`n"+([string]$status.Output)+"`n"+$diffText))).Replace('-','').ToLowerInvariant() } finally { $digest.Dispose() }
-    $operation=Get-GitOperationState $Path
-    return [ordered]@{path=$Path;branch=([string]$branch.Output).Trim();head=$(if($head.Code -eq 0){([string]$head.Output).Trim()}else{''});basis=$basis;changed=$files.Count;ahead=$ahead;behind=$behind;conflicts=@($files|Where-Object {$_ -match '^(UU|AA|DD|AU|UA|DU|UD) '}).Count;operation=$(if($operation.active){[string]$operation.type}else{''});checkedAt=[DateTime]::UtcNow.ToString('o')}
+    $operationType=Get-GitDeckOperationType $gitDir
+    return [ordered]@{path=$Path;branch=([string]$branch.Output).Trim();head=$(if($head.Code -eq 0){([string]$head.Output).Trim()}else{''});basis=$basis;changed=$files.Count;ahead=$ahead;behind=$behind;conflicts=@($files|Where-Object {$_ -match '^(UU|AA|DD|AU|UA|DU|UD) '}).Count;operation=$operationType;checkedAt=[DateTime]::UtcNow.ToString('o')}
 }
 
 function Save-GitDeckTaskCapsule($Body) {

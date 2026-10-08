@@ -1,5 +1,6 @@
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
+. (Join-Path $root 'lib/GitDeck.MultiRepo.ps1')
 . (Join-Path $root 'lib/GitDeck.Cockpit.ps1')
 . (Join-Path $root 'lib/GitDeck.Fleet.ps1')
 . (Join-Path $root 'lib/GitDeck.Integrations.ps1')
