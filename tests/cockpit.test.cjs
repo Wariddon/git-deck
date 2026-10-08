@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const C=require('../web/cockpit.js');
-assert.deepEqual(C.primaryViews,['fleet','my-work','focus-inbox','catalog']);
+assert.deepEqual(C.primaryViews,['fleet','pending','my-work','focus-inbox','catalog']);
 for(const term of ['all repos','ALL REPOSITORIES','repository health','repos','all-repos'])assert(C.toolMatches('fleet','All repositories',term));
 assert(!C.toolMatches('my-work','My work','all repos'));assert(!C.toolMatches('fleet','All repositories','not-a-tool'));assert(C.toolMatches('fleet','All repositories',''));
 assert(C.ticketKey('PAY-123'));assert(!C.ticketKey('PAY-123 secret'));assert(!C.ticketKey('--switch'));

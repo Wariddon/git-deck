@@ -2,7 +2,7 @@
 async page => {
   if(!page.url().startsWith('http://127.0.0.1:12507/'))throw new Error('Owned fixture required');
   await page.setViewportSize({width:1487,height:1058});
-  await page.getByRole('button',{name:'Dashboard',exact:true}).click();
+  await page.getByRole('button',{name:'Dashboard',exact:true}).click();await page.getByRole('button',{name:'My work',exact:true}).click();
   const panel=page.locator('[data-operations-panel="my-work"]'),key=panel.getByRole('searchbox',{name:'Ticket key, for example PAY-123'});
   await key.fill('PAY-123');await panel.getByRole('button',{name:'Find ticket',exact:true}).click();await panel.getByText(/3 matches/).waitFor();
   const items=(await(await page.request.get(new URL('/api/catalog',page.url()).href)).json()).services;

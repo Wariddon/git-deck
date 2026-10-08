@@ -12,7 +12,7 @@ async page => {
   await page.route('**/api/repo/ci?*',route=>route.fulfill({json:{ci:{ref:'feature/PAY-123',sha:ciSha,status:'failed',url:'https://gitlab.example.test/pipeline/12'}}}));
   await page.route('**/api/repo/observed-env?*',route=>{environmentReads++;return route.fulfill({json:{observed:{env:'uat',source:'Argo CD',revision:snapshot.head,revisions:[],health:'Healthy',sync:'Synced',images:['registry.example.test/billing:1.2.3'],reconciledAt:new Date().toISOString(),checkedAt:new Date().toISOString()}}});});
   await page.route('**/api/repo/failure-lens?*',route=>route.fulfill({json:{failure:{ci:{ref:'feature/PAY-123',sha:snapshot.head,status:'failed',url:'https://gitlab.example.test/pipelines/12'},jobs:[{name:'retry.spec.ts',stage:'test',status:'failed',reason:'script_failure',url:'https://gitlab.example.test/jobs/12'}],matchesLocalRef:true,limited:false,checkedAt:new Date().toISOString()}}}));
-  await page.getByRole('button',{name:'Dashboard',exact:true}).click();
+  await page.getByRole('button',{name:'Dashboard',exact:true}).click();await page.getByRole('button',{name:'My work',exact:true}).click();
   await page.getByRole('heading',{name:'My work',exact:true}).waitFor();
   const myWork=page.locator('[data-operations-panel="my-work"]');
   await myWork.getByRole('searchbox',{name:'Ticket key, for example PAY-123'}).fill('PAY-123');

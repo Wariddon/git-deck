@@ -4,6 +4,10 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- The Dashboard button opens Pending work again, and Pending work is one of the main Dashboard views. *Needs attention* checks this computer's repositories as soon as it opens (local and read-only) instead of waiting for a click.
+- One Undo in the Modern toolbar: the Classic Undo beside Push is hidden there, so the toolbar no longer runs out of room and cuts off *Tools*.
+- The new Dashboard views (My work, Needs attention, Systems, More tools…) are translated into Thai.
+
 - Clear a Dashboard tool filter when external navigation would otherwise hide the active destination, and identify the current view for assistive technology.
 
 - Make All repositories a primary Dashboard destination and route the All repos rail button to the complete inventory, not Pending work; keep legacy health/search aliases discoverable.
