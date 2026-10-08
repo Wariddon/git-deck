@@ -31,6 +31,8 @@ const cache = { entries: entries.map(({ env, service, tag }) => ({ env, service,
 assert.deepEqual(I.deployedIn(cache, repos[0], ['1.5.0-poc03', '1.4.5']), ['dev', 'uat']);
 assert.deepEqual(I.deployedIn(cache, repos[0], ['1.4.2']), []);
 assert.deepEqual(I.deployedIn(null, repos[0], ['1.4.5']), []);
+assert.deepEqual(I.deployedTags(cache, repos[0]).map((item) => `${item.env} ${item.tag}`), ['dev 1.5.0-poc03', 'uat 1.4.5']);
+assert.deepEqual(I.deployedTags(null, repos[0]), []);
 
 // Dependencies: only versions are compared; "(managed)" does not count as a different version.
 const pom = (pairs) => new Map(Object.entries(pairs));

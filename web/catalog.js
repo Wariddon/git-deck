@@ -21,6 +21,14 @@
   }
   const helpers={readinessOf,snapshotAge,ticketMatches,filterServices};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
+  // Without configured environments, show the image tags the last Releases load found for this service.
+  function deployedCell(item){
+    const found=window.GitDeckIntegrations?.deployedTags?.({name:item.service,path:item.path})||[];
+    if(!found.length)return t('Not configured');
+    const box=el('span','fleet-release-cell catalog-deployed');box.title=t('From the last Releases load');
+    for(const entry of found)box.append(el('span','fleet-state tone-info',entry.env.toUpperCase()+' '+entry.tag));
+    return box;
+  }
   const F=window.GitDeckFleet;if(!F||typeof api!=='function')return;
   const {addPanel,table,row,query,mapLimit}=F;
   // Explicit literals keep the translation inventory complete for dynamic labels.
@@ -86,7 +94,7 @@
       const grid=table([t('Service'),t('Owner / system'),t('Type'),t('Environments')]);
       for(const item of shown){const name=button(item.service,()=>{if(!leaveEditor())return;selected=item.path;showDetail(item);draw();});name.textContent=item.service;name.className='catalog-name';name.title=item.path;const cell=el('div');const path=el('small','catalog-path',item.path);path.title=item.path;cell.append(name,path);
         const info=el('div');info.append(el('span','',item.owner||t('Owner not set')),el('small','catalog-path',item.system||t('System not set')));
-        const tr=row([cell,info,item.kind,item.environments.length?item.environments.map(e=>e.env.toUpperCase()).join(' · '):t('Not configured')]);[t('Service'),t('Owner / system'),t('Type'),t('Environments')].forEach((label,index)=>{tr.cells[index].dataset.label=label;});tr.classList.toggle('catalog-selected',item.path===selected);grid.append(tr);}
+        const tr=row([cell,info,item.kind,item.environments.length?item.environments.map(e=>e.env.toUpperCase()).join(' · '):deployedCell(item)]);[t('Service'),t('Owner / system'),t('Type'),t('Environments')].forEach((label,index)=>{tr.cells[index].dataset.label=label;});tr.classList.toggle('catalog-selected',item.path===selected);grid.append(tr);}
       list.append(grid);
     }
     async function load(){if(!leaveEditor())return;const request=++serial;refresh.disabled=true;status.textContent=t('Reading catalog…');try{const answer=await api('/api/catalog');if(request!==serial)return;services=answer.services||[];draw();if(selected&&!editing){const item=services.find(s=>s.path===selected);if(item)showDetail(item);else detail.hidden=true;}}catch(error){if(request===serial){message(list,error.message,'bad');status.textContent=t('Catalog unavailable');if(!editing)detail.hidden=true;}}finally{if(request===serial)refresh.disabled=false;}}

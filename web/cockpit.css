@@ -50,6 +50,9 @@ textarea.cockpit-report { width:100%;min-height:240px;box-sizing:border-box;font
 .cockpit-tools summary { cursor:pointer;padding:8px;color:var(--text-secondary); }
 .cockpit-tools[open] > button { display:block;width:100%;text-align:left;padding:5px 8px;min-height:28px; }
 .cockpit-tools:not([open]) > button { display:none!important; }
+.cockpit-tools > button { font-weight:500!important; }
+.cockpit-tools-heading { margin:10px 8px 2px;color:var(--text-tertiary);font-size:.82em;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.cockpit-tools:not([open]) > .cockpit-tools-heading, .cockpit-tools-heading[hidden] { display:none; }
 .cockpit-primary button { min-height:32px!important; }
 .cockpit-nav-empty { margin:0;padding:8px;color:var(--text-secondary);overflow-wrap:anywhere; }
 .cockpit-dashboard #fleet-table { overflow:auto; }

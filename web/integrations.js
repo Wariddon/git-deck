@@ -39,6 +39,12 @@
     const envs=cache.entries.filter(entry=>wanted.has(entry.tag)&&matchRepo(entry.service,[repo])===repo).map(entry=>entry.env);
     return sortEnvs(envs);
   }
+  // Every environment and the tag it runs for one repository (from the last Releases load).
+  function deployedTags(cache,repo){
+    if(!cache?.entries||!repo)return [];const seen=new Map();
+    for(const entry of cache.entries)if(matchRepo(entry.service,[repo])===repo){const key=entry.env+'|'+entry.tag;if(!seen.has(key))seen.set(key,{env:entry.env,tag:entry.tag});}
+    return [...seen.values()].sort((a,b)=>envRank(a.env)-envRank(b.env)||a.env.localeCompare(b.env));
+  }
   // Maven versions worth comparing between repositories.
   const versionKey=(key)=>/^(parent|dependency|managed|plugin)\./.test(key)||/^property\..*version$/i.test(key);
   // pom maps per repository -> [{key, versions: Map(version -> [repo names])}], most different first.
@@ -55,7 +61,7 @@
   }
   // Repositories whose count of commits to pull grew since the last look.
   function newlyBehind(before,repos){return repos.filter(repo=>(Number(repo.behind)||0)>(before.get(repo.path)||0)).map(repo=>({repo,count:(Number(repo.behind)||0)-(before.get(repo.path)||0)}));}
-  const api_={envRank,sortEnvs,matchRepo,deployRows,deployedIn,dependencyRows,newlyBehind};
+  const api_={envRank,sortEnvs,matchRepo,deployRows,deployedIn,deployedTags,dependencyRows,newlyBehind};
   if(typeof module!=='undefined'){module.exports=api_;return;}
 
   const F=window.GitDeckFleet;
@@ -64,7 +70,7 @@
   const feedback=(text,error=false)=>{if(typeof showActionFeedback==='function')showActionFeedback(text,{error});};
   const cacheKey='gitdeck.deployMap';
   const readCache=()=>{try{return JSON.parse(localStorage.getItem(cacheKey)||'null');}catch{return null;}};
-  window.GitDeckIntegrations={...api_,deployedIn:(repo,tags)=>deployedIn(readCache(),repo,tags)};
+  window.GitDeckIntegrations={...api_,deployedIn:(repo,tags)=>deployedIn(readCache(),repo,tags),deployedTags:(repo)=>deployedTags(readCache(),repo)};
   if(!F||typeof el!=='function'||typeof api!=='function')return;
   const {addPanel,folderSelect,reposIn,repoLink,table,row,mapLimit,runQuiet,query,whenOf}=F;
   const button=(label,className='')=>{const node=el('button',className,label);node.type='button';return node;};

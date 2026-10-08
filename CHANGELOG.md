@@ -4,6 +4,9 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- *More tools* in the Dashboard is grouped: Many repositories, Tickets and releases, Code, Git Deck. Search hides empty groups.
+- Systems shows the image tag each environment runs (from the last Releases load) when no environment is configured.
+- Task capsule next steps have readable names (Review the code, Ask for review…) in English and Thai.
 - The Dashboard button opens Pending work again, and Pending work is one of the main Dashboard views. *Needs attention* checks this computer's repositories as soon as it opens (local and read-only) instead of waiting for a click.
 - One Undo in the Modern toolbar: the Classic Undo beside Push is hidden there, so the toolbar no longer runs out of room and cuts off *Tools*.
 - My work, Needs attention, Systems, Task capsules, Change impact, Fleet recipes, Failure lens and Release proof are fully translated into Thai, including their states (Passed, Unknown, *5 local changes*…). The Dashboard header says what the page holds in one line.
