@@ -26,6 +26,8 @@ $script:ServerStamp = (@(Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.ps1
 $script:RepoList = Join-Path $PSScriptRoot 'git-repositories.txt'
 $script:ScanList = Join-Path $PSScriptRoot 'git-scan-locations.txt'
 $script:RepoCache = Join-Path $PSScriptRoot 'git-repository-cache.json'
+# Folders confirmed to be Git work trees recently (path -> time), shared by every request thread.
+$script:ValidRepoChecks = [hashtable]::Synchronized(@{})
 $script:Glab = Join-Path $PSScriptRoot 'bin\glab.exe'
 $script:JobsRoot = Join-Path $PSScriptRoot 'jobs'
 $script:JobWorker = Join-Path $PSScriptRoot 'git-job-worker.ps1'
@@ -38,7 +40,7 @@ $script:BaseUrl = "http://127.0.0.1:$Port/"
 [void](New-Item -ItemType Directory -Path $script:JobsRoot -Force)
 [void](New-Item -ItemType Directory -Path $script:ExportsRoot -Force)
 # Script variables copied into each parallel request runspace.
-$script:SharedVariableNames = @('Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
+$script:SharedVariableNames = @('ValidRepoChecks','Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }
@@ -764,7 +766,13 @@ function Add-Repository([string]$Path) {
 function Assert-Registered([string]$Path) {
     $match = @(Get-Repositories) | Where-Object { [string]::Equals($_,$Path,[StringComparison]::OrdinalIgnoreCase) }
     if (-not $match) { throw 'Repository is not registered in Git Deck.' }
-    if (-not (Test-GitRepository $Path)) { throw 'Repository folder is missing or invalid.' }
+    # Registration is read every time; the Git work-tree test (one more Git start) is reused for a
+    # minute, since Dashboard views ask about every repository several times in a row.
+    $key = $Path.ToLowerInvariant()
+    $checks = $script:ValidRepoChecks
+    if ($checks) { $seen = $checks[$key]; if ($seen -and ([DateTime]::UtcNow - $seen).TotalSeconds -lt 60 -and (Test-Path -LiteralPath $Path -PathType Container)) { return } }
+    if (-not (Test-GitRepository $Path)) { if ($checks) { $checks.Remove($key) }; throw 'Repository folder is missing or invalid.' }
+    if ($checks) { $checks[$key] = [DateTime]::UtcNow }
 }
 
 function Assert-WorkingFile([string]$Path,[string]$File) {
@@ -1745,7 +1753,7 @@ catch {
 # GET requests only read Git state and run in parallel; POST actions stay serial.
 $pool = $null
 if (-not $Serial) {
-    try { $pool = New-GitDeckRequestPool 4 }
+    try { $pool = New-GitDeckRequestPool 6 }
     catch { Write-Host "[WARN] Parallel requests disabled: $($_.Exception.Message)" -ForegroundColor Yellow; $pool = $null }
 }
 

@@ -38,6 +38,12 @@ try{
     if($p.branch -ne 'main' -or $p.changed -ne 1 -or $p.untracked -ne 1){throw "Pending files wrong: $($p.changed)/$($p.untracked)"}
     if(@($p.unpushedBranches).Count -ne 1 -or $p.unpushedBranches[0].branch -ne 'feature/AP-2' -or $p.unpushedBranches[0].commits -ne 1){throw 'Unpushed branch not found'}
     if(@($p.stashes).Count -ne 1 -or $p.stashes[0].message -notmatch 'wip'){throw 'Stash not listed'}
+    # Two branches sharing an unpushed commit each count it (one rev-list serves every branch).
+    Run-Git $local @('branch','feature/AP-3','feature/AP-2')
+    $stacked=Get-GitDeckPendingWork $local
+    $ap3=@($stacked.unpushedBranches|Where-Object{$_.branch -eq 'feature/AP-3'})
+    if($ap3.Count -ne 1 -or $ap3[0].commits -ne 1 -or @($stacked.unpushedBranches|Where-Object{$_.branch -eq 'feature/AP-2' -and $_.commits -eq 1}).Count -ne 1){throw "Shared commit count wrong: $($stacked.unpushedBranches|ConvertTo-Json -Compress)"}
+    Run-Git $local @('branch','-q','-D','feature/AP-3')
     if((@($p.mergedBranches) -join ',') -ne 'done-work'){throw "Merged branches wrong: $(@($p.mergedBranches) -join ',')"}
     if($p.mainline -ne 'origin/main'){throw "Mainline wrong: $($p.mainline)"}
     if($p.latestTag -ne '' -or $p.tagCount -ne 0){throw 'No tags expected yet'}

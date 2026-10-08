@@ -30,7 +30,14 @@ function Write-JobStatus([string]$State,[int]$Progress,[string]$Message,[string]
     $json = $payload | ConvertTo-Json -Depth 8 -Compress
     $tempPath = Join-Path $jobsPath ($JobId + '.' + $PID + '.tmp')
     [IO.File]::WriteAllText($tempPath,$json,$utf8)
-    Move-Item -LiteralPath $tempPath -Destination $statusPath -Force
+    # The server may be reading the status file at this moment; try again shortly instead of failing the job.
+    for ($attempt = 1; ; $attempt++) {
+        try { Move-Item -LiteralPath $tempPath -Destination $statusPath -Force -ErrorAction Stop; break }
+        catch {
+            if ($attempt -ge 20) { if ($State -eq 'running') { Remove-Item -LiteralPath $tempPath -Force -ErrorAction SilentlyContinue; return }; throw }
+            Start-Sleep -Milliseconds 50
+        }
+    }
 }
 
 function Assert-NotCancelled {
@@ -75,6 +82,48 @@ function Add-SavedRepository([string]$Path,[string]$RepoList) {
         $mutex.Dispose()
     }
     return $resolved
+}
+
+# Several repositories at once: each check is three short Git commands, so 129 repositories took
+# about 25 seconds one by one. Results keep the saved order; progress counts finished checks.
+function Get-RepositoryInfoParallel([string[]]$Targets, [int]$Threads = 6) {
+    if (-not $Targets.Count) { return @() }
+    $iss = [Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
+    foreach ($name in @('Assert-NotCancelled','Invoke-Git','Test-GitDeckProtectedStatusLine','Test-GitRepo','Get-RepositoryInfo')) {
+        $iss.Commands.Add((New-Object Management.Automation.Runspaces.SessionStateFunctionEntry($name, (Get-Item "function:$name").Definition)))
+    }
+    $iss.Variables.Add((New-Object Management.Automation.Runspaces.SessionStateVariableEntry('cancelPath', $cancelPath, '')))
+    $pool = [RunspaceFactory]::CreateRunspacePool(1, [Math]::Max(1, [Math]::Min($Threads, $Targets.Count)), $iss, $Host)
+    $pool.Open()
+    $work = New-Object 'System.Collections.Generic.List[object]'
+    try {
+        for ($index = 0; $index -lt $Targets.Count; $index++) {
+            $shell = [PowerShell]::Create(); $shell.RunspacePool = $pool
+            [void]$shell.AddScript('param($Path) Get-RepositoryInfo $Path').AddArgument($Targets[$index])
+            $work.Add([pscustomobject]@{ shell = $shell; handle = $shell.BeginInvoke(); path = $Targets[$index] })
+        }
+        $results = New-Object 'object[]' $Targets.Count
+        $lastReport = [DateTime]::MinValue
+        for ($index = 0; $index -lt $work.Count; $index++) {
+            $entry = $work[$index]
+            while (-not $entry.handle.AsyncWaitHandle.WaitOne(250)) { Assert-NotCancelled }
+            $output = $null
+            try { $output = @($entry.shell.EndInvoke($entry.handle)) } catch { Assert-NotCancelled }
+            $results[$index] = if ($output -and $output.Count) { $output[0] } else {
+                [ordered]@{path=$entry.path;name=(Split-Path $entry.path -Leaf);valid=$false;branch='-';changes=0;ahead='-';behind='-';lastCommit='-';remote='';pending=$false}
+            }
+            # Progress a few times a second at most; every write competes with the server reading it.
+            if ($index -eq $work.Count - 1 -or ([DateTime]::UtcNow - $lastReport).TotalMilliseconds -ge 400) {
+                $lastReport = [DateTime]::UtcNow
+                $progress = [int](3 + ((($index + 1) / [double][Math]::Max(1,$Targets.Count)) * 92))
+                Write-JobStatus 'running' $progress "Checked $($index+1) of $($Targets.Count): $($entry.path)"
+            }
+        }
+        return $results
+    } finally {
+        foreach ($entry in $work) { try { if (-not $entry.handle.IsCompleted) { $entry.shell.Stop() } } catch {}; $entry.shell.Dispose() }
+        $pool.Close(); $pool.Dispose()
+    }
 }
 
 function Get-RepositoryInfo([string]$Path) {
@@ -177,18 +226,12 @@ try {
             $targets = @($script:Spec.repositories)
             $cachePath = [IO.Path]::GetFullPath([string]$script:Spec.cachePath)
             $items = New-Object 'System.Collections.Generic.List[object]'
-            for ($index=0; $index -lt $targets.Count; $index++) {
-                Assert-NotCancelled
-                $repo = [string]$targets[$index]
-                $progress = [int](3 + ((($index + 1) / [double][Math]::Max(1,$targets.Count)) * 92))
-                Write-JobStatus 'running' $progress "Checking $($index+1) of $($targets.Count): $repo"
-                $items.Add((Get-RepositoryInfo $repo))
-            }
+            foreach ($item in (Get-RepositoryInfoParallel @($targets | ForEach-Object { [string]$_ }))) { $items.Add($item) }
             $itemArray = @($items | ForEach-Object { $_ })
             $cache = [ordered]@{cachedAt=[DateTime]::UtcNow.ToString('o');repos=$itemArray}
             $tempCache = $cachePath + '.' + $PID + '.tmp'
             [IO.File]::WriteAllText($tempCache,($cache | ConvertTo-Json -Depth 8 -Compress),$utf8)
-            Move-Item -LiteralPath $tempCache -Destination $cachePath -Force
+            for ($attempt = 1; ; $attempt++) { try { Move-Item -LiteralPath $tempCache -Destination $cachePath -Force -ErrorAction Stop; break } catch { if ($attempt -ge 20) { throw }; Start-Sleep -Milliseconds 50 } }
             Write-JobStatus 'completed' 100 "Repository status updated for $($targets.Count) repositories." '' @{total=$targets.Count;cachedAt=$cache.cachedAt}
         }
         default { throw 'Unsupported background Git action.' }

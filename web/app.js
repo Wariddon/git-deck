@@ -410,8 +410,12 @@ async function refreshRepositoryStatuses(manual=false){
     state.repoRefreshJob=started.jobId;
     if(manual){state.activeJob={id:started.jobId,action:'refresh-repos'};setBusy(true);setJobControls(true);showLoading('Refreshing repository status…','Running in the background. You can cancel this operation.');}
     else setNotice(`${state.repos.length} repositories ready · Refreshing the cache in the background`);
+    // A busy or restarting server can drop one poll; that must not leave the list on "Waiting for first status check".
+    let misses=0;
     while(true){
-      const job=await api(`/api/job?id=${encodeURIComponent(started.jobId)}`);
+      let job;
+      try{job=await api(`/api/job?id=${encodeURIComponent(started.jobId)}`);misses=0;}
+      catch(error){if(++misses>8)throw error;await new Promise((resolve)=>setTimeout(resolve,1500));continue;}
       if(manual){showLoading(job.message||'Checking repositories…',`${job.progress||0}% complete`);setNotice(job.message||'Refreshing repository status…');}
       if(job.state==='completed')break;
       if(job.state==='failed')throw new Error(job.output||job.message||'Repository refresh failed.');
@@ -419,7 +423,7 @@ async function refreshRepositoryStatuses(manual=false){
       await new Promise((resolve)=>setTimeout(resolve,900));
     }
     const data=await loadRepositoryCache(false);if(data)setNotice(`${state.repos.length} repositories ready · updated now`);
-  }catch(error){setNotice(error.message);if(manual)setOutput(error.message);}
+  }catch(error){setNotice(error.message);if(manual)setOutput(error.message);try{await loadRepositoryCache(false);}catch{}}
   finally{state.repoRefreshJob=null;if(state.activeJob?.action==='refresh-repos')state.activeJob=null;setJobControls(false);if(manual){setBusy(false);hideLoading();}button.disabled=false;button.textContent=originalText;}
 }
 

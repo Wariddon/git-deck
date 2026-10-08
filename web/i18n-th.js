@@ -1347,4 +1347,5 @@ GitDeckI18n.register('th',{
   "Tickets and releases":"Ticket และ release",
   "Git Deck":"Git Deck",
   "Other":"อื่นๆ",
+  "showing the last check from {time} until then":"ระหว่างนี้แสดงผลรอบก่อนจาก {time}",
 });

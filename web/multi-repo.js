@@ -322,6 +322,9 @@
       [t('What to do')]:t('The most important next step for this repository'),
       [t('Last commit')]:t('When the branch you are on last changed; hover the date for the message'),
     };
+    const snapshotKey='gitdeck.pendingSnapshot';
+    const readSnapshot=()=>{try{return JSON.parse(localStorage.getItem(snapshotKey)||'null');}catch{return null;}};
+    const saveSnapshot=(items)=>{try{localStorage.setItem(snapshotKey,JSON.stringify({at:Date.now(),items:items.filter(item=>item.pending&&!item.error).map(item=>({path:item.repo.path,pending:item.pending}))}));}catch{}};
     const check=async(repo)=>{try{const pending=(await api('/api/repo/pending?'+query({path:repo.path}))).pending;return {repo,pending,counts:pendingCounts(pending),error:''};}catch(error){return {repo,pending:null,counts:pendingCounts(null),error:firstLine(error.message)};}};
     const kinds=[
       ['any',()=>t('Anything pending')],['changes',()=>t('Uncommitted')],['push',()=>t('To push')],['pull',()=>t('To pull')],
@@ -541,10 +544,16 @@
         checking=false;setMeter(0,0);status.textContent=firstLine(error.message);drawChips();draw();return;
       }
       if(id!==runId)return;
-      results=[];expanded.clear();seenRows.clear();let done=0;checking=repos.length>0;setMeter(0,repos.length);drawChips();draw();
-      status.textContent=t('Checking {done} of {total}…',{done:0,total:repos.length});
-      await mapLimit(repos,4,async repo=>{if(id!==runId)return;const item=await check(repo);if(id!==runId)return;results.push(item);status.textContent=t('Checking {done} of {total}…',{done:++done,total:repos.length});setMeter(done,repos.length);schedule();});
-      if(id!==runId)return;checking=false;setMeter(0,0);checkedAt=new Date();
+      // Start from the last check (kept on this computer) so the page is useful at once; each
+      // repository's row is replaced as soon as its new answer arrives.
+      const snapshot=readSnapshot();const previous=new Map((snapshot?.items||[]).map(item=>[item.path.toLowerCase(),item.pending]));
+      results=repos.filter(repo=>previous.has(repo.path.toLowerCase())).map(repo=>{const pending=previous.get(repo.path.toLowerCase());return {repo,pending,counts:pendingCounts(pending),error:'',stale:true};});
+      const since=results.length&&snapshot?.at?new Date(snapshot.at).toLocaleString([],{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+      const progress=(done)=>t('Checking {done} of {total}…',{done,total:repos.length})+(since?' · '+t('showing the last check from {time} until then',{time:since}):'');
+      expanded.clear();seenRows.clear();let done=0;checking=repos.length>0;setMeter(0,repos.length);drawChips();draw();
+      status.textContent=progress(0);
+      await mapLimit(repos,6,async repo=>{if(id!==runId)return;const item=await check(repo);if(id!==runId)return;const at=results.findIndex(entry=>entry.repo.path===item.repo.path);if(at>=0)results[at]=item;else results.push(item);status.textContent=progress(++done);setMeter(done,repos.length);schedule();});
+      if(id!==runId)return;checking=false;setMeter(0,0);checkedAt=new Date();saveSnapshot(results);
       let added=false;for(const item of results){const tag=item.pending?.latestTag;if(tag&&!seenTags[item.repo.path]){seenTags[item.repo.path]=tag;added=true;}}if(added)saveSeenTags(seenTags);
       summary();drawChips();draw();
     };
