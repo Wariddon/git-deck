@@ -5,6 +5,8 @@ param([Parameter(Mandatory = $true)][string]$Zip)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $zipPath = (Resolve-Path -LiteralPath $Zip).Path
+# The version the ZIP claims in its name (GitDeck-1.5.0-windows.zip) must be what the server reports.
+$expectedVersion = if ([IO.Path]::GetFileName($zipPath) -match 'GitDeck-(\d+\.\d+\.\d+)') { $Matches[1] } else { ([regex]::Match((Get-Content -LiteralPath (Join-Path $root 'Build-Release.ps1') -Raw), "Version='([0-9.]+)'")).Groups[1].Value }
 $expected = ((Get-Content -LiteralPath ($zipPath + '.sha256') -Raw).Trim() -split '\s+')[0]
 if ((Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash -ne $expected) { throw 'ZIP checksum mismatch' }
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -53,7 +55,7 @@ try {
     }
     if (-not $ready) { throw 'Portable server did not start' }
     $readiness = Invoke-RestMethod ($url + 'api/readiness')
-    if ($readiness.appVersion -ne '1.4.0') { throw 'Wrong portable server version' }
+    if ($readiness.appVersion -ne $expectedVersion) { throw 'Wrong portable server version' }
     $html = (Invoke-WebRequest $url -UseBasicParsing).Content
     if ($html -notmatch '/integrations.js') { throw 'Integration UI missing' }
     $js = (Invoke-WebRequest ($url + 'integrations.js') -UseBasicParsing).Content

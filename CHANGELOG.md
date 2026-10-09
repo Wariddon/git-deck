@@ -2,39 +2,34 @@
 
 What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
-## Unreleased
+## 1.5.0 — 2026-10-09
 
-- Fleet recipes: each step shows what it found (changed and untracked files, the diff size, and whitespace problems as file:line, never source lines). Whitespace problems are a finding, not "Check failed".
-- Choosing repositories for recipes and task capsules: a filter box, *Select repositories with changes*, *Clear* and a selected count (164 checkboxes were hard to use).
-- Starting Git Deck again brings the open window to the front again: the title match used an em dash that Windows PowerShell 5.1 read wrongly. Truncated diff/blame notes and the merge request message no longer show "â€¦"/"â†’"; a test keeps PowerShell strings ASCII.
-- Start-up: the readiness check is remembered when you close it (not only with *Got it*) once Git, the identity and the local service are ready, so it no longer opens at every start; the splash also closes when the window is minimized while loading (the fade did not run there).
-- Faster with many repositories (measured with 164):
-  - Repository status refresh checks six repositories at a time: about 30 s → 10–13 s.
-  - Pending work needs about half the Git commands per repository (unpushed branches counted from one list, mainline and stash found in one lookup, the work-tree check reused for a minute) and checks six at a time: about 57 s → 24–30 s.
-  - Needs attention asks Git two questions per repository instead of five, six at a time: about 19 s → 10 s.
-  - Ticket answers repositories that never mention the ticket after three Git lookups, and every local Dashboard view checks six repositories at a time: a ticket search over 164 repositories takes about 14 s instead of 30 s.
-  - The main branch of a repository (origin/HEAD, origin/main, origin/master, main, master) is found with one Git lookup instead of up to five; the Work report reads a repository in about 0.25 s instead of 0.6 s.
-  - Pending work shows the last check at once while the new one runs, and replaces each row as its answer arrives.
-- The status refresh no longer leaves repositories on *Waiting for first status check* when one progress poll fails, and job progress writes retry instead of failing the job while the server reads the file.
-- Dark and Midnight themes: the *Annotated* tag mark and the *CURRENT* / *↑ n* marks in the Push dialog follow the theme instead of staying light chips.
-- *More tools* in the Dashboard is grouped: Many repositories, Tickets and releases, Code, Git Deck. Search hides empty groups.
-- Systems shows the image tag each environment runs (from the last Releases load) when no environment is configured.
-- Task capsule next steps have readable names (Review the code, Ask for review…) in English and Thai.
-- The Dashboard button opens Pending work again, and Pending work is one of the main Dashboard views. *Needs attention* checks this computer's repositories as soon as it opens (local and read-only) instead of waiting for a click.
-- One Undo in the Modern toolbar: the Classic Undo beside Push is hidden there, so the toolbar no longer runs out of room and cuts off *Tools*.
-- My work, Needs attention, Systems, Task capsules, Change impact, Fleet recipes, Failure lens and Release proof are fully translated into Thai, including their states (Passed, Unknown, *5 local changes*…). The Dashboard header says what the page holds in one line.
+Work by ticket across repositories, and much faster with 100+ repositories.
 
-- Clear a Dashboard tool filter when external navigation would otherwise hide the active destination, and identify the current view for assistive technology.
+**Work by ticket**
+- **My work** and **Release proof**: type a ticket key to see its branches, commits, review and build in every repository. Local Git first; GitLab MRs, pipelines and Argo CD only when you ask. A pipeline or tag is shown as evidence only when it matches the branch's exact commit.
+- **Needs attention**: repositories with conflicts, uncommitted files or commits to push or pull, checked as soon as the view opens (local and read-only).
+- **Systems**: owners, systems, dependencies and environments of each service, kept on this computer; shows the tag each environment runs from the last Releases load.
+- **Task capsules** save where you were on a ticket (repository bases and reading position, never file contents) with a reviewed hand-off text. **Change impact** follows declared dependencies. **Failure lens** lists failed jobs without collecting logs.
+- **Fleet recipes**: preview, approve and run read-only review checks on many repositories; each step shows what it found (changed files, diff size, whitespace problems as file:line).
 
-- Make All repositories a primary Dashboard destination and route the All repos rail button to the complete inventory, not Pending work; keep legacy health/search aliases discoverable.
-- Prevent the inventory header from covering the first repository, and keep all six columns aligned with local horizontal scrolling on narrow screens.
+**Faster with many repositories** (measured with 164)
+- Repository status refresh: about 30 s → 10–13 s (six at a time).
+- Pending work: about 57 s → 24–30 s, and the last check shows at once while the new one runs.
+- Needs attention: about 19 s → 10 s. Ticket search: about 30 s → 14 s. Work report: about 0.6 s → 0.25 s per repository.
+- Fewer Git starts per repository: unpushed branches from one list, main branch and stash in one lookup, the work-tree check reused for a minute.
 
-- Compact Workbench / Release Trail directions: three primary Dashboard destinations, searchable More tools, stacked responsive evidence panels, 13px defaults and reduced-motion-safe short fades.
-- Keep Copy path visible beside the diff filename, bound to the repository that supplied the file rather than whichever tab is active later.
-- My work and Release proof: exact ticket boundaries, branch SHA evidence, explicit GitLab MR/CI and Argo checks, unknown states for mismatched SHA or stale controller data. Provider results cannot overwrite newer ticket selections or concurrently checked evidence.
-- Needs attention uses fresh registered catalog scope, including newly cloned repositories not yet in the status cache, plus previously checked same-SHA CI/reviews.
-- Change impact traverses declared catalog consumers with cycle guards. Failure lens reads failed jobs without collecting raw logs; handle JSON arrays correctly in Windows PowerShell 5.1.
-- Local task capsules with base checks and reviewed handoff copying; read-only Fleet recipe previews, approval, tracked-content fingerprints, resumable steps and version guards. No automated branch switching, arbitrary scripts, commits, pushes or deployments.
+**Dashboard**
+- The Dashboard button opens Pending work; main views are All repositories, Pending work, My work, Needs attention and Systems. *More tools* is searchable and grouped (Many repositories, Tickets and releases, Code, Git Deck).
+- Choosing repositories for recipes and capsules: filter, *Select repositories with changes*, *Clear* and a count.
+- All new views in Thai, including their states.
+
+**Fixes**
+- Starting Git Deck again brings the open window to the front again (the title match broke under Windows PowerShell 5.1); "â€¦" and "â†’" no longer appear in diff notes and messages.
+- The readiness check no longer opens at every start once everything required is ready; the splash closes even when the window is minimized while loading.
+- The status refresh no longer leaves repositories on *Waiting for first status check* after one failed poll; background job files are written safely while the server reads them.
+- One Undo in the Modern toolbar (the toolbar no longer cuts off *Tools*); dark themes: Annotated, CURRENT and ↑ n marks follow the theme.
+- All repositories: the header no longer covers the first row; Copy path stays visible beside the diff file name.
 
 ## 1.4.0 — 2026-10-07
 
