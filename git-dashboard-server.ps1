@@ -240,24 +240,29 @@ function Get-RepositoryInfo([string]$Path) {
 
 function Get-RepositoryDetails([string]$Path) {
     Assert-Registered $Path
-    if (-not (Test-GitRepository $Path)) { throw 'Repository folder is missing or is not a Git working copy.' }
-
-    $root = [IO.Path]::GetFullPath((Invoke-GitOrThrow $Path @('rev-parse','--show-toplevel')).Trim())
-    $gitDirRaw = (Invoke-GitOrThrow $Path @('rev-parse','--git-dir')).Trim()
+    # About eight Git commands instead of eighteen: rev-parse answers several questions at once, the
+    # status header carries branch/upstream/ahead/behind, and one for-each-ref counts every kind of ref.
+    $info = Invoke-GitCapture $Path @('rev-parse','--show-toplevel','--git-dir','--is-shallow-repository','--short','HEAD')
+    if ($info.Code -ne 0) { $info = Invoke-GitCapture $Path @('rev-parse','--show-toplevel','--git-dir','--is-shallow-repository') }
+    if ($info.Code -ne 0) { throw 'Repository folder is missing or is not a Git working copy.' }
+    $lines = @(([string]$info.Output) -split "`r?`n" | Where-Object { $_ })
+    $root = [IO.Path]::GetFullPath($lines[0].Trim())
+    $gitDirRaw = $lines[1].Trim()
     $gitDir = [IO.Path]::GetFullPath($(if([IO.Path]::IsPathRooted($gitDirRaw)){$gitDirRaw}else{Join-Path $Path $gitDirRaw}))
-    $branch = (Invoke-GitCapture $Path @('branch','--show-current')).Output.Trim()
-    $head = (Invoke-GitCapture $Path @('rev-parse','--short','HEAD')).Output.Trim()
+    $shallow = $lines.Count -gt 2 -and $lines[2].Trim() -eq 'true'
+    $head = if ($lines.Count -gt 3) { $lines[3].Trim() } else { '' }
+
+    $status = Invoke-GitCapture $Path @('status','--porcelain=v1','--branch')
+    $header = ''
+    $statusLines = @(Get-GitDeckVisibleStatusLines (@(([string]$status.Output) -split "`r?`n" | Where-Object { if ($_.StartsWith('## ')) { $header = $_.Substring(3); $false } else { $true } }) -join "`n"))
+    $branch = Get-GitDeckHeaderBranch $header
     if (-not $branch) { $branch = if ($head) { "detached@$head" } else { 'detached HEAD' } }
-
-    $upstreamResult = Invoke-GitCapture $Path @('rev-parse','--abbrev-ref','--symbolic-full-name','@{u}')
-    $upstream = if ($upstreamResult.Code -eq 0) { $upstreamResult.Output.Trim() } else { '' }
-    $ahead = 0; $behind = 0
-    if ($upstream) {
-        $counts = Invoke-GitCapture $Path @('rev-list','--left-right','--count','HEAD...@{u}')
-        if ($counts.Code -eq 0 -and $counts.Output -match '(\d+)\s+(\d+)') { $ahead=[int]$Matches[1]; $behind=[int]$Matches[2] }
+    $upstream = ''; $ahead = 0; $behind = 0
+    if ($header -match '\.\.\.(\S+)' -and $header -notmatch '\[gone\]') {
+        $upstream = $Matches[1]
+        if ($header -match 'ahead (\d+)') { $ahead = [int]$Matches[1] }
+        if ($header -match 'behind (\d+)') { $behind = [int]$Matches[1] }
     }
-
-    $statusLines = @(Get-GitDeckVisibleStatusLines (Invoke-GitCapture $Path @('status','--porcelain=v1')).Output)
     $staged = 0; $unstaged = 0; $untracked = 0
     foreach ($line in $statusLines) {
         if ($line.StartsWith('??')) { $untracked++; continue }
@@ -268,12 +273,13 @@ function Get-RepositoryDetails([string]$Path) {
     }
 
     $remotes = New-Object 'System.Collections.Generic.List[object]'
-    $remoteNames = @((Invoke-GitCapture $Path @('remote')).Output -split "`r?`n" | Where-Object { $_ })
-    foreach ($remoteName in $remoteNames) {
-        $fetchUrl = (Invoke-GitCapture $Path @('remote','get-url',$remoteName)).Output.Trim()
-        $pushUrl = (Invoke-GitCapture $Path @('remote','get-url','--push',$remoteName)).Output.Trim()
-        $remotes.Add([ordered]@{name=$remoteName;fetchUrl=$fetchUrl;pushUrl=$pushUrl})
+    $remoteUrls = [ordered]@{}
+    foreach ($line in @((Invoke-GitCapture $Path @('remote','-v')).Output -split "`r?`n" | Where-Object { $_ })) {
+        if ($line -notmatch '^(\S+)\s+(.*?)\s+\((fetch|push)\)$') { continue }
+        if (-not $remoteUrls.Contains($Matches[1])) { $remoteUrls[$Matches[1]] = @{ fetch = ''; push = '' } }
+        $remoteUrls[$Matches[1]][$Matches[3]] = $Matches[2]
     }
+    foreach ($remoteName in $remoteUrls.Keys) { $remotes.Add([ordered]@{name=$remoteName;fetchUrl=$remoteUrls[$remoteName].fetch;pushUrl=$remoteUrls[$remoteName].push}) }
 
     $lastCommit = $null
     $lastResult = Invoke-GitCapture $Path @('log','-1','--date=iso-local','--format=%H%x1f%h%x1f%ad%x1f%an%x1f%s')
@@ -282,19 +288,18 @@ function Get-RepositoryDetails([string]$Path) {
         if ($parts.Count -ge 5) { $lastCommit=[ordered]@{fullHash=$parts[0];hash=$parts[1];date=$parts[2];author=$parts[3];subject=$parts[4]} }
     }
 
-    $countLines = { param([string[]]$Arguments) @((Invoke-GitCapture $Path $Arguments).Output -split "`r?`n" | Where-Object { $_ }).Count }
-    $branchCount = & $countLines @('for-each-ref','--format=%(refname)','refs/heads')
-    $remoteBranchCount = & $countLines @('for-each-ref','--format=%(refname)','refs/remotes')
-    $tagCount = & $countLines @('tag','--list')
-    $stashCount = & $countLines @('stash','list')
-    $shallowResult = Invoke-GitCapture $Path @('rev-parse','--is-shallow-repository')
+    $branchCount = 0; $remoteBranchCount = 0; $tagCount = 0; $hasStash = $false
+    foreach ($ref in @((Invoke-GitCapture $Path @('for-each-ref','--format=%(refname)','refs/heads','refs/remotes','refs/tags','refs/stash')).Output -split "`r?`n" | Where-Object { $_ })) {
+        if ($ref.StartsWith('refs/heads/')) { $branchCount++ } elseif ($ref.StartsWith('refs/remotes/')) { $remoteBranchCount++ } elseif ($ref.StartsWith('refs/tags/')) { $tagCount++ } elseif ($ref -eq 'refs/stash') { $hasStash = $true }
+    }
+    $stashCount = if ($hasStash) { @((Invoke-GitCapture $Path @('stash','list')).Output -split "`r?`n" | Where-Object { $_ }).Count } else { 0 }
     $operation = Get-GitOperationState $Path
 
     return [ordered]@{
         name=(Split-Path $root -Leaf);path=$root;gitDir=$gitDir;valid=$true;branch=$branch;upstream=$upstream
         ahead=$ahead;behind=$behind;changes=$statusLines.Count;staged=$staged;unstaged=$unstaged;untracked=$untracked
         remotes=$remotes.ToArray();lastCommit=$lastCommit;branchCount=$branchCount;remoteBranchCount=$remoteBranchCount
-        tagCount=$tagCount;stashCount=$stashCount;shallow=($shallowResult.Output.Trim() -eq 'true');operation=$operation
+        tagCount=$tagCount;stashCount=$stashCount;shallow=$shallow;operation=$operation
     }
 }
 
@@ -440,17 +445,21 @@ function Get-PushPreview([string]$Path,[string]$Remote,[string]$Local,[string]$T
 
 function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
     Assert-Registered $Path
-    $statusResult = Invoke-GitCapture $Path @('status','--porcelain=v1')
+    # Opening a repository asks Git many questions; each Git start costs ~50 ms on Windows, so the
+    # branch, its upstream and ahead/behind come from the status header instead of four more commands.
+    $statusResult = Invoke-GitCapture $Path @('status','--porcelain=v1','--branch')
     if ($statusResult.Code -ne 0) { throw $statusResult.Output }
     $files = New-Object 'System.Collections.Generic.List[object]'
     $protectedPaths = New-Object 'System.Collections.Generic.List[string]'
+    $statusHeader = ''
     foreach ($line in @($statusResult.Output -split "`r?`n" | Where-Object { $_ })) {
+        if ($line.StartsWith('## ')) { $statusHeader = $line.Substring(3); continue }
         if (Test-GitDeckProtectedStatusLine $line) { $protectedPaths.Add((Get-GitDeckStatusPath $line)); continue }
         if ($line.Length -lt 4) { continue }
         $indexStatus=$line.Substring(0,1);$worktreeStatus=$line.Substring(1,1)
         $files.Add([ordered]@{status=$line.Substring(0,2);path=(Get-GitDeckStatusPath $line);indexStatus=$indexStatus;worktreeStatus=$worktreeStatus;staged=($indexStatus -ne ' ' -and $indexStatus -ne '?');unstaged=($worktreeStatus -ne ' ' -or $line.StartsWith('??'))})
     }
-    $branch = (Invoke-GitOrThrow $Path @('branch','--show-current')).Trim()
+    $branch = Get-GitDeckHeaderBranch $statusHeader
     $branches = New-Object 'System.Collections.Generic.List[object]'
     $branchText = Invoke-GitOrThrow $Path @('for-each-ref','--format=%(refname:short)|%(HEAD)|%(upstream:short)|%(upstream:track)','refs/heads')
     foreach ($line in @($branchText -split "`r?`n" | Where-Object { $_ })) {
@@ -488,37 +497,45 @@ function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
         $parts=$line -split ([char]31),2
         $stashes.Add([ordered]@{ref=$parts[0];message=$(if($parts.Count -gt 1){$parts[1]}else{''})})
     }
+    # Every remote's fetch and push URL from one `git remote -v` (insteadOf rewrites applied, like get-url).
     $remotes = New-Object 'System.Collections.Generic.List[object]'
-    $remoteNames = @((Invoke-GitCapture $Path @('remote')).Output -split "`r?`n" | Where-Object { $_ })
-    foreach ($remoteName in $remoteNames) {
-        $fetchUrl=(Invoke-GitCapture $Path @('remote','get-url',$remoteName)).Output.Trim()
-        $pushUrl=(Invoke-GitCapture $Path @('remote','get-url','--push',$remoteName)).Output.Trim()
-        $remotes.Add([ordered]@{name=$remoteName;fetchUrl=$fetchUrl;pushUrl=$pushUrl})
+    $remoteUrls = [ordered]@{}
+    foreach ($line in @((Invoke-GitCapture $Path @('remote','-v')).Output -split "`r?`n" | Where-Object { $_ })) {
+        if ($line -notmatch '^(\S+)\s+(.*?)\s+\((fetch|push)\)$') { continue }
+        if (-not $remoteUrls.Contains($Matches[1])) { $remoteUrls[$Matches[1]] = @{ fetch = ''; push = '' } }
+        $remoteUrls[$Matches[1]][$Matches[3]] = $Matches[2]
     }
+    foreach ($remoteName in $remoteUrls.Keys) { $remotes.Add([ordered]@{name=$remoteName;fetchUrl=$remoteUrls[$remoteName].fetch;pushUrl=$remoteUrls[$remoteName].push}) }
+    $originUrl = if ($remoteUrls.Contains('origin')) { [string]$remoteUrls['origin'].fetch } else { '' }
+    # "main...origin/main [ahead 1, behind 2]"; a gone upstream counts as none, as `@{u}` does.
     $sync=[ordered]@{upstream='';ahead=0;behind=0;outgoing=@();incoming=@()}
-    $upstreamResult=Invoke-GitCapture $Path @('rev-parse','--abbrev-ref','--symbolic-full-name','@{u}')
-    if($upstreamResult.Code -eq 0){
-        $sync.upstream=$upstreamResult.Output.Trim()
-        $counts=Invoke-GitCapture $Path @('rev-list','--left-right','--count','HEAD...@{u}')
-        if($counts.Code -eq 0){$parts=$counts.Output.Trim() -split '\s+';if($parts.Count -ge 2){$sync.ahead=[int]$parts[0];$sync.behind=[int]$parts[1]}}
-        $sync.outgoing=@((Invoke-GitCapture $Path @('log','--format=%h %s','-8','@{u}..HEAD')).Output -split "`r?`n" | Where-Object {$_})
-        $sync.incoming=@((Invoke-GitCapture $Path @('log','--format=%h %s','-8','HEAD..@{u}')).Output -split "`r?`n" | Where-Object {$_})
+    if($statusHeader -match '\.\.\.(\S+)' -and $statusHeader -notmatch '\[gone\]'){
+        $sync.upstream=$Matches[1]
+        if($statusHeader -match 'ahead (\d+)'){$sync.ahead=[int]$Matches[1]}
+        if($statusHeader -match 'behind (\d+)'){$sync.behind=[int]$Matches[1]}
+        if($sync.ahead){$sync.outgoing=@((Invoke-GitCapture $Path @('log','--format=%h %s','-8','@{u}..HEAD')).Output -split "`r?`n" | Where-Object {$_})}
+        if($sync.behind){$sync.incoming=@((Invoke-GitCapture $Path @('log','--format=%h %s','-8','HEAD..@{u}')).Output -split "`r?`n" | Where-Object {$_})}
     }
     $headMessage=(Invoke-GitCapture $Path @('log','-1','--format=%B')).Output.Trim()
     $operation=Get-GitOperationState $Path
-    $userName=(Invoke-GitCapture $Path @('config','--get','user.name')).Output.Trim();$userEmail=(Invoke-GitCapture $Path @('config','--get','user.email')).Output.Trim()
+    $userName='';$userEmail=''
+    foreach($line in @((Invoke-GitCapture $Path @('config','--get-regexp','^user\.(name|email)$')).Output -split "`r?`n" | Where-Object { $_ })){ if($line -match '^user\.name (.*)$'){$userName=$Matches[1].Trim()} elseif($line -match '^user\.email (.*)$'){$userEmail=$Matches[1].Trim()} }
     $ignorePath=Join-Path $Path '.gitignore';$gitignore='';if(Test-Path -LiteralPath $ignorePath -PathType Leaf){$info=Get-Item -LiteralPath $ignorePath;if($info.Length -le 200000){$gitignore=[IO.File]::ReadAllText($ignorePath)}}
     $submodules=New-Object 'System.Collections.Generic.List[object]'
     $lfsVersion=@{Code=1;Output=''};$lfsCount=0
     if($IncludeExtras){
-        $submoduleText=(Invoke-GitCapture $Path @('submodule','status','--recursive')).Output
+        # Submodules and LFS only when the repository declares them; whether LFS is installed is asked once per process.
+        $submoduleText=if(Test-Path -LiteralPath (Join-Path $Path '.gitmodules') -PathType Leaf){(Invoke-GitCapture $Path @('submodule','status','--recursive')).Output}else{''}
         foreach($line in @($submoduleText -split "`r?`n"|Where-Object{$_})){if($line -match '^(.)([0-9a-fA-F]+)\s+(\S+)(?:\s+\((.+)\))?'){$submodules.Add([ordered]@{state=$Matches[1];hash=$Matches[2].Substring(0,[Math]::Min(8,$Matches[2].Length));path=$Matches[3];description=$Matches[4]})}}
-        $lfsVersion=Invoke-GitCapture $Path @('lfs','version')
-        if($lfsVersion.Code -eq 0){$lfsCount=@((Invoke-GitCapture $Path @('lfs','ls-files','--name-only')).Output -split "`r?`n"|Where-Object{$_}).Count}
+        if(-not $script:GitLfsVersion){$script:GitLfsVersion=Invoke-GitCapture $Path @('lfs','version')}
+        $lfsVersion=$script:GitLfsVersion
+        $attributes=Join-Path $Path '.gitattributes'
+        $usesLfs=(Test-Path -LiteralPath $attributes -PathType Leaf) -and ([IO.File]::ReadAllText($attributes) -match 'filter=lfs')
+        if($lfsVersion.Code -eq 0 -and $usesLfs){$lfsCount=@((Invoke-GitCapture $Path @('lfs','ls-files','--name-only')).Output -split "`r?`n"|Where-Object{$_}).Count}
     }
     $previousResult=Invoke-GitCapture $Path @('rev-parse','--symbolic-full-name','@{-1}')
     $previousBranch='';if($previousResult.Code -eq 0 -and $previousResult.Output.Trim().StartsWith('refs/heads/')){$previousBranch=$previousResult.Output.Trim().Substring(11)}
-    return [ordered]@{previousBranch=$previousBranch;branch=$branch;files=$files.ToArray();protectedUntracked=[ordered]@{count=$protectedPaths.Count;paths=$protectedPaths.ToArray()};branches=$branches.ToArray();remoteBranches=$remoteBranches.ToArray();history=$history.ToArray();tags=@($tags);tagDetails=$tagDetails.ToArray();stashes=$stashes.ToArray();remotes=$remotes.ToArray();remote=(Get-OriginUrl $Path);sync=$sync;lastFetchAt=(Get-GitDeckLastFetchAt $Path);operation=$operation;headMessage=$headMessage;settings=[ordered]@{extrasLoaded=$IncludeExtras;userName=$userName;userEmail=$userEmail;gitignore=$gitignore;submodules=$submodules.ToArray();lfsAvailable=($lfsVersion.Code -eq 0);lfsVersion=$lfsVersion.Output.Trim();lfsFiles=$lfsCount}}
+    return [ordered]@{previousBranch=$previousBranch;branch=$branch;files=$files.ToArray();protectedUntracked=[ordered]@{count=$protectedPaths.Count;paths=$protectedPaths.ToArray()};branches=$branches.ToArray();remoteBranches=$remoteBranches.ToArray();history=$history.ToArray();tags=@($tags);tagDetails=$tagDetails.ToArray();stashes=$stashes.ToArray();remotes=$remotes.ToArray();remote=$originUrl;sync=$sync;lastFetchAt=(Get-GitDeckLastFetchAt $Path);operation=$operation;headMessage=$headMessage;settings=[ordered]@{extrasLoaded=$IncludeExtras;userName=$userName;userEmail=$userEmail;gitignore=$gitignore;submodules=$submodules.ToArray();lfsAvailable=($lfsVersion.Code -eq 0);lfsVersion=$lfsVersion.Output.Trim();lfsFiles=$lfsCount}}
 }
 
 function Get-CommitHistory([string]$Path,[string]$Scope,[string]$Ref,[bool]$IncludeRemote,[string]$Order,[int]$Skip=0,[string]$Query='') {
