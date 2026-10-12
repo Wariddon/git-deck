@@ -44,6 +44,7 @@ cd C:\GitDeck
    .\git-dashboard.bat
    ```
    When the pull changed the launcher, `git-dashboard.bat` rebuilds `GitDeck.exe` before starting it.
+   Easier: when GitHub has a newer Git Deck, Git Deck shows **A new version of Git Deck is available** with **Update now** (a `git pull --ff-only` in the Git Deck folder, refused when files there were edited). Close and reopen Git Deck afterwards. It checks at most every 6 hours; a release ZIP install does not check.
 
 ### B. From a release ZIP (no Git clone)
 

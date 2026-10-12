@@ -1353,4 +1353,9 @@ GitDeckI18n.register('th',{
   "Select repositories with changes":"เลือก repository ที่มีไฟล์แก้",
   "Whitespace":"ช่องว่าง",
   "Waiting":"รอ",
+  "A new version of Git Deck is available ({count} update(s)).":"มี Git Deck เวอร์ชันใหม่ ({count} อัปเดต)",
+  "Latest: {subject}":"ล่าสุด: {subject}",
+  "Files in the Git Deck folder were changed on this computer, so update it with git pull yourself.":"มีไฟล์ในโฟลเดอร์ Git Deck ถูกแก้บนเครื่องนี้ จึงต้องอัปเดตเองด้วย git pull",
+  "Update now":"อัปเดตเลย",
+  "Download the new Git Deck version now (git pull in the Git Deck folder)? Your repositories are not touched.":"ดาวน์โหลด Git Deck เวอร์ชันใหม่ตอนนี้เลยไหม (git pull ในโฟลเดอร์ Git Deck) repository ของคุณจะไม่ถูกแตะ",
 });

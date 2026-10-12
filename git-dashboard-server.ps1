@@ -20,6 +20,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Cockpit.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.SelfUpdate.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
 # Newest change to the server code when this process started; /api/version compares it with the disk.
 $script:ServerStamp = (@(Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.ps1' -File) + @(Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'lib') -Filter '*.ps1' -File) | Measure-Object -Property LastWriteTimeUtc -Maximum).Maximum.Ticks
@@ -1114,6 +1115,7 @@ function Invoke-Action($Body) {
             if ($result.Code -ne 0) { throw $result.Output }
             return @{message="Merge request created: $source -> $target.";output=$result.Output}
         }
+        'self-update' { return Invoke-GitDeckSelfUpdate }
         'notify-toast' { return Show-GitDeckToast ([string]$Body.title) ([string]$Body.text) }
         'open-url' {
             $url=([string]$Body.url).Trim();if($url -notmatch '^https?://'){throw 'Only HTTP or HTTPS URLs can be opened.'};Start-Process $url;return @{message='URL opened in your browser.';output=$url}
@@ -1673,6 +1675,7 @@ function Invoke-GitDeckRequest($context) {
     switch ($route) {
         '/api/health' { Write-Json $context @{status='ok'} }
         '/api/version' { Write-Json $context (Get-GitDeckVersionState) }
+        '/api/self-update' { Write-Json $context @{update=(Get-GitDeckSelfUpdate ($query['force'] -eq 'true'))} }
         '/api/repo/status-snapshot' { Write-Json $context (Get-WorkflowStatus $query['path']) }
         '/api/repo/checkout-review' { Write-Json $context (Get-CheckoutReview $query['path'] $query['target']) }
         '/api/readiness' { Write-Json $context (Get-SetupReadiness) }
