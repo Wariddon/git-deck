@@ -74,5 +74,5 @@ if($launcher -notmatch 'IntPtr existing = specificFolder \? IntPtr.Zero : FindAp
 $server=Get-Content -Raw (Join-Path (Split-Path $PSScriptRoot -Parent) 'git-dashboard-server.ps1')
 if($server -notmatch 'if \(\$IdleShutdownSeconds -gt 0\) \{ \$NoBrowser = \[switch\]\$true \}'){throw 'A launcher-started server must never open its own window (old launchers did not pass -NoBrowser)'}
 $bat=Get-Content -Raw (Join-Path (Split-Path $PSScriptRoot -Parent) 'git-dashboard.bat')
-if($bat -notmatch 'if /i not "%~1"=="--console" if exist "%~dp0GitDeck.exe"'){throw 'git-dashboard.bat must hand over to GitDeck.exe (no console window)'}
+if($bat -notmatch 'if /i "%~1"=="--console" goto server' -or $bat -notmatch 'start "" "%~dp0GitDeck.exe"'){throw 'git-dashboard.bat must hand over to GitDeck.exe (no console window)'}
 'PASS: secret scan, protected branches, GitHub slugs, static paths, change filter, AI request, app window'

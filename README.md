@@ -21,28 +21,56 @@ Git Deck runs a local PowerShell service and opens a browser-based interface. It
 
 ## Quick start
 
+There are two ways to get Git Deck. Either way, **the program to run is `git-dashboard.bat`** in the Git Deck folder. `GitDeck.exe` is not stored in Git; `git-dashboard.bat` builds it the first time.
+
+### A. From Git (clone, then pull for updates)
+
 ```powershell
-git clone https://github.com/Wariddon/git-deck.git
-cd git-deck
+git clone https://github.com/Wariddon/git-deck.git C:\GitDeck
+cd C:\GitDeck
 .\git-dashboard.bat
 ```
 
-Git Deck opens in its own app window (Microsoft Edge `--app` mode: no tabs or address bar) when Edge is installed, otherwise in your default browser. Open **http://127.0.0.1:8765/** if nothing opens automatically. Keep the server running while using the UI.
+1. The first start builds `GitDeck.exe` (a few seconds, with the C# compiler that is part of Windows) and opens Git Deck.
+2. Optional: add a **Git Deck** icon to the Desktop and the Start menu:
+   ```powershell
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Build-GitDeck.ps1 -Shortcut
+   ```
+   From then on, start Git Deck from that icon (or double-click `GitDeck.exe`).
+3. To update later: close Git Deck, then
+   ```powershell
+   cd C:\GitDeck
+   git pull
+   .\git-dashboard.bat
+   ```
+   When the pull changed the launcher, `git-dashboard.bat` rebuilds `GitDeck.exe` before starting it.
 
-Like Sourcetree there is one window: starting Git Deck again brings the open window to the front instead of opening another. When `GitDeck.exe` has been built, `git-dashboard.bat` simply starts it (hidden server, no console window); run `git-dashboard.bat --console` to see the server output while troubleshooting. While loading, Git Deck shows its logo tile and name on brand green with a small merge animation. `GitDeck.exe` draws the same card the moment you start it and keeps it until the app window appears, so the hand-over looks like one picture.
+### B. From a release ZIP (no Git clone)
 
-Use **Clone**, **Add** or **Scan** to register your own repositories. Scan can discover repositories nested inside the chosen folder. Start with a disposable repository to learn the workflow.
+1. Download `GitDeck-<version>-windows.zip` from the [Releases](https://github.com/Wariddon/git-deck/releases) page.
+2. Right-click the ZIP > **Properties** > tick **Unblock** > OK, then extract it to a folder such as `C:\GitDeck`.
+3. Double-click `GitDeck.exe` (it is in the ZIP). Windows SmartScreen may warn because the file is unsigned: **More info > Run anyway**.
 
-The terminal-only menu is available through `git-repo-manager.bat`.
+### What opens
+
+Git Deck opens in its own app window (Microsoft Edge `--app` mode: no tabs or address bar) when Edge is installed, otherwise in your default browser. Open **http://127.0.0.1:8765/** if nothing opens automatically. Use **Clone**, **Add** or **Scan** to register your repositories; Scan finds repositories nested inside the chosen folder.
+
+Like Sourcetree there is one window: starting Git Deck again brings the open window to the front instead of opening another. While loading, Git Deck shows its logo tile on brand green with a small merge animation. The terminal-only menu is available through `git-repo-manager.bat`.
+
+### If it does not start
+
+| What you see | What to do |
+|---|---|
+| No `GitDeck.exe` after clone or pull | Expected: it is not in Git. Run `git-dashboard.bat`, which builds it, or run `powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-GitDeck.ps1`. |
+| `Git was not found in PATH` | Install [Git for Windows](https://git-scm.com/download/win), open a new window, run `git-dashboard.bat` again. |
+| `GitDeck.exe could not be built` | The Windows C# compiler (`%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, part of .NET Framework 4) is missing or blocked. Git Deck still starts in the console window; or use the release ZIP, which contains `GitDeck.exe`. |
+| `running scripts is disabled on this system` | Start through `git-dashboard.bat` or `GitDeck.exe`; both run PowerShell with `-ExecutionPolicy Bypass` for Git Deck only. |
+| Nothing opens, or the window is blank | Run `git-dashboard.bat --console` to see the server output, then open http://127.0.0.1:8765/. If another program uses port 8765, close it or start the server with `-Port 8766`. |
+| `git pull` refuses because of local changes in the Git Deck folder | Your own settings (`git-repositories.txt`, cache, jobs) are ignored by Git and are kept. For anything else, run `git status` in the Git Deck folder, then `git stash` before the pull. |
 
 ## Optional desktop launcher
 
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Build-GitDeck.ps1
-.\GitDeck.exe
-```
-
-The build uses the Windows .NET Framework C# compiler. Keep the generated executable alongside the scripts and `web/` folder; it is not a standalone bundled application. The executable is unsigned. The launcher opens Git Deck as an Edge app window (Edge in Program Files, Program Files (x86) or a per-user install), falling back to the default browser. A server started by the launcher stops by itself about 90 seconds after the last Git Deck window closes (`-IdleShutdownSeconds`); `git-dashboard.bat` keeps running until you close its window.
+`GitDeck.exe` is built from `launcher\GitDeckLauncher.cs` by `Build-GitDeck.ps1` (or automatically by `git-dashboard.bat`). It needs no install, but keep it in the Git Deck folder next to the scripts and `web/`; it is not a standalone application. The executable is unsigned. `-Shortcut` adds Desktop and Start menu icons; `-Artwork` redraws `GitDeck.ico` and `web\favicon.svg` from `assets\brand` (only needed when the artwork changes, so ordinary builds leave Git clean). The launcher opens Git Deck as an Edge app window (Edge in Program Files, Program Files (x86) or a per-user install), falling back to the default browser. A server started by the launcher stops by itself about 90 seconds after the last Git Deck window closes (`-IdleShutdownSeconds`); `git-dashboard.bat --console` keeps running until you close its window.
 
 ## Features
 
