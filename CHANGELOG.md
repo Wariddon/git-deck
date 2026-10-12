@@ -6,6 +6,7 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 - Starting on another computer: `GitDeck.exe` is not in Git, so `git-dashboard.bat` now builds it on the first start after a clone, and again after a pull that changed the launcher. `Build-GitDeck.ps1 -Shortcut` adds Desktop and Start menu icons. Building no longer rewrites `GitDeck.ico` and `web/favicon.svg` (that left changes behind that blocked the next pull); use `-Artwork` to redraw them.
 - Update Git Deck from Git Deck: when the Git Deck folder is a git clone and GitHub has newer commits, a banner offers **Update now** (`git pull --ff-only`, only without local edits in that folder). Checked at most every 6 hours.
+- The repository list (`/api/repos`, read at start and after every refresh) and the registration check every request makes use dictionary look-ups instead of nested pipelines: with 201 repositories about 0.65 s → 0.16 s per request.
 - README: step-by-step start from a clone or from the release ZIP, how to update with `git pull`, and what to do when it does not start.
 
 ## 1.5.0 — 2026-10-09

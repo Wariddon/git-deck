@@ -45,7 +45,11 @@ $script:SharedVariableNames = @('ValidRepoChecks','Root','WebRoot','RepoList','S
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }
-    return @(Get-Content -Encoding UTF8 -LiteralPath $script:RepoList | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique)
+    # Read on every request (registration checks): plain .NET instead of a pipeline per line.
+    $seen = New-Object 'System.Collections.Generic.HashSet[string]'
+    $list = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($line in [IO.File]::ReadAllLines($script:RepoList, [Text.Encoding]::UTF8)) { $path = $line.Trim(); if ($path -and $seen.Add($path)) { $list.Add($path) } }
+    return $list.ToArray()
 }
 
 function Save-Repositories([string[]]$Repositories) {
@@ -307,19 +311,23 @@ function Get-RepositoryCache {
     }
     $items = New-Object 'System.Collections.Generic.List[object]'
     $missingFromCache = $false
+    # Look-ups by path (case-insensitive): matching every saved path against every cached entry
+    # with Where-Object took ~0.6 s per request with 130 repositories.
+    $byPath = New-Object 'System.Collections.Generic.Dictionary[string,object]' ([StringComparer]::OrdinalIgnoreCase)
+    foreach ($cached in $cachedItems) { $key = [string]$cached.path; if ($key -and -not $byPath.ContainsKey($key)) { $byPath[$key] = $cached } }
+    $savedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+    foreach ($path in $saved) { [void]$savedSet.Add([string]$path) }
     foreach ($path in $saved) {
-        $match = $cachedItems | Where-Object { [string]::Equals([string]$_.path,$path,[StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
-        if ($match) { $items.Add($match); continue }
+        if ($byPath.ContainsKey($path)) { $items.Add($byPath[$path]); continue }
         $missingFromCache = $true
         $name = Split-Path $path -Leaf
         $exists = Test-Path -LiteralPath $path -PathType Container
         $items.Add([ordered]@{path=$path;name=$name;valid=$exists;branch='-';changes='-';ahead='-';behind='-';lastCommit='Waiting for first status check';remote='';pending=$true})
     }
-    $cachedPaths = @($cachedItems | ForEach-Object { [string]$_.path })
-    $listChanged = $missingFromCache -or @($cachedPaths | Where-Object { $candidate=$_; -not ($saved | Where-Object { [string]::Equals($_,$candidate,[StringComparison]::OrdinalIgnoreCase) }) }).Count -gt 0
+    $listChanged = $missingFromCache -or @($byPath.Keys | Where-Object { -not $savedSet.Contains($_) }).Count -gt 0
     $ageMinutes = [double]::PositiveInfinity
     if ($cachedAt) { try { $ageMinutes = ([DateTime]::UtcNow - [DateTime]::Parse($cachedAt).ToUniversalTime()).TotalMinutes } catch {} }
-    $itemArray = @($items | ForEach-Object { $_ })
+    $itemArray = $items.ToArray()
     return [ordered]@{repos=$itemArray;scanLocations=@(Get-ScanLocations);cachedAt=$cachedAt;fromCache=$true;stale=($listChanged -or $ageMinutes -ge 15);cacheAgeMinutes=$(if([double]::IsPositiveInfinity($ageMinutes)){$null}else{[Math]::Round([Math]::Max(0,$ageMinutes),1)})}
 }
 
@@ -765,8 +773,9 @@ function Add-Repository([string]$Path) {
 }
 
 function Assert-Registered([string]$Path) {
-    $match = @(Get-Repositories) | Where-Object { [string]::Equals($_,$Path,[StringComparison]::OrdinalIgnoreCase) }
-    if (-not $match) { throw 'Repository is not registered in Git Deck.' }
+    $registered = $false
+    foreach ($candidate in @(Get-Repositories)) { if ([string]::Equals($candidate,$Path,[StringComparison]::OrdinalIgnoreCase)) { $registered = $true; break } }
+    if (-not $registered) { throw 'Repository is not registered in Git Deck.' }
     # Registration is read every time; the Git work-tree test (one more Git start) is reused for a
     # minute, since Dashboard views ask about every repository several times in a row.
     $key = $Path.ToLowerInvariant()
