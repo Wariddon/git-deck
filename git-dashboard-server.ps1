@@ -18,6 +18,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Integrations.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Config.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Risk.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Agents.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Catalog.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Cockpit.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
@@ -43,7 +44,7 @@ $script:BaseUrl = "http://127.0.0.1:$Port/"
 [void](New-Item -ItemType Directory -Path $script:JobsRoot -Force)
 [void](New-Item -ItemType Directory -Path $script:ExportsRoot -Force)
 # Script variables copied into each parallel request runspace.
-$script:SharedVariableNames = @('PushRiskRules','ConfigResourceDirs','ValidRepoChecks','Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
+$script:SharedVariableNames = @('AgentCommands','PushRiskRules','ConfigResourceDirs','ValidRepoChecks','Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }
@@ -1271,6 +1272,8 @@ function Invoke-Action($Body) {
             return @{message='Terminal opened.'}
         }
         'open-idea' { return Open-GitDeckEditor $path 'idea' '' $null }
+        'ticket-workspace-create' { return New-GitDeckTicketWorkspace $path ([string]$Body.key) ([string]$Body.start) }
+        'agent-start' { return Start-GitDeckAgent $path ([string]$Body.agent) ([string]$Body.prompt) }
         'open-editor' { return Open-GitDeckEditor $path ([string]$Body.editor) ([string]$Body.file) $Body.line }
         'catalog-save' { return Save-GitDeckServiceMetadata $path $Body }
         'open-code' {
@@ -1321,9 +1324,9 @@ function Invoke-Action($Body) {
             [void](Add-Repository $destination);return @{message="Worktree created at $destination.";output=$output}
         }
         'worktree-remove' {
-            $destination=([string]$Body.destination).Trim();$worktrees=@(Get-Worktrees $path);$item=$worktrees|Where-Object{[string]::Equals([string]$_.path,$destination,[StringComparison]::OrdinalIgnoreCase)}|Select-Object -First 1
+            $destination=([string]$Body.destination).Trim();$worktrees=@(Get-Worktrees $path);$wanted=$(try{[IO.Path]::GetFullPath($destination).TrimEnd([char]92)}catch{$destination});$item=$worktrees|Where-Object{[string]::Equals([IO.Path]::GetFullPath([string]$_.path).TrimEnd([char]92),$wanted,[StringComparison]::OrdinalIgnoreCase)}|Select-Object -First 1
             if(-not $item){throw 'Worktree was not found.'};if($item.isMain){throw 'The main working tree cannot be removed here.'}
-            $output=Invoke-GitOrThrow $path @('worktree','remove',$item.path);$remaining=@(Get-Repositories|Where-Object{-not [string]::Equals($_,$item.path,[StringComparison]::OrdinalIgnoreCase)});Save-Repositories $remaining
+            $output=Invoke-GitOrThrow $path @('worktree','remove',$item.path);$removedPath=[IO.Path]::GetFullPath([string]$item.path).TrimEnd([char]92);$remaining=@(Get-Repositories|Where-Object{-not [string]::Equals([IO.Path]::GetFullPath($_).TrimEnd([char]92),$removedPath,[StringComparison]::OrdinalIgnoreCase)});Save-Repositories $remaining
             return @{message="Worktree removed: $($item.path).";output=$output}
         }
         'worktree-prune' { $output=Invoke-GitOrThrow $path @('worktree','prune','--verbose');return @{message='Stale worktree records pruned.';output=$(if($output){$output}else{'No stale worktrees.'})} }
@@ -1721,6 +1724,8 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/file' { Write-Json $context @{file=(Get-GitDeckRepoFile $query['path'] $query['file'] $query['ref'])} }
         '/api/repo/files' { Write-Json $context @{files=@(Find-GitDeckRepoFiles $query['path'] $query['q'])} }
         '/api/repo/ci' { Write-Json $context @{ci=(Get-GitDeckCiStatus $query['path'] $query['ref'])} }
+        '/api/agents' { Write-Json $context @{agents=@(Get-GitDeckAgents)} }
+        '/api/ticket-workspaces' { Write-Json $context @{workspaces=@(Get-GitDeckTicketWorkspaces)} }
         '/api/repo/effective-config' { Write-Json $context @{config=(Get-GitDeckEffectiveConfigSources $query['path'] $query['env'] $query['ref'] $query['deploy'] $query['deployRef'] $query['name'])} }
         '/api/repo/deploy-map' { Write-Json $context @{deploy=(Get-GitDeckDeployMap $query['path'] $query['ref'])} }
         '/api/repo/mrs' { Write-Json $context @{mergeRequests=@(Get-GitDeckMergeRequests $query['path'])} }
