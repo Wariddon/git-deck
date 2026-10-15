@@ -107,7 +107,9 @@ function Get-PushChecks([string]$Path, [string]$Remote, [string]$Local, [string]
     if (Test-GitDeckProtectedBranch $Target) {
         $checks.Add([ordered]@{level=$(if ($Force) { 'block' } else { 'warn' }); label='Protected branch'; detail=$(if ($Force) { "Force pushing to $Target can overwrite shared history." } else { "You are pushing directly to $Target. Many teams expect a pull/merge request instead." })})
     }
-    return [ordered]@{local=$Local; target=$Target; remote=$Remote; knownTarget=$known; checks=$checks.ToArray(); findings=$findings; blocked=[bool](@($checks | Where-Object { $_.level -eq 'block' }).Count)}
+    # Blast radius of the outgoing commits (lib/GitDeck.Risk.ps1); never blocks the checks themselves.
+    $risk = $null; try { $risk = Get-GitDeckPushRisk $Path $range } catch { $risk = $null }
+    return [ordered]@{local=$Local; target=$Target; remote=$Remote; knownTarget=$known; checks=$checks.ToArray(); findings=$findings; risk=$risk; blocked=[bool](@($checks | Where-Object { $_.level -eq 'block' }).Count)}
 }
 
 # ---------------------------------------------------------------------------

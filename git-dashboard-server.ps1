@@ -17,6 +17,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Fleet.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Integrations.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Config.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Risk.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Catalog.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Cockpit.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
@@ -42,7 +43,7 @@ $script:BaseUrl = "http://127.0.0.1:$Port/"
 [void](New-Item -ItemType Directory -Path $script:JobsRoot -Force)
 [void](New-Item -ItemType Directory -Path $script:ExportsRoot -Force)
 # Script variables copied into each parallel request runspace.
-$script:SharedVariableNames = @('ConfigResourceDirs','ValidRepoChecks','Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
+$script:SharedVariableNames = @('PushRiskRules','ConfigResourceDirs','ValidRepoChecks','Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }

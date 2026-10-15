@@ -350,6 +350,19 @@ html.ui-modern body .effective-config-table tr.effective-config-overridden .effe
 html.ui-modern body .effective-config-table tr.effective-config-deploy-only > td:first-child { box-shadow: inset 3px 0 0 #3b82f6; }
 html.ui-modern body .effective-config-notes { display: grid; gap: 6px; margin: 6px 0; }
 
+/* ---- Push risk card (web/push-checks.js) -------------------------------------------------------- */
+html.ui-modern body .push-risk { display: grid; gap: 4px; margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-default); border-left: 4px solid var(--tone, var(--text-tertiary)); background: color-mix(in srgb, var(--tone, var(--text-tertiary)) 7%, var(--surface)); }
+html.ui-modern body .push-risk-low { --tone: #16a34a; }
+html.ui-modern body .push-risk-medium { --tone: #d97706; }
+html.ui-modern body .push-risk-high { --tone: #dc2626; }
+html.ui-modern body .push-risk-head { display: flex; align-items: baseline; gap: 10px; }
+html.ui-modern body .push-risk-head strong { color: color-mix(in srgb, var(--tone) 80%, var(--text-primary)); }
+html.ui-modern body .push-risk-score { font-variant-numeric: tabular-nums; font-weight: 600; }
+html.ui-modern body .push-risk-reason { display: grid; grid-template-columns: 36px max-content minmax(0, 1fr); gap: 8px; align-items: baseline; }
+html.ui-modern body .push-risk-reason b { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+html.ui-modern body .push-risk-reason small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.ui-modern body .push-risk-note { margin: 6px 0 0; font-weight: 600; }
+
 /* ---- Toolbar: the Modern action bar has its own Undo; the Classic one beside Push would be a second. */
 html.ui-modern body #undo-last { display: none !important; }
 
