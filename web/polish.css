@@ -394,6 +394,9 @@ html.ui-modern body .briefing-head { display: flex; align-items: center; justify
 html.ui-modern body .briefing-list { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
 html.ui-modern body .briefing-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px; }
 
+html.ui-modern body .family-rules { width: 100%; font-family: var(--modern-mono); font-size: .85em; }
+html.ui-modern body .family-table td { white-space: nowrap; }
+
 /* ---- Toolbar: the Modern action bar has its own Undo; the Classic one beside Push would be a second. */
 html.ui-modern body #undo-last { display: none !important; }
 

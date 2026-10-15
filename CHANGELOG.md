@@ -4,6 +4,7 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- **Family checks** (Dashboard › Code): the same rules over every repository of a family (`depinq-`, `src-`, `crs-`…) in one table, so a sibling missed in a batch migration stands out. Default rules: Docker base image and Spring Boot version (odd values marked), `argo_yaml` in the SIT Jenkins build (db-migration excluded), `ci-lib-module` as `provided` (it still ends up in the fat jar), and the configuration file per environment in the deploy repository. Rules are JSON you can edit; they stay on this computer.
 - Effective config reads deploy repositories laid out like `manifestvalues/{env}/lns-app-configuration/{svc}.yml`: a plain Spring file named after the service is the configuration mounted for it (found by its path, even when the file does not mention the service).
 - Effective config warns about **partial overrides** (for example the deployment sets `spring.data.redis.host` while `application.yml` still sets `port`, `ssl` and `use-managed-identity`), and **Compare environments** shows every environment side by side: settings missing in some environments first, then settings with different values.
 - **Today** (first Dashboard view, and a *Good morning* card once a day): new tags since you last looked, repositories with commits to pull, your work not pushed, ticket workspaces with changes (an agent's work, for example) and services whose production tag differs from UAT (from the last Releases load). *Mark all as seen* moves the starting point to now.
