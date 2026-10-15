@@ -56,7 +56,7 @@ console.log('PASS: tag suggestions, YAML keys, line diff, new tags and worksets 
 // menus close on a press elsewhere or Escape, and "Tags" opens the Tags view without the create dialog.
 {
   const modern = web('modern.js');
-  assert.match(modern, /extra\[button\.dataset\.multiRepo\]\|\|\(button\.dataset\.workReport\?'report':button\.dataset\.customActions\?'sparkles':''\)/);
+  assert.match(modern, /extra\[button\.dataset\.multiRepo\]\|\|\(button\.dataset\.workReport\?'report':button\.dataset\.customActions\?'sparkles':(button\.dataset\.branchStack\?'branch':)?''\)/);
   assert.match(modern, /document\.addEventListener\('pointerdown',\(event\)=>\{document\.querySelectorAll\(popupMenus\)/);
   assert.match(modern, /const popupMenus='\.sync-more\[open\], \.history-options\[open\]/);
   assert.match(web('index.html'), /<button type="button" data-workbench-nav="tags"><strong>◇ Tags<\/strong>/);

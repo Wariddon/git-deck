@@ -19,5 +19,5 @@ assert.ok(web('index.html').indexOf('/timeline.js') < web('index.html').indexOf(
 assert.match(web('cockpit.js'), /\['timeline','jobs','automation'\]/);
 const server = fs.readFileSync(path.join(__dirname, '../git-dashboard-server.ps1'), 'utf8');
 assert.ok(server.includes("'/api/timeline'") && server.includes("'timeline-restore'"));
-assert.match(server, /\$tracked = @\('timeline-restore','absorb',/, 'Going back is journaled, so it can be undone');
+assert.match(server, /\$tracked = @\([^)]*'timeline-restore'/, 'Going back is journaled, so it can be undone');
 console.log('PASS: undo timeline batches and wiring');

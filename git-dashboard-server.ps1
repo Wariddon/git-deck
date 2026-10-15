@@ -21,6 +21,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Agents.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Absorb.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Timeline.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Stack.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Catalog.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Cockpit.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
@@ -982,7 +983,7 @@ function Get-ActionJournalEntry([string]$Path,[string]$Id) {
 function Invoke-ActionWithJournal($Body) {
     $action = [string]$Body.action
     $path = [string]$Body.path
-    $tracked = @('timeline-restore','absorb','commit','pull','pull-ref','branch-create','branch-create-at','branch-switch','branch-track','checkout-commit','merge','rebase-start','rebase-interactive','operation-continue','reset-commit','cherry-pick','cherry-pick-many','revert-commit') -contains $action
+    $tracked = @('stack-restack','timeline-restore','absorb','commit','pull','pull-ref','branch-create','branch-create-at','branch-switch','branch-track','checkout-commit','merge','rebase-start','rebase-interactive','operation-continue','reset-commit','cherry-pick','cherry-pick-many','revert-commit') -contains $action
     $before = $null
     if ($tracked -and $path -and (Test-GitRepository $path)) { $before = Get-GitSnapshot $path }
     $result = Invoke-Action $Body
@@ -1274,6 +1275,8 @@ function Invoke-Action($Body) {
             return @{message='Terminal opened.'}
         }
         'open-idea' { return Open-GitDeckEditor $path 'idea' '' $null }
+        'stack-restack' { return Invoke-GitDeckRestack $path ([string]$Body.base) }
+        'stack-push' { return Invoke-GitDeckStackPush $path ([string]$Body.base) }
         'timeline-restore' { return Invoke-GitDeckTimelineRestore $path ([string]$Body.id) }
         'absorb' { return Invoke-GitDeckAbsorb $path ([string]$Body.fingerprint) }
         'ticket-workspace-create' { return New-GitDeckTicketWorkspace $path ([string]$Body.key) ([string]$Body.start) }
@@ -1729,6 +1732,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/files' { Write-Json $context @{files=@(Find-GitDeckRepoFiles $query['path'] $query['q'])} }
         '/api/repo/ci' { Write-Json $context @{ci=(Get-GitDeckCiStatus $query['path'] $query['ref'])} }
         '/api/repo/absorb-plan' { $plan=Get-GitDeckAbsorbPlan $query['path']; Write-Json $context @{plan=[ordered]@{ready=$plan.ready;reason=$plan.reason;fingerprint=$plan.fingerprint;targets=@($plan.targets|ForEach-Object{[ordered]@{commit=$_.commit;short=$_.short;subject=$_.subject;files=$_.files;hunks=$_.hunks}});unassigned=$plan.unassigned}} }
+        '/api/repo/stack' { Write-Json $context @{stack=(Get-GitDeckBranchStack $query['path'] $query['base'])} }
         '/api/timeline' { Write-Json $context @{timeline=@(Get-GitDeckTimeline 200)} }
         '/api/agents' { Write-Json $context @{agents=@(Get-GitDeckAgents)} }
         '/api/ticket-workspaces' { Write-Json $context @{workspaces=@(Get-GitDeckTicketWorkspaces)} }

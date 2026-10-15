@@ -370,6 +370,19 @@ html.ui-modern body .absorb-target code { grid-row: span 2; color: var(--text-te
 html.ui-modern body .absorb-left { margin: 8px 0; color: var(--text-secondary); }
 html.ui-modern body .absorb-left > div { padding: 2px 0 2px 12px; font-size: .9em; }
 
+/* ---- Branch stack (web/stack.js) and Undo timeline (web/timeline.js) ---------------------------- */
+html.ui-modern body .stack-list { display: grid; gap: 6px; margin: 10px 0; padding-left: 22px; }
+html.ui-modern body .stack-item { padding: 8px 10px; border: 1px solid var(--border-default); border-radius: 8px; }
+html.ui-modern body .stack-item.is-current { border-color: color-mix(in srgb, var(--green) 50%, var(--border-default)); background: var(--modern-accent-soft); }
+html.ui-modern body .stack-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+html.ui-modern body .stack-head code { font-family: var(--modern-mono); font-weight: 600; }
+html.ui-modern body .stack-state { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+html.ui-modern body .timeline-day { margin: 14px 0 6px; color: var(--text-secondary); }
+html.ui-modern body .timeline-batch { margin: 0 0 10px; }
+html.ui-modern body .timeline-batch-head { display: flex; align-items: center; gap: 10px; margin: 4px 0; }
+html.ui-modern body .timeline-action { display: grid; gap: 1px; }
+html.ui-modern body .timeline-table code { font-family: var(--modern-mono); font-size: .85em; color: var(--text-tertiary); }
+
 /* ---- Toolbar: the Modern action bar has its own Undo; the Classic one beside Push would be a second. */
 html.ui-modern body #undo-last { display: none !important; }
 
