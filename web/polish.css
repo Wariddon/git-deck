@@ -412,3 +412,6 @@ html.ui-modern body button.primary:not(:disabled) { background-image: linear-gra
   html.ui-modern body :is(input, select, textarea) { transition: none; }
   html.ui-modern body .release-dialog { animation: none; }
 }
+
+html.ui-modern body .fleet-tag-cell { display: grid; gap: 4px; }
+html.ui-modern body .fleet-tag-guard { cursor: pointer; text-decoration: underline dotted; }

@@ -34,6 +34,13 @@
     const match=String(tag||'').match(/^(.*?)(\d+)(\D*)$/);if(!match)return '';
     const next=String(Number(match[2])+1).padStart(match[2].length,'0');return match[1]+next+match[3];
   }
+  // A version-number tag belongs on a release branch; a test tag on a feature branch uses words.
+  // Returns '' when fine, else a suggested test tag name for that branch.
+  function tagGuard(tag,branch){
+    if(!/^v?\d+(\.\d+){1,3}$/.test(String(tag||'').trim())||!branch||/^(release|hotfix)([\/-]|$)/i.test(branch))return '';
+    const word=String(branch).split('/').pop().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'test';
+    return word+'-01';
+  }
   function buildTagMany(panel){
     const bar=el('div','operations-toolbar');const folder=folderSelect();
     const branch=input(t('Only repositories on this branch (empty: all)'));branch.value=recall('gitdeck.tagManyBranch','');
@@ -65,9 +72,12 @@
         const p=item.pending;const box=el('input');box.type='checkbox';box.checked=Number(p.commitsSinceTag)>0||!p.latestTag;
         const name=el('input','workflow-input fleet-tag-name');name.value=nextTag(p.latestTag);name.placeholder=t('Tag name');name.setAttribute('aria-label',t('New tag for {name}',{name:item.repo.name}));
         const result=el('span','multi-repo-result');
+        const guard=el('small','fleet-tag-guard tone-warn');guard.hidden=true;
+        const check=()=>{const hint=tagGuard(name.value,p.branch);guard.hidden=!hint;guard.textContent=hint?t('A version number on {branch} (not release). Test tag: {hint}',{branch:p.branch,hint}):'';guard.onclick=()=>{name.value=hint;check();};};
+        const nameCell=el('div','fleet-tag-cell');nameCell.append(name,guard);check();
         const since=Number(p.commitsSinceTag)||0;
-        const tr=row([box,repoLink(item.repo),p.branch||'—',p.latestTag?el('span','pending-tag-badge','🏷 '+p.latestTag):el('span','fleet-muted',t('No tag yet')),since?el('b','fleet-count',String(since)):el('span','fleet-muted','0'),name,result]);
-        grid.append(tr);box.onchange=refresh;name.oninput=()=>{if(name.value.trim())box.checked=true;refresh();};
+        const tr=row([box,repoLink(item.repo),p.branch||'—',p.latestTag?el('span','pending-tag-badge','🏷 '+p.latestTag):el('span','fleet-muted',t('No tag yet')),since?el('b','fleet-count',String(since)):el('span','fleet-muted','0'),nameCell,result]);
+        grid.append(tr);box.onchange=refresh;name.oninput=()=>{if(name.value.trim())box.checked=true;check();refresh();};
         return {...item,box,name,result};
       });
       all.onchange=()=>{rows.forEach(item=>{item.box.checked=all.checked;});refresh();};
@@ -78,7 +88,7 @@
     push.onchange=()=>remember('gitdeck.tagManyPush',push.checked?'1':'0');
     create.onclick=async()=>{
       const todo=rows.filter(item=>item.box.checked&&item.name.value.trim());if(!todo.length)return;
-      const summary=todo.map(item=>`${item.repo.name}: ${item.name.value.trim()}`).join('\n');
+      const summary=todo.map(item=>`${item.repo.name}: ${item.name.value.trim()}`+(tagGuard(item.name.value,item.pending.branch)?'  ⚠ '+t('version number on {branch}',{branch:item.pending.branch}):'')).join('\n');
       if(!confirm(t('Create {count} tags{push}?',{count:todo.length,push:push.checked?t(' and push them to origin'):''})+'\n\n'+summary))return;
       create.disabled=load.disabled=true;let ok=0,failed=0;
       await mapLimit(todo,2,async item=>{
@@ -359,5 +369,5 @@
     const fleetItems=[more.querySelector('[data-work-report]'),...['pending','switch-all','search-all','tag-all','ticket','compare-files','ci'].map(id=>more.querySelector(`[data-multi-repo="${id}"]`))].filter(Boolean);
     more.append(heading,...fleetItems);
   }
-  window.GitDeckFleet.nextTag=nextTag;window.GitDeckFleet.flattenYaml=flattenYaml;window.GitDeckFleet.flattenPom=flattenPom;window.GitDeckFleet.lineDiff=lineDiff;
+  window.GitDeckFleet.nextTag=nextTag;window.GitDeckFleet.tagGuard=tagGuard;window.GitDeckFleet.flattenYaml=flattenYaml;window.GitDeckFleet.flattenPom=flattenPom;window.GitDeckFleet.lineDiff=lineDiff;
 })();

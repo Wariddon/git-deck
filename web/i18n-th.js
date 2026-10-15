@@ -1525,4 +1525,6 @@ GitDeckI18n.register('th',{
   "{repos} repositories · {issues} issue(s)":"{repos} repository · พบปัญหา {issues}",
   "Family checks":"ตรวจทั้งตระกูล",
   "The same rules over every repository of a family":"ตรวจกฎเดียวกันในทุก repository ของตระกูล",
+  "A version number on {branch} (not release). Test tag: {hint}":"เลขเวอร์ชันบน {branch} (ไม่ใช่ release) tag ทดสอบ: {hint}",
+  "version number on {branch}":"เลขเวอร์ชันบน {branch}",
 });

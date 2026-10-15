@@ -23,6 +23,10 @@ assert.equal(F.nextTag('1.2.2-poc14'), '1.2.2-poc15');
 assert.equal(F.nextTag('v1.0.9'), 'v1.0.10');
 assert.equal(F.nextTag('poc09-final'), 'poc10-final');
 assert.equal(F.nextTag('release'), '');
+// Tag guard: a version number belongs on release; elsewhere suggest a word tag.
+assert.equal(F.tagGuard('1.2.3', 'release/1.2'), '');
+assert.equal(F.tagGuard('v1.2.3', 'feature/AP2365-3320-promptpay'), 'ap2365-3320-promptpay-01');
+assert.equal(F.tagGuard('poc05', 'feature/x'), '');
 
 // Compare files: YAML flattened to keys, lists indexed, block scalars kept as one value.
 const yaml = F.flattenYaml([
