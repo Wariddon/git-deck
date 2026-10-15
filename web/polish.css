@@ -415,3 +415,8 @@ html.ui-modern body button.primary:not(:disabled) { background-image: linear-gra
 
 html.ui-modern body .fleet-tag-cell { display: grid; gap: 4px; }
 html.ui-modern body .fleet-tag-guard { cursor: pointer; text-decoration: underline dotted; }
+html.ui-modern body .family-edit-card { border: 1px solid var(--modern-line, rgba(127,127,127,.25)); border-radius: 8px; padding: 8px 10px; margin: 0 0 8px; }
+html.ui-modern body .family-edit-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 4px; }
+html.ui-modern body .family-edit-head .multi-repo-result { margin-left: auto; }
+html.ui-modern body .family-edit-fields .workflow-input { min-width: 160px; }
+html.ui-modern body .family-edit-message { flex: 1 1 320px; }

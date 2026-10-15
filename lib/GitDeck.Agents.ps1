@@ -122,3 +122,71 @@ function Start-GitDeckAgent([string]$Path, [string]$Agent, [string]$Prompt) {
     else { Start-Process powershell.exe -WorkingDirectory $Path -ArgumentList @('-NoExit', '-EncodedCommand', $encoded) }
     return @{ message = "$($chosen.name) started in $Path." }
 }
+
+# ---- Family edit (web/family-edit.js) --------------------------------------------------------
+# The same change to one file in many repositories, each in its ticket worktree: the page reads
+# the file from where the worktree is (or would start), computes the new text and shows the diff;
+# this writes it only if the file still has the text the page saw, commits that file alone and
+# optionally pushes feature/<KEY> (GitLab answers with the merge request link).
+function Get-GitDeckFamilyEditSource([string]$Path, [string]$Key, [string]$File, [string]$Start) {
+    Assert-Registered $Path
+    $Key = ([string]$Key).Trim().ToUpperInvariant()
+    Assert-GitDeckTicketWorkspaceKey $Key
+    $File = ConvertTo-GitDeckRepoFile $File
+    $plan = Get-GitDeckTicketWorkspacePlan $Path $Key
+    if (Test-Path -LiteralPath (Join-Path $plan.destination '.git')) {
+        $full = Join-Path $plan.destination ($File.Replace('/', '\'))
+        $exists = Test-Path -LiteralPath $full -PathType Leaf
+        return [ordered]@{ from = 'worktree'; ref = $plan.branch; exists = $exists; content = $(if ($exists) { [IO.File]::ReadAllText($full, [Text.Encoding]::UTF8) } else { '' }) }
+    }
+    $from = ''
+    foreach ($candidate in @("refs/heads/$($plan.branch)", "refs/remotes/origin/$($plan.branch)")) {
+        if ((Invoke-GitCapture $Path @('show-ref', '--verify', '--quiet', $candidate)).Code -eq 0) { $from = $candidate -replace '^refs/(heads|remotes)/', ''; break }
+    }
+    if (-not $from) {
+        $Start = ([string]$Start).Trim()
+        if ($Start) { [void](Resolve-GitRef $Path $Start); $from = $Start }
+        else {
+            $from = 'HEAD'
+            foreach ($candidate in @('origin/develop', 'origin/main', 'origin/master')) { if ((Invoke-GitCapture $Path @('rev-parse', '--verify', '--quiet', "$candidate^{commit}")).Code -eq 0) { $from = $candidate; break } }
+        }
+    }
+    $read = Get-GitDeckRepoFile $Path $File $from
+    return [ordered]@{ from = 'ref'; ref = $from; exists = $read.exists; content = $read.content }
+}
+
+function ConvertTo-GitDeckPlainText([string]$Text) { return ([string]$Text).Replace("`r`n", "`n").TrimEnd("`n") }
+
+function Invoke-GitDeckFamilyEdit([string]$Path, [string]$Key, [string]$File, [string]$Before, [string]$After, [string]$Message, [bool]$Push, [string]$Start) {
+    $File = ConvertTo-GitDeckRepoFile $File
+    if ((ConvertTo-GitDeckPlainText $Before) -eq (ConvertTo-GitDeckPlainText $After)) { throw 'Nothing to change.' }
+    if ($After.Length -gt 1MB) { throw 'The file is larger than 1 MB.' }
+    $workspace = New-GitDeckTicketWorkspace $Path $Key $Start
+    $root = [IO.Path]::GetFullPath($workspace.path).TrimEnd('\') + '\'
+    $full = [IO.Path]::GetFullPath((Join-Path $workspace.path ($File.Replace('/', '\'))))
+    if (-not $full.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) { throw 'The file must be inside the repository.' }
+    if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { throw "$File is not in the worktree." }
+    $bytes = [IO.File]::ReadAllBytes($full)
+    $bom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
+    $current = [IO.File]::ReadAllText($full, [Text.Encoding]::UTF8)
+    if ((ConvertTo-GitDeckPlainText $current) -ne (ConvertTo-GitDeckPlainText $Before)) { throw "$File changed since the preview (in $($workspace.path)). Preview again." }
+    # Keep the file's line endings, final new line and byte order mark.
+    $text = ConvertTo-GitDeckPlainText $After
+    if ($current.EndsWith("`n")) { $text += "`n" }
+    if ($current.Contains("`r`n")) { $text = $text.Replace("`n", "`r`n") }
+    [IO.File]::WriteAllText($full, $text, (New-Object Text.UTF8Encoding($bom)))
+    $Message = ([string]$Message).Trim()
+    $Key = ([string]$Key).Trim().ToUpperInvariant()
+    if (-not $Message) { $Message = "$Key update $File" }
+    [void](Invoke-GitOrThrow $workspace.path @('add', '--', $File))
+    [void](Invoke-GitOrThrow $workspace.path @('commit', '-q', '-m', $Message, '--', $File))
+    $commit = ([string](Invoke-GitOrThrow $workspace.path @('rev-parse', '--short', 'HEAD'))).Trim()
+    $result = [ordered]@{ message = "Committed $commit on $($workspace.branch)."; path = $workspace.path; branch = $workspace.branch; commit = $commit; mergeRequest = '' }
+    if ($Push) {
+        $output = [string](Invoke-GitOrThrow $workspace.path @('push', '-u', 'origin', $workspace.branch))
+        if ($output -match '(https?://\S+?/merge_requests/new\S*)') { $result.mergeRequest = $Matches[1] }
+        elseif ($output -match '(https?://\S+?/pull/new/\S+)') { $result.mergeRequest = $Matches[1] }
+        $result.message = "Committed $commit and pushed $($workspace.branch)."
+    }
+    return $result
+}

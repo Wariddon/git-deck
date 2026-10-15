@@ -1281,6 +1281,7 @@ function Invoke-Action($Body) {
         'absorb' { return Invoke-GitDeckAbsorb $path ([string]$Body.fingerprint) }
         'ticket-workspace-create' { return New-GitDeckTicketWorkspace $path ([string]$Body.key) ([string]$Body.start) }
         'agent-start' { return Start-GitDeckAgent $path ([string]$Body.agent) ([string]$Body.prompt) }
+        'family-edit' { return Invoke-GitDeckFamilyEdit $path ([string]$Body.key) ([string]$Body.file) ([string]$Body.before) ([string]$Body.after) ([string]$Body.message) ([bool]$Body.push) ([string]$Body.start) }
         'open-editor' { return Open-GitDeckEditor $path ([string]$Body.editor) ([string]$Body.file) $Body.line }
         'catalog-save' { return Save-GitDeckServiceMetadata $path $Body }
         'open-code' {
@@ -1737,6 +1738,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/timeline' { Write-Json $context @{timeline=@(Get-GitDeckTimeline 200)} }
         '/api/agents' { Write-Json $context @{agents=@(Get-GitDeckAgents)} }
         '/api/ticket-workspaces' { Write-Json $context @{workspaces=@(Get-GitDeckTicketWorkspaces)} }
+        '/api/repo/family-edit-source' { Write-Json $context @{source=(Get-GitDeckFamilyEditSource $query['path'] $query['key'] $query['file'] $query['start'])} }
         '/api/repo/effective-config' { Write-Json $context @{config=(Get-GitDeckEffectiveConfigSources $query['path'] $query['env'] $query['ref'] $query['deploy'] $query['deployRef'] $query['name'])} }
         '/api/repo/deploy-map' { Write-Json $context @{deploy=(Get-GitDeckDeployMap $query['path'] $query['ref'])} }
         '/api/repo/mrs' { Write-Json $context @{mergeRequests=@(Get-GitDeckMergeRequests $query['path'])} }
