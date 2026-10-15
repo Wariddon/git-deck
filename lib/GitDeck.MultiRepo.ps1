@@ -170,3 +170,18 @@ function Find-GitDeckBranch([string]$Path, [string]$Name) {
     $dirty = @(Get-GitDeckLines (Invoke-GitCapture $Path @('status', '--porcelain'))).Count -gt 0
     return [ordered]@{ local = $local; remote = $remote; current = $current; dirty = $dirty }
 }
+
+# Tags created after a time (Unix seconds), newest first, for the Today view's "new tags" list.
+function Get-GitDeckRecentTags([string]$Path, [string]$Since) {
+    Assert-Registered $Path
+    $after = [int64]0
+    if (-not [int64]::TryParse(([string]$Since).Trim(), [ref]$after) -or $after -lt 0) { throw 'Since must be a Unix time in seconds.' }
+    $tags = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--sort=-creatordate', '--count=20', '--format=%(refname:short)%09%(creatordate:unix)%09%(creatordate:iso-strict)', 'refs/tags'))) {
+        $f = $line -split "`t"
+        $when = [int64]0; [void][int64]::TryParse($f[1], [ref]$when)
+        if ($when -le $after) { break }
+        $tags.Add([ordered]@{ name = $f[0]; date = $(if ($f.Count -gt 2) { $f[2] } else { '' }) })
+    }
+    return $tags.ToArray()
+}

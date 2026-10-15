@@ -3,7 +3,7 @@
 (function(){
   const keyOf=value=>String(value||'').trim().toLowerCase();
   const providerRef=branch=>branch?.remote?branch.name.slice(branch.name.indexOf('/')+1):branch?.name||'';
-  const primaryViews=['fleet','pending','my-work','focus-inbox','catalog'];
+  const primaryViews=['briefing','fleet','pending','my-work','focus-inbox','catalog'];
   function toolMatches(id,label,term){
     const aliases={fleet:'all repos all repositories repository dashboard repository health repos repositories',pending:'pending work unfinished work'};
     const words=keyOf(term).replace(/[-_]+/g,' ').split(/\s+/).filter(Boolean);

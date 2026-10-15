@@ -383,6 +383,17 @@ html.ui-modern body .timeline-batch-head { display: flex; align-items: center; g
 html.ui-modern body .timeline-action { display: grid; gap: 1px; }
 html.ui-modern body .timeline-table code { font-family: var(--modern-mono); font-size: .85em; color: var(--text-tertiary); }
 
+/* ---- Today briefing (web/briefing.js) ---------------------------------------------------------- */
+html.ui-modern body .briefing-intro { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 8px; }
+html.ui-modern body .briefing-intro h2 { margin: 0; }
+html.ui-modern body .briefing-intro .fleet-actions { margin-left: auto; }
+html.ui-modern body .briefing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+html.ui-modern body .briefing-card { padding: 12px 14px; border: 1px solid var(--border-default); border-top: 3px solid var(--tone, var(--border-default)); border-radius: 12px; background: var(--surface); }
+html.ui-modern body .briefing-card.tone-ok { --tone: #16a34a; } html.ui-modern body .briefing-card.tone-warn { --tone: #d97706; } html.ui-modern body .briefing-card.tone-info { --tone: #3b82f6; }
+html.ui-modern body .briefing-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+html.ui-modern body .briefing-list { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+html.ui-modern body .briefing-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px; }
+
 /* ---- Toolbar: the Modern action bar has its own Undo; the Classic one beside Push would be a second. */
 html.ui-modern body #undo-last { display: none !important; }
 
