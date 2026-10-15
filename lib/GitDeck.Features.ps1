@@ -128,7 +128,7 @@ function Get-UndoCandidate([string]$Path) {
 function Get-UndoPreview([string]$Path) {
     $entry = Get-UndoCandidate $Path
     if (-not $entry) { return [ordered]@{available=$false} }
-    $soft = ($entry.action -eq 'commit' -and $entry.beforeBranch -eq $entry.afterBranch)
+    $soft = ($entry.action -in @('commit','absorb') -and $entry.beforeBranch -eq $entry.afterBranch)
     $subject = (Invoke-GitCapture $Path @('log', '-1', '--format=%s', [string]$entry.afterHead)).Output.Trim()
     return [ordered]@{available=$true; id=[string]$entry.id; action=[string]$entry.action; subject=$subject; summary=[string]$entry.summary; createdAt=[string]$entry.createdAt; mode=$(if ($soft) { 'soft' } else { 'restore' }); beforeHead=[string]$entry.beforeHead; beforeBranch=[string]$entry.beforeBranch}
 }
@@ -136,10 +136,10 @@ function Get-UndoPreview([string]$Path) {
 function Invoke-UndoLast([string]$Path, [string]$Id) {
     $entry = Get-UndoCandidate $Path
     if (-not $entry -or [string]$entry.id -ne $Id) { throw 'Nothing to undo: the repository changed after the last recorded action.' }
-    if ($entry.action -eq 'commit' -and $entry.beforeBranch -eq $entry.afterBranch) {
-        # Undo commit keeps its changes staged, so no work is lost and a dirty tree is fine.
+    if ($entry.action -in @('commit','absorb') -and $entry.beforeBranch -eq $entry.afterBranch) {
+        # Undo commit (or absorb) keeps the changes staged, so no work is lost and a dirty tree is fine.
         $output = Invoke-GitOrThrow $Path @('reset', '--soft', [string]$entry.beforeHead)
-        return @{message='Last commit undone. Its changes are staged again.'; output=$(if ($output) { $output } else { "HEAD -> $($entry.beforeHead)" })}
+        return @{message=$(if ($entry.action -eq 'absorb') { 'Absorb undone: the commits are as before and the absorbed changes are staged again.' } else { 'Last commit undone. Its changes are staged again.' }); output=$(if ($output) { $output } else { "HEAD -> $($entry.beforeHead)" })}
     }
     return Invoke-Action ([pscustomobject]@{action='journal-restore-head'; path=$Path; id=$Id})
 }

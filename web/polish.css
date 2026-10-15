@@ -363,6 +363,13 @@ html.ui-modern body .push-risk-reason b { color: var(--text-tertiary); font-vari
 html.ui-modern body .push-risk-reason small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html.ui-modern body .push-risk-note { margin: 6px 0 0; font-weight: 600; }
 
+/* ---- Absorb (web/absorb.js) ------------------------------------------------------------------- */
+html.ui-modern body .absorb-targets { display: grid; gap: 6px; margin: 8px 0; }
+html.ui-modern body .absorb-target { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px 10px; padding: 8px 10px; border: 1px solid var(--border-default); border-radius: 8px; }
+html.ui-modern body .absorb-target code { grid-row: span 2; color: var(--text-tertiary); font-family: var(--modern-mono); }
+html.ui-modern body .absorb-left { margin: 8px 0; color: var(--text-secondary); }
+html.ui-modern body .absorb-left > div { padding: 2px 0 2px 12px; font-size: .9em; }
+
 /* ---- Toolbar: the Modern action bar has its own Undo; the Classic one beside Push would be a second. */
 html.ui-modern body #undo-last { display: none !important; }
 
