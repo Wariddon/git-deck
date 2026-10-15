@@ -341,6 +341,15 @@ html.ui-modern body .fleet-deps-who > div { padding: 2px 0; color: var(--text-se
 html.ui-modern body .fleet-deployed { align-items: center; }
 html.ui-modern body .windows-toast { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-default); }
 
+/* ---- Effective config (web/effective-config.js) ----------------------------------------------- */
+html.ui-modern body .effective-config-table code { font-family: var(--modern-mono); font-size: .88em; overflow-wrap: anywhere; }
+html.ui-modern body .effective-config-key { font-weight: 600; }
+html.ui-modern body :is(.effective-config-deploy, .effective-config-value) { display: grid; gap: 2px; }
+html.ui-modern body .effective-config-table tr.effective-config-overridden > td:first-child { box-shadow: inset 3px 0 0 #d97706; }
+html.ui-modern body .effective-config-table tr.effective-config-overridden .effective-config-value code { color: color-mix(in srgb, #d97706 80%, var(--text-primary)); }
+html.ui-modern body .effective-config-table tr.effective-config-deploy-only > td:first-child { box-shadow: inset 3px 0 0 #3b82f6; }
+html.ui-modern body .effective-config-notes { display: grid; gap: 6px; margin: 6px 0; }
+
 /* ---- Toolbar: the Modern action bar has its own Undo; the Classic one beside Push would be a second. */
 html.ui-modern body #undo-last { display: none !important; }
 

@@ -16,6 +16,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.MultiRepo.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Fleet.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Integrations.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Config.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Catalog.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Cockpit.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
@@ -41,7 +42,7 @@ $script:BaseUrl = "http://127.0.0.1:$Port/"
 [void](New-Item -ItemType Directory -Path $script:JobsRoot -Force)
 [void](New-Item -ItemType Directory -Path $script:ExportsRoot -Force)
 # Script variables copied into each parallel request runspace.
-$script:SharedVariableNames = @('ValidRepoChecks','Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
+$script:SharedVariableNames = @('ConfigResourceDirs','ValidRepoChecks','Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }
@@ -1719,6 +1720,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/file' { Write-Json $context @{file=(Get-GitDeckRepoFile $query['path'] $query['file'] $query['ref'])} }
         '/api/repo/files' { Write-Json $context @{files=@(Find-GitDeckRepoFiles $query['path'] $query['q'])} }
         '/api/repo/ci' { Write-Json $context @{ci=(Get-GitDeckCiStatus $query['path'] $query['ref'])} }
+        '/api/repo/effective-config' { Write-Json $context @{config=(Get-GitDeckEffectiveConfigSources $query['path'] $query['env'] $query['ref'] $query['deploy'] $query['deployRef'] $query['name'])} }
         '/api/repo/deploy-map' { Write-Json $context @{deploy=(Get-GitDeckDeployMap $query['path'] $query['ref'])} }
         '/api/repo/mrs' { Write-Json $context @{mergeRequests=@(Get-GitDeckMergeRequests $query['path'])} }
         '/api/editors' { Write-Json $context @{editors=(Get-GitDeckEditors)} }
