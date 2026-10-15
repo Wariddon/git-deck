@@ -24,10 +24,13 @@
   const indentOf=(line)=>line.match(/^\s*/)[0].length;
   // What a deploy file feeds the service: ConfigMap data (keys become environment variables, file-like
   // keys become mounted config files) and env: name/value pairs of Deployments or Helm values.
-  function deployInputs(text,file=''){
+  // nameMatch: the file is named after the service (lns-app-configuration/{svc}.yml): a plain Spring file
+  // there (no kind:/apiVersion:) is the configuration mounted for the service.
+  function deployInputs(text,file='',nameMatch=false){
     const env=[],files=[];
     for(const doc of String(text).split(/^---\s*$/m)){
       const lines=doc.split(/\r?\n/);
+      if(nameMatch&&doc.trim()&&!/^(kind|apiVersion):/m.test(doc)){files.push({name:String(file).split('/').pop(),via:file,kind:'yaml',content:doc});continue;}
       if(/^kind:\s*ConfigMap\s*$/m.test(doc)){
         const name=(doc.match(/^metadata:\s*\r?\n(?:[ \t]+.*\r?\n)*?[ \t]+name:\s*["']?([^"'\s]+)/m)||[])[1]||file;
         const start=lines.findIndex(line=>/^data:\s*$/.test(line));
@@ -97,7 +100,36 @@
     if(row.values[0]!==undefined&&row.values[1]!==undefined&&String(row.values[0])!==String(row.values[1]))return 'profile';
     return 'file';
   }
-  const helpers={canon,looksLikeEnv,flattenProperties,deployInputs,mergeLayers,resolvePlaceholders,classify};
+  // "A ConfigMap that overrides only part of a group is more dangerous than none": groups (for example
+  // spring.data.redis) where the deployment sets some keys while the service's files still set others.
+  function partialOverrides(rows,fileLayers){
+    const groups=new Map();
+    for(const row of rows){
+      const parts=String(row.key).split('.');if(parts.length<3)continue;
+      const group=parts.slice(0,-1).join('.');if(!groups.has(group))groups.set(group,{group,deploy:[],files:[]});
+      const entry=groups.get(group);const leaf=parts[parts.length-1];
+      if(row.winner>=fileLayers)entry.deploy.push(leaf);else if(row.winner>=0)entry.files.push(leaf);
+    }
+    return [...groups.values()].filter(group=>group.deploy.length&&group.files.length).sort((a,b)=>a.group.localeCompare(b.group));
+  }
+  // Environments side by side: settings missing in some environments (drift) or with different values.
+  const kindOrder={missing:0,different:1,same:2};
+  function compareEnvironments(byEnv){
+    const envs=Object.keys(byEnv);const keys=new Map();
+    for(const env of envs)for(const row of byEnv[env]){
+      const id=canon(row.key);if(!keys.has(id))keys.set(id,{key:row.key,values:{},deploy:{}});
+      const item=keys.get(id);if(looksLikeEnv(item.key)&&!looksLikeEnv(row.key))item.key=row.key;
+      item.values[env]=row.effective;item.deploy[env]=row.fromDeploy===true;
+    }
+    const out=[];
+    for(const item of keys.values()){
+      const present=envs.filter(env=>item.values[env]!==undefined);
+      const distinct=new Set(present.map(env=>String(item.values[env])));
+      out.push({...item,missing:envs.filter(env=>item.values[env]===undefined),kind:present.length<envs.length?'missing':distinct.size>1?'different':'same'});
+    }
+    return out.sort((a,b)=>kindOrder[a.kind]-kindOrder[b.kind]||a.key.localeCompare(b.key));
+  }
+  const helpers={canon,looksLikeEnv,flattenProperties,deployInputs,mergeLayers,resolvePlaceholders,classify,partialOverrides,compareEnvironments};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
 
   const F=window.GitDeckFleet;
@@ -140,7 +172,9 @@
       }
     };
     const cell=(value)=>value===undefined?el('span','fleet-muted','—'):el('code','',String(value));
+    let comparing=false;
     const draw=()=>{
+      if(comparing)return;
       out.replaceChildren();const words=find.value.trim().toLowerCase();
       const shown=rows.filter(item=>(filter==='all'||item.kind===filter)&&(!words||item.key.toLowerCase().includes(words)||String(item.effective).toLowerCase().includes(words)));
       if(!shown.length){out.append(el('div','multi-repo-empty',filter==='overridden'?t('No setting from the service files is overridden by the deployment.'):t('Nothing to show.')));return;}
@@ -159,34 +193,73 @@
       if(shown.length>500)out.append(el('p','multi-repo-note',t('Showing the first 500. Filter to narrow the list.')));
     };
     find.addEventListener('input',draw);
+    // One environment: the service's files, then the deploy files for it, merged in Spring Boot order.
+    const compute=(answer,envName,warn)=>{
+      const layers=[];
+      const base=new Map(),profile=new Map();const baseFiles=[],profileFiles=[];
+      for(const source of answer.service){const target=source.role==='base'?base:profile;try{for(const [key,value] of flatten(kindOf(source.file),source.content))target.set(key,value);(source.role==='base'?baseFiles:profileFiles).push(source.file);}catch(error){warn(`${source.file}: ${error.message}`);}}
+      layers.push({label:baseFiles.join(', ')||'application.yml',map:base});layers.push({label:profileFiles.join(', ')||`application-${envName}.yml`,map:profile});
+      const mounted=[],variables=[];
+      for(const file of answer.deploy?.files||[]){const inputs=deployInputs(file.content,file.file,file.nameMatch);for(const item of inputs.files)mounted.push(item);for(const item of inputs.env)variables.push(item);}
+      for(const item of mounted){try{layers.push({label:t('ConfigMap file {name} ({via})',{name:item.name,via:item.via}),map:flatten(item.kind,item.content)});}catch(error){warn(`${item.via}: ${error.message}`);}}
+      if(variables.length){const map=new Map();for(const item of variables)map.set(item.name,item.value);layers.push({label:t('Environment variable ({via})',{via:[...new Set(variables.map(item=>item.via))].slice(0,3).join(', ')}),map});}
+      const merged=mergeLayers(layers).map(item=>({...item,kind:classify(item,2),fromDeploy:item.winner>=2}));
+      return {rows:merged,labels:layers.map(layer=>layer.label)};
+    };
+    const request=(repo,envName)=>api('/api/repo/effective-config?'+query({path:repo.path,env:envName,ref:ref.value.trim(),deploy:deploy.value,name:name.value.trim()})).then(answer=>answer.config);
+    const warnNote=(text)=>notes.append(el('div','repo-alert tone-warn',text));
+    const partialNotes=(list)=>{for(const group of list.slice(0,8))warnNote(t('{group}: the deployment sets {deploy} but the service files still set {files}. A partial override is more dangerous than none: check that they belong together.',{group:group.group,deploy:group.deploy.join(', '),files:group.files.join(', ')}));};
     load.onclick=async()=>{
+      comparing=false;find.oninput=null;
       const repo=repos().find(item=>item.path===service.value);if(!repo)return;
       const envName=env.value.trim();remember('gitdeck.configEnv',envName);remember('gitdeck.configService',repo.path);if(deploy.value)remember('gitdeck.deployRepo',deploy.value);
       load.disabled=true;out.replaceChildren();notes.replaceChildren();status.textContent=t('Reading {name}…',{name:repo.name});
       let answer;
-      try{answer=(await api('/api/repo/effective-config?'+query({path:repo.path,env:envName,ref:ref.value.trim(),deploy:deploy.value,name:name.value.trim()}))).config;}
+      try{answer=await request(repo,envName);}
       catch(error){load.disabled=false;status.textContent='';out.append(el('div','repo-alert tone-bad',error.message));return;}
       load.disabled=false;
       envList.replaceChildren(...answer.profiles.map(profile=>new Option(profile,profile)));
-      // Service files: every base file into layer 1, every profile file into layer 2 (later folders win).
-      const layers=[];
-      const base=new Map(),profile=new Map();const baseFiles=[],profileFiles=[];
-      for(const source of answer.service){const target=source.role==='base'?base:profile;try{for(const [key,value] of flatten(kindOf(source.file),source.content))target.set(key,value);(source.role==='base'?baseFiles:profileFiles).push(source.file);}catch(error){notes.append(el('div','repo-alert tone-warn',`${source.file}: ${error.message}`));}}
-      layers.push({label:baseFiles.join(', ')||'application.yml',map:base});layers.push({label:profileFiles.join(', ')||`application-${envName}.yml`,map:profile});
-      fileLayers=2;
-      const mounted=[],variables=[];
-      for(const file of answer.deploy?.files||[]){const inputs=deployInputs(file.content,file.file);for(const item of inputs.files)mounted.push({...item,file:file.file});for(const item of inputs.env)variables.push({...item,file:file.file});}
-      for(const item of mounted){try{layers.push({label:t('ConfigMap file {name} ({via})',{name:item.name,via:item.via}),map:flatten(item.kind,item.content)});}catch(error){notes.append(el('div','repo-alert tone-warn',`${item.via}/${item.name}: ${error.message}`));}}
-      if(variables.length){const map=new Map();const from=new Map();for(const item of variables){map.set(item.name,item.value);from.set(item.name,item.via);}layers.push({label:t('Environment variable ({via})',{via:[...new Set(variables.map(item=>item.via))].slice(0,3).join(', ')}),map});}
-      labels=layers.map(layer=>layer.label);layerCount=layers.length;
-      rows=mergeLayers(layers).map(item=>({...item,kind:classify(item,fileLayers)}));
-      if(!answer.service.length)notes.append(el('div','repo-alert tone-warn',t('No application.yml or application.properties was found in {name}.',{name:repo.name})));
-      if(answer.deploy&&!(answer.deploy.files||[]).length)notes.append(el('div','repo-alert tone-warn',t('No file in the deploy repository at {ref} names {name}. Set the name the deploy repository uses.',{ref:answer.deploy.ref,name:answer.deploy.name})));
+      const result=compute(answer,envName,warnNote);fileLayers=2;labels=result.labels;layerCount=labels.length;rows=result.rows;
+      partialNotes(partialOverrides(rows,fileLayers));
+      if(!answer.service.length)warnNote(t('No application.yml or application.properties was found in {name}.',{name:repo.name}));
+      if(answer.deploy&&!(answer.deploy.files||[]).length)warnNote(t('No file in the deploy repository at {ref} names {name}. Set the name the deploy repository uses.',{ref:answer.deploy.ref,name:answer.deploy.name}));
       notes.append(el('p','fleet-muted',t('Assumes ConfigMap keys reach the container as environment variables (envFrom) and ConfigMap files are imported as configuration. Values from Spring Cloud Config, Vault or command-line arguments are not visible here.')));
       const by=counts();
       status.textContent=t('{settings} settings · {overridden} overridden by the deployment · {files} deploy files at {ref}',{settings:rows.length,overridden:by.overridden||0,files:(answer.deploy?.files||[]).length,ref:answer.deploy?.ref||'—'});
       if(!(by.overridden||0)&&filter==='overridden')filter='all';
       drawChips();draw();
+    };
+    // Every environment side by side: drift (a setting missing in some environments) first.
+    const compareAll=button(t('Compare environments'));bar.insertBefore(compareAll,load.nextSibling);
+    compareAll.onclick=async()=>{
+      const repo=repos().find(item=>item.path===service.value);if(!repo)return;
+      comparing=true;compareAll.disabled=true;out.replaceChildren();notes.replaceChildren();chips.replaceChildren();status.textContent=t('Reading {name}…',{name:repo.name});
+      try{
+        const first=await request(repo,'');
+        const envs=[...new Set([...(first.profiles||[]),...(first.deploy?.files||[]).map(file=>file.env).filter(value=>value&&value!=='default')])].sort((a,b)=>(window.GitDeckIntegrations?.envRank?.(a)??0)-(window.GitDeckIntegrations?.envRank?.(b)??0)||a.localeCompare(b));
+        if(!envs.length){status.textContent='';warnNote(t('No environments found: no application-{env} files and no deploy files per environment.'));return;}
+        const byEnv={};const partial=[];
+        for(const envName of envs){const answer=await request(repo,envName);const result=compute(answer,envName,warnNote);byEnv[envName]=result.rows;for(const group of partialOverrides(result.rows,2))partial.push({...group,group:`${envName.toUpperCase()} · ${group.group}`});}
+        partialNotes(partial);
+        const matrix=compareEnvironments(byEnv);
+        const counts_={missing:matrix.filter(item=>item.kind==='missing').length,different:matrix.filter(item=>item.kind==='different').length};
+        status.textContent=t('{settings} settings in {envs} environments · {missing} missing somewhere · {different} with different values',{settings:matrix.length,envs:envs.length,missing:counts_.missing,different:counts_.different});
+        let mode=counts_.missing?'missing':'different';
+        const drawMatrix=()=>{
+          out.replaceChildren();const words=find.value.trim().toLowerCase();
+          const shown=matrix.filter(item=>(mode==='all'||item.kind===mode)&&(!words||item.key.toLowerCase().includes(words)));
+          if(!shown.length){out.append(el('div','multi-repo-empty',t('Nothing to show.')));return;}
+          const grid=table([t('Setting'),...envs.map(value=>value.toUpperCase())]);grid.classList.add('effective-config-table');
+          for(const item of shown.slice(0,500)){
+            const cells=envs.map(value=>{if(item.values[value]===undefined)return el('span','fleet-state tone-bad',t('missing'));const node=el('code',item.deploy[value]?'fleet-now':'',String(item.values[value]));node.title=item.deploy[value]?t('From the deployment'):t('From the service files');return node;});
+            const tr=tableRow([el('code','effective-config-key',item.key),...cells]);tr.classList.add('effective-config-'+(item.kind==='missing'?'overridden':item.kind==='different'?'deploy-only':'file'));grid.append(tr);
+          }
+          out.append(grid);
+        };
+        const drawModes=()=>{chips.replaceChildren();for(const [id,label] of [['missing',t('Missing in some environments')],['different',t('Different values')],['all',t('All settings')]]){const chip=button(`${label} ${id==='all'?matrix.length:counts_[id]}`,'pending-filter'+(mode===id?' active':''));chip.onclick=()=>{mode=id;drawModes();drawMatrix();};chips.append(chip);}};
+        find.oninput=drawMatrix;drawModes();drawMatrix();
+      }catch(error){status.textContent='';out.append(el('div','repo-alert tone-bad',error.message));}
+      finally{compareAll.disabled=false;}
     };
   }
 

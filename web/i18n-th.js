@@ -1500,4 +1500,13 @@ GitDeckI18n.register('th',{
   "Good morning":"สวัสดีตอนเช้า",
   "{pull} repositories have commits to pull · {push} have your work not pushed. Today shows new tags and releases too.":"{pull} repository มี commit ให้ pull · {push} มีงานของคุณที่ยังไม่ push ดูหน้า วันนี้ เพื่อดู tag ใหม่และ release ด้วย",
   "Open Today":"เปิดหน้าวันนี้",
+  "{group}: the deployment sets {deploy} but the service files still set {files}. A partial override is more dangerous than none: check that they belong together.":"{group}: deployment ตั้ง {deploy} แต่ไฟล์ของ service ยังตั้ง {files} อยู่ การทับไม่ครบอันตรายกว่าไม่ทับเลย เช็คว่าค่าชุดนี้ไปด้วยกันได้",
+  "Compare environments":"เทียบทุก environment",
+  "No environments found: no application-{env} files and no deploy files per environment.":"ไม่พบ environment: ไม่มีไฟล์ application-{env} และไม่มีไฟล์ deploy แยกตาม environment",
+  "{settings} settings in {envs} environments · {missing} missing somewhere · {different} with different values":"{settings} ค่าใน {envs} environment · ขาดในบาง env {missing} · ค่าต่างกัน {different}",
+  "missing":"ไม่มี",
+  "From the deployment":"มาจาก deployment",
+  "From the service files":"มาจากไฟล์ของ service",
+  "Missing in some environments":"ขาดในบาง environment",
+  "Different values":"ค่าต่างกัน",
 });

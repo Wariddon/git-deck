@@ -21,6 +21,7 @@ try{
     Run-Git $service @('add','.');Run-Git $service @('commit','-qm','config')
     Write-Text (Join-Path $deploy 'overlays/uat/billing-svc-config.yaml') "kind: ConfigMap`nmetadata:`n  name: billing-svc-config`ndata:`n  SPRING_DATASOURCE_URL: jdbc:uat`n"
     Write-Text (Join-Path $deploy 'overlays/prod/billing-svc-config.yaml') "kind: ConfigMap`nmetadata:`n  name: billing-svc-config`ndata:`n  SPRING_DATASOURCE_URL: jdbc:prod`n"
+    Write-Text (Join-Path $deploy 'manifestvalues/uat/lns-app-configuration/billing-svc.yml') "spring:`n  data:`n    redis:`n      host: classic`n"
     Write-Text (Join-Path $deploy 'overlays/uat/ledger.yaml') "kind: ConfigMap`nmetadata:`n  name: ledger`n"
     Run-Git $deploy @('add','.');Run-Git $deploy @('commit','-qm','deploy')
 
@@ -29,7 +30,8 @@ try{
     $files=@($result.service|ForEach-Object{"$($_.role):$($_.file)"})
     if(($files -join ',') -ne 'base:src/main/resources/application.yml,profile:src/main/resources/application-uat.yml'){throw "Service files: $($files -join ',')"}
     $deployFiles=@($result.deploy.files|ForEach-Object{$_.file})
-    if(($deployFiles -join ',') -ne 'overlays/uat/billing-svc-config.yaml'){throw "Deploy files for uat: $($deployFiles -join ',')"}
+    if(($deployFiles -join ',') -ne 'manifestvalues/uat/lns-app-configuration/billing-svc.yml,overlays/uat/billing-svc-config.yaml'){throw "Deploy files for uat: $($deployFiles -join ',')"}
+    if(-not @($result.deploy.files)[0].nameMatch -or @($result.deploy.files)[1].nameMatch){throw 'nameMatch wrong'}
     if($result.deploy.ref -ne 'HEAD' -or $result.deploy.name -ne 'billing-svc'){throw 'Deploy ref or name wrong'}
     # A ref reads committed files; a different deploy name; unsafe input is refused.
     Write-Text (Join-Path $service 'src/main/resources/application.yml') "server:`n  port: 1`n"

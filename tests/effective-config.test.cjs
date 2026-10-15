@@ -65,3 +65,27 @@ const server = fs.readFileSync(path.join(__dirname, '../git-dashboard-server.ps1
 assert.ok(server.includes("'/api/repo/effective-config'"));
 assert.match(web('cockpit.js'), /'compare-files','effective-config'/);
 console.log('PASS: effective config (relaxed binding, ConfigMap keys/files, env lists, layer order, placeholders)');
+
+// lns-deployment-2 style: manifestvalues/{env}/lns-app-configuration/{svc}.yml is a plain Spring file.
+const plain = C.deployInputs('spring:\n  data:\n    redis:\n      host: classic.redis\n', 'manifestvalues/dev/lns-app-configuration/src-svc-common.yml', true);
+assert.equal(plain.files.length, 1, 'Plain Spring file named after the service is configuration');
+assert.equal(C.deployInputs('spring:\n  x: 1\n', 'helmvalues/dev/other.yaml', false).files.length, 0, 'Other plain files are not');
+// The real trap: the deployment overrides only host while application.yml sets port, ssl and managed identity.
+const trap = C.mergeLayers([
+  { label: 'application.yml', map: flattenYaml('spring:\n  data:\n    redis:\n      host: managed.redis\n      port: 10000\n      ssl: true\n      use-managed-identity: true\n') },
+  { label: 'profile', map: new Map() },
+  { label: 'src-svc-common.yml', map: flattenYaml(plain.files[0].content) },
+]);
+const partial = C.partialOverrides(trap, 2);
+assert.equal(partial.length, 1);
+assert.equal(partial[0].group, 'spring.data.redis');
+assert.deepEqual(partial[0].deploy, ['host']);
+assert.deepEqual(partial[0].files.sort(), ['port', 'ssl', 'use-managed-identity']);
+// Environments side by side: a key missing in one environment is drift and comes first.
+const matrix = C.compareEnvironments({
+  dev: [{ key: 'spring.data.redis.host', effective: 'a', fromDeploy: true }, { key: 'x.y', effective: '1' }],
+  uat: [{ key: 'SPRING_DATA_REDIS_HOST', effective: 'b', fromDeploy: true }, { key: 'x.y', effective: '1' }, { key: 'only.uat', effective: '1' }],
+});
+assert.deepEqual(matrix.map((item) => `${item.key}:${item.kind}`), ['only.uat:missing', 'spring.data.redis.host:different', 'x.y:same']);
+assert.deepEqual(matrix[0].missing, ['dev']);
+console.log('PASS: effective config for plain config files, partial overrides and environment comparison');
