@@ -183,6 +183,8 @@
     switch(filter){
       case 'all':return true;
       case 'newtag':return isNewTag(item);
+      // Committed in the last 7 days, pending or not: "where is the repository I just pushed?"
+      case 'recent':{const at=Date.parse(item.pending?.lastCommitDate||'');return Number.isFinite(at)&&Date.now()-at<7*864e5;}
       case 'changes':return c.changes>0;
       case 'push':return c.push>0;
       case 'pull':return c.pull>0;
@@ -327,7 +329,7 @@
     const saveSnapshot=(items)=>{try{localStorage.setItem(snapshotKey,JSON.stringify({at:Date.now(),items:items.filter(item=>item.pending&&!item.error).map(item=>({path:item.repo.path,pending:item.pending}))}));}catch{}};
     const check=async(repo)=>{try{const pending=(await api('/api/repo/pending?'+query({path:repo.path}))).pending;return {repo,pending,counts:pendingCounts(pending),error:''};}catch(error){return {repo,pending:null,counts:pendingCounts(null),error:firstLine(error.message)};}};
     const kinds=[
-      ['any',()=>t('Anything pending')],['changes',()=>t('Uncommitted')],['push',()=>t('To push')],['pull',()=>t('To pull')],
+      ['any',()=>t('Anything pending')],['recent',()=>t('Worked on this week')],['changes',()=>t('Uncommitted')],['push',()=>t('To push')],['pull',()=>t('To pull')],
       ['unpublished',()=>t('Not published')],['localOnly',()=>t('Unpushed branches')],['stashes',()=>t('Stashes')],['merged',()=>t('Merged branches')],['problems',()=>t('Conflicts / errors')],['newtag',()=>t('New tags')],['all',()=>t('All')]];
     const drawChips=()=>{
       chips.replaceChildren();
@@ -414,7 +416,7 @@
     const collapsed=new Set();
     const drawTasks=()=>{
       out.replaceChildren();
-      const pool=results.filter(shown);const terms=parseTerms(search.value);
+      const pool=results.filter(item=>shown(item)&&(filter!=='recent'||pendingMatches(item,'recent')));const terms=parseTerms(search.value);
       const byTyped=(a,b)=>(terms.length>1?termRank(a,terms)-termRank(b,terms):0)||a.repo.name.localeCompare(b.repo.name);
       if(!pool.length){out.append(el('div','multi-repo-empty',results.length?t('No repository matches this filter.'):t('Checking…')));return;}
       let shownAny=false;
@@ -457,7 +459,7 @@
       }
       const tidyItems=pool.filter(item=>!pendingMatches(item,'any'));const tidy=tidyItems.length;
       // Searched repositories with nothing pending are still listed, so a search always finds them.
-      if(terms.length&&tidy){
+      if((terms.length||filter==='recent')&&tidy){
         const section=el('section','pending-group pending-group-clean');const head=el('div','pending-group-head');
         const title=el('div','pending-group-toggle');title.append(el('span','pending-group-icon','✓'),el('strong','',t('Nothing pending')),el('b','pending-group-count',String(tidy)));head.append(title);
         const list=el('div','pending-group-list');

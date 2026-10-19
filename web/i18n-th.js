@@ -1552,4 +1552,5 @@ GitDeckI18n.register('th',{
   "{ok} committed · {failed} failed":"commit แล้ว {ok} · ล้มเหลว {failed}",
   "Family edit":"แก้ทั้งตระกูล",
   "The same change to one file in every repository of a family":"แก้ไฟล์เดียวกันในทุก repository ของตระกูล",
+  "Worked on this week":"ทำงานสัปดาห์นี้",
 });

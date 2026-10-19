@@ -32,6 +32,9 @@ assert.ok(m.pendingCounts({ ...clean, operation: 'merge', conflicts: 1 }).score 
 const item = (p, error = '') => ({ pending: p, counts: m.pendingCounts(p), error });
 assert.equal(m.pendingMatches(item(clean), 'any'), false, 'A tidy repository is not pending');
 assert.equal(m.pendingMatches(item(clean), 'all'), true);
+// A tidy repository committed this week still shows under "Worked on this week".
+assert.equal(m.pendingMatches({ pending: { ...clean, lastCommitDate: new Date().toISOString() } }, 'recent'), true);
+assert.equal(m.pendingMatches({ pending: { ...clean, lastCommitDate: '2020-01-01T00:00:00Z' } }, 'recent'), false);
 assert.equal(m.pendingMatches(item(busy), 'pull'), true);
 assert.equal(m.pendingMatches(item(busy), 'push'), false);
 assert.equal(m.pendingMatches(item(busy), 'unpublished'), true);
@@ -135,7 +138,7 @@ console.log('PASS: multi-repository pending labels, switch plans, cleanup, ticke
 {
   const source = require('node:fs').readFileSync(require('node:path').join(__dirname, '../web/multi-repo.js'), 'utf8');
   require('node:assert/strict').match(source, /const activeFilter=\(\)=>filter==='any'&&parseTerms\(search\.value\)\.length\?'all':filter;/);
-  require('node:assert/strict').match(source, /if\(terms\.length&&tidy\)\{/);
+  require('node:assert/strict').match(source, /if\(\(terms\.length\|\|filter==='recent'\)&&tidy\)\{/);
   require('node:assert/strict').match(source, /t\('Checked \{total\} repositories',\{total:results\.length\}\)/);
   console.log('PASS: search shows repositories with nothing pending; summary says all were checked');
 }
