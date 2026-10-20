@@ -89,3 +89,12 @@ const matrix = C.compareEnvironments({
 assert.deepEqual(matrix.map((item) => `${item.key}:${item.kind}`), ['only.uat:missing', 'spring.data.redis.host:different', 'x.y:same']);
 assert.deepEqual(matrix[0].missing, ['dev']);
 console.log('PASS: effective config for plain config files, partial overrides and environment comparison');
+// Then and now: changed, removed, added, and same value from another source.
+{
+  const E2 = require('../web/effective-config.js');
+  const then = [{ key: 'redis.host', effective: 'classic', winner: 2 }, { key: 'a', effective: '1', winner: 0 }, { key: 'b', effective: 'x', winner: 0 }];
+  const now = [{ key: 'redis.host', effective: 'cluster', winner: 2 }, { key: 'b', effective: 'x', winner: 2 }, { key: 'c', effective: 'new', winner: 1 }];
+  const diff = E2.diffEffective(then, now, ['application.yml', 'application-uat.yml', 'ConfigMap'], ['application.yml', 'application-uat.yml', 'ConfigMap']);
+  assert.deepEqual(diff.map((d) => `${d.kind}:${d.key}`), ['changed:redis.host', 'removed:a', 'added:c', 'moved:b']);
+  assert.equal(diff[0].fromAfter, 'ConfigMap');
+}

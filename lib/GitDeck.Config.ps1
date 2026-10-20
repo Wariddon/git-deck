@@ -21,6 +21,21 @@ function Get-GitDeckConfigProfiles([string]$Path, [string]$Ref) {
     return @($profiles)
 }
 
+# The commit a branch (default HEAD) pointed to at a moment in the past: "what was configured
+# yesterday at 10:00". Uses commit dates on the first-parent line, not the local reflog.
+function Get-GitDeckRefAt([string]$Path, [string]$At, [string]$Ref) {
+    Assert-Registered $Path
+    $when = [DateTimeOffset]::MinValue
+    if (-not [DateTimeOffset]::TryParse(([string]$At).Trim(), [ref]$when)) { throw 'Use a date and time, for example 2026-10-19T10:00.' }
+    $Ref = ([string]$Ref).Trim(); if (-not $Ref) { $Ref = 'HEAD' }
+    if ($Ref.Length -gt 200 -or $Ref.StartsWith('-') -or $Ref -notmatch '^[A-Za-z0-9._/@{}~^-]+$') { throw 'Branch or tag name is not valid.' }
+    $line = ([string](Invoke-GitCapture $Path @('rev-list', '-1', '--first-parent', "--before=$($when.ToString('yyyy-MM-ddTHH:mm:sszzz'))", $Ref, '--format=%H%x09%h%x09%cI%x09%s')).Output).Trim()
+    $parts = @(($line -split "`r?`n") | Where-Object { $_ -and -not $_.StartsWith('commit ') })
+    if (-not $parts.Count) { return [ordered]@{ found = $false; at = $when.ToString('o'); ref = $Ref } }
+    $f = $parts[0] -split "`t", 4
+    return [ordered]@{ found = $true; at = $when.ToString('o'); ref = $Ref; commit = $f[0]; short = $f[1]; date = $f[2]; subject = $(if ($f.Count -gt 3) { $f[3] } else { '' }) }
+}
+
 function Get-GitDeckEffectiveConfigSources([string]$Path, [string]$Env, [string]$Ref, [string]$DeployPath, [string]$DeployRef, [string]$Name) {
     Assert-Registered $Path
     $Env = ([string]$Env).Trim(); $Ref = ([string]$Ref).Trim(); $Name = ([string]$Name).Trim()

@@ -1759,6 +1759,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/api-surface' { Write-Json $context @{surface=(Get-GitDeckApiSurface $query['path'] $query['ref'])} }
         '/api/repo/commit-pairs' { Write-Json $context @{pairs=(Get-GitDeckCommitPairs $query['path'] $query['commit'])} }
         '/api/repo/family-edit-source' { Write-Json $context @{source=(Get-GitDeckFamilyEditSource $query['path'] $query['key'] $query['file'] $query['start'])} }
+        '/api/repo/ref-at' { Write-Json $context @{ref=(Get-GitDeckRefAt $query['path'] $query['at'] $query['ref'])} }
         '/api/repo/effective-config' { Write-Json $context @{config=(Get-GitDeckEffectiveConfigSources $query['path'] $query['env'] $query['ref'] $query['deploy'] $query['deployRef'] $query['name'])} }
         '/api/repo/deploy-map' { Write-Json $context @{deploy=(Get-GitDeckDeployMap $query['path'] $query['ref'])} }
         '/api/repo/mrs' { Write-Json $context @{mergeRequests=@(Get-GitDeckMergeRequests $query['path'])} }

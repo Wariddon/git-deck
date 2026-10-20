@@ -114,6 +114,20 @@
   }
   // Environments side by side: settings missing in some environments (drift) or with different values.
   const kindOrder={missing:0,different:1,same:2};
+  // Effective configuration then and now: settings added, removed or changed, and the layer each
+  // value came from (a service file, a ConfigMap, an environment variable).
+  function diffEffective(before,after,labelsBefore=[],labelsAfter=[]){
+    const then=new Map((before||[]).map(item=>[item.key,item])),now=new Map((after||[]).map(item=>[item.key,item]));
+    const out=[];
+    for(const key of new Set([...then.keys(),...now.keys()])){
+      const a=then.get(key),b=now.get(key);
+      const kind=!a?'added':!b?'removed':String(a.effective)!==String(b.effective)?'changed':a.winner!==b.winner?'moved':'';
+      if(!kind)continue;
+      out.push({key,kind,before:a?.effective,after:b?.effective,fromBefore:a?labelsBefore[a.winner]||'':'',fromAfter:b?labelsAfter[b.winner]||'':''});
+    }
+    const order={changed:0,removed:1,added:2,moved:3};
+    return out.sort((x,y)=>order[x.kind]-order[y.kind]||x.key.localeCompare(y.key));
+  }
   function compareEnvironments(byEnv){
     const envs=Object.keys(byEnv);const keys=new Map();
     for(const env of envs)for(const row of byEnv[env]){
@@ -129,7 +143,7 @@
     }
     return out.sort((a,b)=>kindOrder[a.kind]-kindOrder[b.kind]||a.key.localeCompare(b.key));
   }
-  const helpers={canon,looksLikeEnv,flattenProperties,deployInputs,mergeLayers,resolvePlaceholders,classify,partialOverrides,compareEnvironments};
+  const helpers={diffEffective,canon,looksLikeEnv,flattenProperties,deployInputs,mergeLayers,resolvePlaceholders,classify,partialOverrides,compareEnvironments};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
 
   const F=window.GitDeckFleet;
@@ -206,7 +220,7 @@
       const merged=mergeLayers(layers).map(item=>({...item,kind:classify(item,2),fromDeploy:item.winner>=2}));
       return {rows:merged,labels:layers.map(layer=>layer.label)};
     };
-    const request=(repo,envName)=>api('/api/repo/effective-config?'+query({path:repo.path,env:envName,ref:ref.value.trim(),deploy:deploy.value,name:name.value.trim()})).then(answer=>answer.config);
+    const request=(repo,envName,refs={})=>api('/api/repo/effective-config?'+query({path:repo.path,env:envName,ref:refs.ref??ref.value.trim(),deploy:deploy.value,deployRef:refs.deployRef||'',name:name.value.trim()})).then(answer=>answer.config);
     const warnNote=(text)=>notes.append(el('div','repo-alert tone-warn',text));
     const partialNotes=(list)=>{for(const group of list.slice(0,8))warnNote(t('{group}: the deployment sets {deploy} but the service files still set {files}. A partial override is more dangerous than none: check that they belong together.',{group:group.group,deploy:group.deploy.join(', '),files:group.files.join(', ')}));};
     load.onclick=async()=>{
@@ -228,6 +242,35 @@
       status.textContent=t('{settings} settings · {overridden} overridden by the deployment · {files} deploy files at {ref}',{settings:rows.length,overridden:by.overridden||0,files:(answer.deploy?.files||[]).length,ref:answer.deploy?.ref||'—'});
       if(!(by.overridden||0)&&filter==='overridden')filter='all';
       drawChips();draw();
+    };
+    // What changed since a moment: the same environment, service and deploy repository as they were then.
+    const since=el('input','workflow-input');since.type='datetime-local';since.setAttribute('aria-label',t('Since'));since.title=t('Compare with the configuration at this moment');
+    {const d=new Date(Date.now()-24*3600e3);const p=(n)=>String(n).padStart(2,'0');since.value=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;}
+    const changedSince=button(t('What changed since'));bar.insertBefore(since,load.nextSibling);bar.insertBefore(changedSince,since.nextSibling);
+    changedSince.onclick=async()=>{
+      const repo=repos().find(item=>item.path===service.value);if(!repo)return;const envName=env.value.trim();
+      comparing=true;changedSince.disabled=true;out.replaceChildren();notes.replaceChildren();chips.replaceChildren();status.textContent=t('Reading {name}…',{name:repo.name});
+      try{
+        const at=new Date(since.value).toISOString();
+        const then=(await api('/api/repo/ref-at?'+query({path:repo.path,at,ref:ref.value.trim()}))).ref;
+        const deployThen=deploy.value?(await api('/api/repo/ref-at?'+query({path:deploy.value,at}))).ref:null;
+        if(!then.found){status.textContent='';warnNote(t('{name} has no commit before {time}.',{name:repo.name,time:new Date(at).toLocaleString()}));return;}
+        const [nowAnswer,thenAnswer]=await Promise.all([request(repo,envName),request(repo,envName,{ref:then.commit,deployRef:deployThen?.found?deployThen.commit:''})]);
+        const nowResult=compute(nowAnswer,envName,warnNote),thenResult=compute(thenAnswer,envName,()=>{});
+        const changes=diffEffective(thenResult.rows,nowResult.rows,thenResult.labels,nowResult.labels);
+        status.textContent=t('{count} effective setting(s) changed since {time} · service at {commit}{deploy}',{count:changes.length,time:new Date(at).toLocaleString(),commit:then.short,deploy:deployThen?.found?' · '+t('deploy repository at {commit}',{commit:deployThen.short}):''});
+        if(!changes.length){out.append(el('div','multi-repo-empty',t('The effective configuration of {env} is the same as then.',{env:envName||'default'})));return;}
+        const grid=table([t('Setting'),t('Then'),t('Now'),t('Where it changed')]);grid.classList.add('effective-config-table');
+        const kinds={changed:t('changed'),removed:t('removed'),added:t('added'),moved:t('same value, other source')};
+        for(const item of changes.slice(0,500)){
+          const thenCell=item.before===undefined?el('span','fleet-muted','—'):el('code','fleet-was',String(item.before));
+          const nowCell=item.after===undefined?el('span','fleet-muted','—'):el('code','fleet-now',String(item.after));
+          const whereCell=el('div','');whereCell.append(el('span',`fleet-state tone-${item.kind==='changed'||item.kind==='removed'?'warn':'info'}`,kinds[item.kind]),el('small','fleet-muted',' '+(item.fromAfter||item.fromBefore)));
+          grid.append(tableRow([el('code','effective-config-key',item.key),thenCell,nowCell,whereCell]));
+        }
+        out.append(grid);
+      }catch(error){status.textContent='';out.append(el('div','repo-alert tone-bad',error.message));}
+      finally{changedSince.disabled=false;}
     };
     // Every environment side by side: drift (a setting missing in some environments) first.
     const compareAll=button(t('Compare environments'));bar.insertBefore(compareAll,load.nextSibling);

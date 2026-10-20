@@ -38,6 +38,11 @@ try{
     if(@((Get-GitDeckEffectiveConfigSources $service 'uat' 'main' '' '' '').service)[0].content -notmatch '8080'){throw 'Ref did not read the committed file'}
     if(@((Get-GitDeckEffectiveConfigSources $service 'uat' '' $deploy '' 'ledger').deploy.files).Count -ne 1){throw 'Deploy name override ignored'}
     foreach($bad in @(@('../x','',''),@('uat','--output=x',''),@('uat','','a b'))){$refused=$false;try{[void](Get-GitDeckEffectiveConfigSources $service $bad[0] $bad[1] $deploy '' $bad[2])}catch{$refused=$true};if(-not $refused){throw "Unsafe input accepted: $($bad -join '|')"}}
+    # The commit a branch pointed to at a past moment (commit dates, first parent).
+    $at=Get-GitDeckRefAt $service ((Get-Date).AddMinutes(5).ToString('o')) ''
+    if(-not $at.found -or -not $at.commit){throw "Ref at now: $($at|ConvertTo-Json -Compress)"}
+    if((Get-GitDeckRefAt $service '2000-01-01T00:00:00Z' '').found){throw 'Found a commit before the repository existed'}
+    $refused=$false;try{[void](Get-GitDeckRefAt $service 'yesterday-ish' '')}catch{$refused=$true};if(-not $refused){throw 'Bad date accepted'}
     Write-Host 'PASS: effective config sources (profiles, service files by role, deploy files by service and environment, ref, unsafe input)'
 }finally{
     if(Test-Path -LiteralPath $base){Remove-Item -LiteralPath $base -Recurse -Force}
