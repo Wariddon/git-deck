@@ -69,8 +69,7 @@ html.ui-modern body .gd-dock-toggle { margin-left: 8px; }
 
 
 /* Today: three columns (to do, in progress, news). */
-html.ui-modern body .gd-today { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
-@media (max-width: 900px) { html.ui-modern body .gd-today { grid-template-columns: 1fr; } }
+html.ui-modern body .gd-today { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; align-items: start; }
 html.ui-modern body .gd-today-col { min-width: 0; padding: 10px; border: 1px solid color-mix(in srgb, currentColor 12%, transparent); border-radius: 10px; }
 html.ui-modern body .gd-today-col h3 { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 13px; }
 html.ui-modern body .gd-today-col h3 b { margin-left: auto; font-size: 12px; opacity: .65; }
@@ -90,3 +89,4 @@ html.ui-modern body .gd-ticket-chip { display: inline-flex; align-items: center;
 html.ui-modern body .gd-ticket-chip button { border: 0; background: none; color: inherit; cursor: pointer; padding: 0 4px; }
 html.ui-modern body.gd-ticket-mode .repo-tab.gd-off-ticket { opacity: .35; }
 html.ui-modern body .fleet-release-gap { display: block; margin-top: 2px; font-size: 11px; color: var(--tone); }
+html.ui-modern body .gd-card .gd-card-action { padding: 2px 10px; font-size: 12px; }
