@@ -183,28 +183,43 @@ function Get-GitDeckFamilyEditSource([string]$Path, [string]$Key, [string]$File,
 function ConvertTo-GitDeckPlainText([string]$Text) { return ([string]$Text).Replace("`r`n", "`n").TrimEnd("`n") }
 
 function Invoke-GitDeckFamilyEdit([string]$Path, [string]$Key, [string]$File, [string]$Before, [string]$After, [string]$Message, [bool]$Push, [string]$Start) {
-    $File = ConvertTo-GitDeckRepoFile $File
-    if ((ConvertTo-GitDeckPlainText $Before) -eq (ConvertTo-GitDeckPlainText $After)) { throw 'Nothing to change.' }
-    if ($After.Length -gt 1MB) { throw 'The file is larger than 1 MB.' }
+    return Invoke-GitDeckFamilyEditMany $Path $Key @([pscustomobject]@{ file = $File; before = $Before; after = $After }) $Message $Push $Start
+}
+
+# Several files of one repository in one commit (a change carried over from a sibling's commit).
+# Every file must still have the text the preview saw before anything is written.
+function Invoke-GitDeckFamilyEditMany([string]$Path, [string]$Key, $Changes, [string]$Message, [bool]$Push, [string]$Start) {
+    $items = @($Changes | Where-Object { $_ } | Select-Object -First 20)
+    if (-not $items.Count) { throw 'Nothing to change.' }
+    foreach ($item in $items) {
+        $item.file = ConvertTo-GitDeckRepoFile ([string]$item.file)
+        if ((ConvertTo-GitDeckPlainText ([string]$item.before)) -ceq (ConvertTo-GitDeckPlainText ([string]$item.after))) { throw "Nothing to change in $($item.file)." }
+        if (([string]$item.after).Length -gt 1MB) { throw "$($item.file) is larger than 1 MB." }
+    }
     $workspace = New-GitDeckTicketWorkspace $Path $Key $Start
     $root = [IO.Path]::GetFullPath($workspace.path).TrimEnd('\') + '\'
-    $full = [IO.Path]::GetFullPath((Join-Path $workspace.path ($File.Replace('/', '\'))))
-    if (-not $full.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) { throw 'The file must be inside the repository.' }
-    if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { throw "$File is not in the worktree." }
-    $bytes = [IO.File]::ReadAllBytes($full)
-    $bom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
-    $current = [IO.File]::ReadAllText($full, [Text.Encoding]::UTF8)
-    if ((ConvertTo-GitDeckPlainText $current) -ne (ConvertTo-GitDeckPlainText $Before)) { throw "$File changed since the preview (in $($workspace.path)). Preview again." }
-    # Keep the file's line endings, final new line and byte order mark.
-    $text = ConvertTo-GitDeckPlainText $After
-    if ($current.EndsWith("`n")) { $text += "`n" }
-    if ($current.Contains("`r`n")) { $text = $text.Replace("`n", "`r`n") }
-    [IO.File]::WriteAllText($full, $text, (New-Object Text.UTF8Encoding($bom)))
+    $plans = foreach ($item in $items) {
+        $full = [IO.Path]::GetFullPath((Join-Path $workspace.path ($item.file.Replace('/', '\'))))
+        if (-not $full.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) { throw 'The file must be inside the repository.' }
+        if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { throw "$($item.file) is not in the worktree." }
+        $bytes = [IO.File]::ReadAllBytes($full)
+        $current = [IO.File]::ReadAllText($full, [Text.Encoding]::UTF8)
+        if ((ConvertTo-GitDeckPlainText $current) -cne (ConvertTo-GitDeckPlainText ([string]$item.before))) { throw "$($item.file) changed since the preview (in $($workspace.path)). Preview again." }
+        [pscustomobject]@{ file = $item.file; full = $full; current = $current; after = [string]$item.after; bom = ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) }
+    }
+    foreach ($plan in $plans) {
+        # Keep the file's line endings, final new line and byte order mark.
+        $text = ConvertTo-GitDeckPlainText $plan.after
+        if ($plan.current.EndsWith("`n")) { $text += "`n" }
+        if ($plan.current.Contains("`r`n")) { $text = $text.Replace("`n", "`r`n") }
+        [IO.File]::WriteAllText($plan.full, $text, (New-Object Text.UTF8Encoding($plan.bom)))
+    }
+    $files = @($plans | ForEach-Object { $_.file })
     $Message = ([string]$Message).Trim()
     $Key = ([string]$Key).Trim().ToUpperInvariant()
-    if (-not $Message) { $Message = "$Key update $File" }
-    [void](Invoke-GitOrThrow $workspace.path @('add', '--', $File))
-    [void](Invoke-GitOrThrow $workspace.path @('commit', '-q', '-m', $Message, '--', $File))
+    if (-not $Message) { $Message = "$Key update $($files -join ', ')" }
+    [void](Invoke-GitOrThrow $workspace.path (@('add', '--') + $files))
+    [void](Invoke-GitOrThrow $workspace.path (@('commit', '-q', '-m', $Message, '--') + $files))
     $commit = ([string](Invoke-GitOrThrow $workspace.path @('rev-parse', '--short', 'HEAD'))).Trim()
     $result = [ordered]@{ message = "Committed $commit on $($workspace.branch)."; path = $workspace.path; branch = $workspace.branch; commit = $commit; mergeRequest = '' }
     if ($Push) {
@@ -214,4 +229,48 @@ function Invoke-GitDeckFamilyEdit([string]$Path, [string]$Key, [string]$File, [s
         $result.message = "Committed $commit and pushed $($workspace.branch)."
     }
     return $result
+}
+
+# A commit as line replacements per file (old line -> new line), to carry the same change over to
+# sibling repositories. Only hunks that replace lines one for one are carried; additions and
+# deletions are listed as skipped, so nothing is guessed.
+function Get-GitDeckCommitPairs([string]$Path, [string]$Commit) {
+    Assert-Registered $Path
+    $Commit = ([string]$Commit).Trim(); if (-not $Commit) { $Commit = 'HEAD' }
+    if ($Commit.Length -gt 80 -or $Commit.StartsWith('-') -or $Commit -notmatch '^[A-Za-z0-9._/~^@-]+$') { throw 'Commit is not valid.' }
+    $head = ([string](Invoke-GitOrThrow $Path @('log', '-1', '--format=%h%x09%s', $Commit))).Trim() -split "`t", 2
+    $patch = [string](Invoke-GitOrThrow $Path @('show', '--format=', '--no-color', '--no-ext-diff', '-U0', $Commit))
+    $files = New-Object 'System.Collections.Generic.List[object]'
+    $current = $null; $removed = @(); $added = @()
+    $flush = {
+        if ($current) {
+            if ($removed.Count -and $removed.Count -eq $added.Count) { for ($i = 0; $i -lt $removed.Count; $i++) { $current.pairs.Add([ordered]@{ old = $removed[$i]; new = $added[$i] }) } }
+            elseif ($removed.Count -or $added.Count) {
+                # Uneven hunk: pair a removed line with an added line that starts the same way
+                # (the same key or XML tag, a new value); the rest is skipped.
+                $used = @{}; $paired = 0
+                foreach ($old in $removed) {
+                    $a = $old.Trim(); $best = -1; $bestLength = 0
+                    for ($j = 0; $j -lt $added.Count; $j++) {
+                        if ($used.ContainsKey($j)) { continue }
+                        $b = $added[$j].Trim(); $n = 0; $max = [Math]::Min($a.Length, $b.Length)
+                        while ($n -lt $max -and $a[$n] -eq $b[$n]) { $n++ }
+                        if ($n -ge 5 -and $n -ge 0.4 * [Math]::Max($a.Length, $b.Length) -and $n -gt $bestLength) { $best = $j; $bestLength = $n }
+                    }
+                    if ($best -ge 0) { $used[$best] = $true; $paired++; $current.pairs.Add([ordered]@{ old = $old; new = $added[$best] }) }
+                }
+                if ($paired -lt [Math]::Max($removed.Count, $added.Count)) { $current.skipped++ }
+            }
+        }
+    }
+    foreach ($line in ($patch -split "`r?`n")) {
+        if ($line.StartsWith('diff --git ')) { & $flush; $removed = @(); $added = @(); $current = $null; continue }
+        if ($line.StartsWith('+++ ')) { if ($line -match '^\+\+\+ b/(.+)$') { $current = [ordered]@{ file = $Matches[1]; pairs = (New-Object 'System.Collections.Generic.List[object]'); skipped = 0 }; $files.Add($current) }; continue }
+        if ($line.StartsWith('--- ')) { continue }
+        if ($line.StartsWith('@@')) { & $flush; $removed = @(); $added = @(); continue }
+        if ($line.StartsWith('-')) { $removed += $line.Substring(1) } elseif ($line.StartsWith('+')) { $added += $line.Substring(1) }
+    }
+    & $flush
+    return [ordered]@{ commit = $head[0]; subject = $(if ($head.Count -gt 1) { $head[1] } else { '' })
+        files = @($files | Select-Object -First 20 | ForEach-Object { [ordered]@{ file = $_.file; pairs = $_.pairs.ToArray(); skipped = $_.skipped } }) }
 }

@@ -19,3 +19,10 @@ assert.ok(read('web/index.html').indexOf('/fleet.js') < read('web/index.html').i
 assert.ok(((id) => require('../web/cockpit.js').intentGroups.flatMap(([, ids]) => ids).concat(require('../web/cockpit.js').moreViews).includes(id))('family-edit'), 'In the Dashboard menu');
 for (const route of ["'family-edit'", "'/api/repo/family-edit-source'"]) assert.ok(read('git-dashboard-server.ps1').includes(route), route);
 console.log('PASS: family edit (literal and regex edits, presets, wiring)');
+// Carry a commit over: the same line replaced where it exists, keeping this file's indentation.
+{
+  const r = E.applyPairs('<a>\n    <java.version>17</java.version>\r\n  <x/>\n', [{ old: '  <java.version>17</java.version>', new: '  <java.version>21</java.version>' }, { old: 'not here', new: 'x' }]);
+  assert.equal(r.count, 1);
+  assert.equal(r.after, '<a>\n    <java.version>21</java.version>\r\n  <x/>\n');
+  assert.equal(E.applyPairs('a', [{ old: '', new: 'b' }]).count, 0, 'Empty lines are not replaced everywhere');
+}

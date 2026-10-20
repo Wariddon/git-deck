@@ -45,6 +45,22 @@ try{
     $refused=$false;try{[void](Invoke-GitDeckFamilyEdit $repo 'PAY-20' 'Dockerfile' $source.content $after '' $false '')}catch{$refused=$_.Exception.Message -match 'changed since the preview'};if(-not $refused){throw 'Stale preview accepted'}
     $refused=$false;try{[void](Invoke-GitDeckFamilyEdit $repo 'PAY-20' 'Dockerfile' $after $after '' $false '')}catch{$refused=$true};if(-not $refused){throw 'Empty change accepted'}
     $refused=$false;try{[void](Get-GitDeckFamilyEditSource $repo 'PAY-20' '../x' '')}catch{$refused=$true};if(-not $refused){throw 'Path outside accepted'}
+    # A commit as one-for-one line replacements; additions are skipped, not guessed.
+    [IO.File]::WriteAllText((Join-Path $repo 'pom.xml'),"<a>`n  <java.version>17</java.version>`n</a>`n")
+    Run-Git $repo @('add','pom.xml');Run-Git $repo @('commit','-qm','pom')
+    [IO.File]::WriteAllText((Join-Path $repo 'pom.xml'),"<a>`n  <java.version>21</java.version>`n  <extra/>`n</a>`n")
+    [IO.File]::WriteAllText((Join-Path $repo 'Dockerfile'),$docker.Replace('1.40','1.60'))
+    Run-Git $repo @('commit','-qam','PAY-21 bump java and image')
+    $pairs=Get-GitDeckCommitPairs $repo 'HEAD'
+    $byFile=@{};foreach($f in $pairs.files){$byFile[$f.file]=$f}
+    if($pairs.subject -ne 'PAY-21 bump java and image' -or @($byFile['Dockerfile'].pairs).Count -ne 1 -or @($byFile['Dockerfile'].pairs)[0].new -notmatch '1\.60'){throw "Pairs: $($pairs|ConvertTo-Json -Depth 5 -Compress)"}
+    if(@($byFile['pom.xml'].pairs)[0].old.Trim() -ne '<java.version>17</java.version>'){throw 'pom pair wrong'}
+    $refused=$false;try{[void](Get-GitDeckCommitPairs $repo '--all')}catch{$refused=$true};if(-not $refused){throw 'Unsafe commit accepted'}
+    # Several files in one commit.
+    $one=(Get-GitDeckFamilyEditSource $repo 'PAY-22' 'Dockerfile' '').content;$two=(Get-GitDeckFamilyEditSource $repo 'PAY-22' 'other.txt' '').content
+    $many=Invoke-GitDeckFamilyEditMany $repo 'PAY-22' @([pscustomobject]@{file='Dockerfile';before=$one;after=$one.Replace('scb','SCB')},[pscustomobject]@{file='other.txt';before=$two;after="changed`n"}) 'PAY-22 two files' $false ''
+    $stat=[string](Invoke-GitCapture $many.path @('show','--stat','--format=%s','HEAD')).Output
+    if($stat -notmatch 'PAY-22 two files' -or $stat -notmatch 'Dockerfile' -or $stat -notmatch 'other.txt'){throw "Many: $stat"}
     Write-Host 'PASS: family edit (source from origin/develop then the worktree, write with line endings kept, commit one file, push, stale preview refused)'
 }finally{
     if(Test-Path -LiteralPath $base){Remove-Item -LiteralPath $base -Recurse -Force}
