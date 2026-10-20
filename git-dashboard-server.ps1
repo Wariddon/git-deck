@@ -1749,6 +1749,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/absorb-plan' { $plan=Get-GitDeckAbsorbPlan $query['path']; Write-Json $context @{plan=[ordered]@{ready=$plan.ready;reason=$plan.reason;fingerprint=$plan.fingerprint;targets=@($plan.targets|ForEach-Object{[ordered]@{commit=$_.commit;short=$_.short;subject=$_.subject;files=$_.files;hunks=$_.hunks}});unassigned=$plan.unassigned}} }
         '/api/repo/find-files' { Write-Json $context @{files=@(Find-GitDeckFilesBySuffix $query['path'] $query['names'])} }
         '/api/repo/tag-distance' { Write-Json $context @{distance=(Get-GitDeckTagDistance $query['path'] $query['tags'] $query['target'])} }
+        '/api/repo/forgotten' { $days=14;[void][int]::TryParse([string]$query['days'],[ref]$days);Write-Json $context @{forgotten=(Get-GitDeckForgottenWork $query['path'] $days)} }
         '/api/repo/commits-since' { Write-Json $context @{commits=@(Get-GitDeckCommitsSince $query['path'] $query['tag'])} }
         '/api/repo/recent-tags' { Write-Json $context @{tags=@(Get-GitDeckRecentTags $query['path'] $query['since'])} }
         '/api/repo/stack' { Write-Json $context @{stack=(Get-GitDeckBranchStack $query['path'] $query['base'])} }

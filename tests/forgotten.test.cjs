@@ -1,0 +1,13 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const G = require('../web/forgotten.js');
+const repos = [{ name: 'a', path: 'C:/a' }, { name: 'b', path: 'C:/b' }, { name: 'c', path: 'C:/c' }];
+const snapshot = { items: [{ path: 'C:/a', pending: { stashes: [{}] } }, { path: 'C:/b', pending: { stashes: [], unpushedBranches: [] } }] };
+assert.deepEqual(G.candidates(repos, snapshot).map((r) => r.name), ['a', 'c'], 'Flagged by the last check, or never checked');
+assert.equal(G.candidates(repos, null).length, 3);
+assert.equal(G.ageDays('2026-10-01T00:00:00Z', Date.parse('2026-10-20T12:00:00Z')), 19);
+const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+assert.ok(read('web/index.html').indexOf('/forgotten.js') < read('web/index.html').indexOf('/cockpit.js'));
+assert.ok(read('git-dashboard-server.ps1').includes("'/api/repo/forgotten'"));
+console.log('PASS: forgotten work (candidates from the last check, age)');

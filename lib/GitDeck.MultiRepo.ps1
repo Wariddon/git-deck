@@ -263,6 +263,34 @@ function Get-GitDeckTagDistance([string]$Path, [string]$Tags, [string]$Target) {
     return [ordered]@{ mainline = $mainline; tags = $out.ToArray() }
 }
 
+# Work you may have forgotten in one repository: stashes and branches whose commits are on no remote,
+# older than $Days, each with what is inside (subject, date, the files it touches). Read-only.
+function Get-GitDeckForgottenWork([string]$Path, [int]$Days = 14) {
+    Assert-Registered $Path
+    if ($Days -lt 0 -or $Days -gt 3650) { $Days = 14 }
+    $cutoff = [DateTimeOffset]::Now.AddDays(-$Days)
+    $stashes = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('stash', 'list', '--format=%gd%x09%cI%x09%s'))) {
+        $f = $line -split "`t", 3; $when = [DateTimeOffset]::MinValue
+        if ($f.Count -lt 3 -or -not [DateTimeOffset]::TryParse($f[1], [ref]$when) -or $when -gt $cutoff) { continue }
+        $files = @(Get-GitDeckLines (Invoke-GitCapture $Path @('stash', 'show', '--name-only', '--format=', $f[0])) | Select-Object -First 8)
+        $stashes.Add([ordered]@{ ref = $f[0]; date = $f[1]; message = $f[2]; files = $files })
+        if ($stashes.Count -ge 20) { break }
+    }
+    $branches = New-Object 'System.Collections.Generic.List[object]'
+    $current = ([string](Invoke-GitCapture $Path @('branch', '--show-current')).Output).Trim()
+    foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--format=%(refname:short)%09%(committerdate:iso-strict)%09%(subject)', 'refs/heads'))) {
+        $f = $line -split "`t", 3; $when = [DateTimeOffset]::MinValue
+        if ($f.Count -lt 2 -or $f[0] -eq $current -or -not [DateTimeOffset]::TryParse($f[1], [ref]$when) -or $when -gt $cutoff) { continue }
+        $count = 0; [void][int]::TryParse(([string](Invoke-GitCapture $Path @('rev-list', '--count', "refs/heads/$($f[0])", '--not', '--remotes')).Output).Trim(), [ref]$count)
+        if (-not $count) { continue }
+        $files = @(Get-GitDeckLines (Invoke-GitCapture $Path @('log', '--format=', '--name-only', '-n', '20', "refs/heads/$($f[0])", '--not', '--remotes')) | Select-Object -Unique -First 8)
+        $branches.Add([ordered]@{ name = $f[0]; date = $f[1]; subject = $(if ($f.Count -gt 2) { $f[2] } else { '' }); commits = $count; files = $files })
+        if ($branches.Count -ge 20) { break }
+    }
+    return [ordered]@{ days = $Days; stashes = $stashes.ToArray(); branches = $branches.ToArray() }
+}
+
 # Commit subjects on HEAD after a tag (or the last 30 without one), newest first: a tag message
 # that says what the tag contains.
 function Get-GitDeckCommitsSince([string]$Path, [string]$Ref) {

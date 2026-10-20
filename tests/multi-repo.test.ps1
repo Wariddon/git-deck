@@ -68,6 +68,11 @@ try{
     Run-Git $tidy @('switch','-q','--track','origin/shared-work');Run-Git $local @('push','-q','origin','--delete','shared-work');Run-Git $tidy @('fetch','-q','--prune')
     if(-not (Get-GitDeckPendingWork $tidy).upstreamGone){throw 'Deleted remote branch not flagged'}
     Run-Git $tidy @('switch','-q','main')
+    # Forgotten work: an old stash and an old local-only branch, with their files.
+    $f=Get-GitDeckForgottenWork $local 0
+    if(@($f.stashes).Count -ne 1 -or @($f.stashes)[0].message -notmatch 'wip' -or -not (@($f.stashes)[0].files -contains 'a.txt')){throw "Forgotten stashes: $($f.stashes|ConvertTo-Json -Compress)"}
+    if(-not (@($f.branches)|Where-Object{$_.name -eq 'feature/AP-2' -and $_.commits -eq 1 -and ($_.files -contains 'b.txt')})){throw "Forgotten branches: $($f.branches|ConvertTo-Json -Compress)"}
+    if(@((Get-GitDeckForgottenWork $local 30).stashes).Count){throw 'A fresh stash is not forgotten'}
     $c=Get-GitDeckBranchCleanup $local
     $byName=@{};foreach($b in $c.branches){$byName[$b.name]=$b}
     if(-not $byName['done-work'].merged -or $byName['done-work'].protected){throw 'done-work should be merged and deletable'}
