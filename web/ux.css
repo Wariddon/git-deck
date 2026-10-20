@@ -107,3 +107,8 @@ html.ui-modern body .incident-deploy { background: color-mix(in srgb, var(--gd-w
 html.ui-modern body .incident-tag { background: color-mix(in srgb, var(--gd-info) 6%, transparent); }
 html.ui-modern body .incident-files { color: var(--gd-warn); }
 @media (max-width: 760px) { html.ui-modern body .incident-line { grid-template-columns: 46px 18px 1fr; } html.ui-modern body .incident-body { grid-column: 1 / -1; } }
+html.ui-modern body .semantic-box { margin-top: 8px; padding: 8px 10px; border-radius: 8px; border: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+html.ui-modern body .semantic-file { margin: 8px 0 2px; }
+html.ui-modern body .semantic-list { margin: 2px 0 6px 18px; padding: 0; }
+html.ui-modern body .semantic-list li { margin: 2px 0; }
+html.ui-modern body .semantic-list li b { color: var(--tone); }

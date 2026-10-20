@@ -1,0 +1,15 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const S = require('../web/semantic-diff.js');
+const before = new Map([['parent.org.springframework.boot:spring-boot-starter-parent', '3.5.6'], ['dependency.com.ci.lib:ci-lib-module', '1.4'], ['property.java.version', '17']]);
+const after = new Map([['parent.org.springframework.boot:spring-boot-starter-parent', '3.5.16'], ['dependency.com.ci.lib:ci-lib-module', '1.4 [provided]'], ['dependency.org.x:new', '2.0']]);
+const changes = S.compareMaps(before, after);
+assert.deepEqual(changes.map((c) => `${c.kind}:${S.label(c.key)}`), ['changed:Spring Boot', 'changed:dependency ci-lib-module', 'added:dependency new', 'removed:java.version']);
+const docker = S.compareMaps(S.dockerMap('FROM maven AS build\nFROM reg/eclipse-temurin:17-scb-1.53\nEXPOSE 8080'), S.dockerMap('FROM maven AS build\nFROM reg/eclipse-temurin:17-scb-1.70\nEXPOSE 8080'));
+assert.deepEqual(docker.map((c) => [c.key, c.after]), [['FROM #1', 'reg/eclipse-temurin:17-scb-1.70']]);
+assert.ok(S.understood('src/main/resources/application-uat.yml') && S.understood('Dockerfile') && S.understood('pom.xml') && !S.understood('src/App.java'));
+const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+assert.ok(read('web/index.html').indexOf('/fleet.js') < read('web/index.html').indexOf('/semantic-diff.js'));
+assert.match(read('web/fleet.js'), /GitDeckFleet\.flatten=flatten/);
+console.log('PASS: semantic diff (pom labels, Dockerfile FROM, which files are understood)');

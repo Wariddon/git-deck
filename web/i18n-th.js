@@ -1701,4 +1701,10 @@ GitDeckI18n.register('th',{
   "{days} days old · {subject} · {files}":"{days} วันแล้ว · {subject} · {files}",
   "Open branches":"เปิด Branches",
   "Forgotten work":"งานที่ลืม",
+  "What this commit changes":"commit นี้เปลี่ยนอะไร",
+  "No pom.xml, configuration or Dockerfile in this commit: see the diff.":"commit นี้ไม่มี pom.xml, config หรือ Dockerfile: ดูที่ diff",
+  "Could not read this file as structure; see the diff.":"อ่านไฟล์นี้เป็นโครงสร้างไม่ได้ ดูที่ diff",
+  "Only formatting or comments changed.":"เปลี่ยนแค่รูปแบบหรือคอมเมนต์",
+  "🧾 Meaning":"🧾 ความหมาย",
+  "Say in words what changed in pom.xml, configuration and Dockerfile":"บอกเป็นคำว่า pom.xml, config และ Dockerfile เปลี่ยนอะไร",
 });

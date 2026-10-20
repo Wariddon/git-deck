@@ -402,5 +402,5 @@
     const fleetItems=[more.querySelector('[data-work-report]'),...['pending','switch-all','search-all','tag-all','ticket','compare-files','ci'].map(id=>more.querySelector(`[data-multi-repo="${id}"]`))].filter(Boolean);
     more.append(heading,...fleetItems);
   }
-  window.GitDeckFleet.nextTag=nextTag;window.GitDeckFleet.tagGuard=tagGuard;window.GitDeckFleet.journeySteps=journeySteps;window.GitDeckFleet.releaseNotes=releaseNotes;window.GitDeckFleet.flattenYaml=flattenYaml;window.GitDeckFleet.flattenPom=flattenPom;window.GitDeckFleet.lineDiff=lineDiff;
+  window.GitDeckFleet.nextTag=nextTag;window.GitDeckFleet.tagGuard=tagGuard;window.GitDeckFleet.journeySteps=journeySteps;window.GitDeckFleet.releaseNotes=releaseNotes;window.GitDeckFleet.flattenYaml=flattenYaml;window.GitDeckFleet.flattenPom=flattenPom;window.GitDeckFleet.lineDiff=lineDiff;window.GitDeckFleet.kindOf=kindOf;window.GitDeckFleet.flatten=flatten;
 })();
