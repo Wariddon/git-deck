@@ -98,3 +98,12 @@ html.ui-modern body .api-where { margin: 1px 0; }
 html.ui-modern body .api-where small { word-break: break-all; }
 html.ui-modern body .api-drift { margin-bottom: 10px; }
 html.ui-modern body .api-drift code { font-weight: 700; }
+html.ui-modern body .incident-day { margin: 14px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; opacity: .7; }
+html.ui-modern body .incident-line { display: grid; grid-template-columns: 46px 18px minmax(120px, 200px) 1fr; gap: 8px; align-items: baseline; padding: 4px 0; border-bottom: 1px solid color-mix(in srgb, currentColor 8%, transparent); }
+html.ui-modern body .incident-time { font: 12px var(--modern-mono, monospace); opacity: .75; }
+html.ui-modern body .incident-body { display: grid; gap: 1px; min-width: 0; }
+html.ui-modern body .incident-body small { overflow-wrap: anywhere; }
+html.ui-modern body .incident-deploy { background: color-mix(in srgb, var(--gd-warn) 8%, transparent); }
+html.ui-modern body .incident-tag { background: color-mix(in srgb, var(--gd-info) 6%, transparent); }
+html.ui-modern body .incident-files { color: var(--gd-warn); }
+@media (max-width: 760px) { html.ui-modern body .incident-line { grid-template-columns: 46px 18px 1fr; } html.ui-modern body .incident-body { grid-column: 1 / -1; } }

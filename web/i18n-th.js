@@ -1671,4 +1671,10 @@ GitDeckI18n.register('th',{
   "Scanning {done} of {total}…":"กำลังสแกน {done} จาก {total}…",
   "{repos} repositories · {provided} endpoints · {calls} calls":"{repos} repository · {provided} endpoint · {calls} การเรียก",
   "API map":"แผนที่ API",
+  "Build timeline":"สร้างไทม์ไลน์",
+  "Everything that changed in a time window, in one list: commits of the family on every branch, changes in the deploy repository (image tags, ConfigMaps, app configuration) and new tags. Pick the window in which an environment broke.":"ทุกอย่างที่เปลี่ยนในช่วงเวลาหนึ่งในรายการเดียว: commit ของตระกูลในทุก branch, การเปลี่ยนใน deploy repo (image tag, ConfigMap, app configuration) และ tag ใหม่ เลือกช่วงเวลาที่ env พัง",
+  "Pick a window where From is before To.":"เลือกช่วงเวลาให้ From อยู่ก่อน To",
+  "{count} changes between {from} and {to}":"{count} การเปลี่ยนระหว่าง {from} ถึง {to}",
+  "Nothing changed in this window.":"ไม่มีอะไรเปลี่ยนในช่วงนี้",
+  "Incident timeline":"ไทม์ไลน์ incident",
 });
