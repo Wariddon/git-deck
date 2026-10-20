@@ -101,6 +101,26 @@ function Get-GitDeckTicketWorkspaces {
     return $items.ToArray()
 }
 
+# How a coding agent connects to Git Deck's MCP server (mcp/gitdeck-mcp.ps1, read-only), and a
+# config file for "claude --mcp-config" written next to it.
+function Get-GitDeckMcpSetup {
+    $script = Join-Path $script:Root 'mcp\gitdeck-mcp.ps1'
+    $available = Test-Path -LiteralPath $script -PathType Leaf
+    $configFile = Join-Path $script:Root 'mcp\gitdeck-mcp.json'
+    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $script)
+    if ($available) {
+        $config = @{ mcpServers = @{ gitdeck = @{ type = 'stdio'; command = 'powershell'; args = $arguments } } } | ConvertTo-Json -Depth 5
+        try { if (-not (Test-Path -LiteralPath $configFile) -or [IO.File]::ReadAllText($configFile) -ne $config) { [IO.File]::WriteAllText($configFile, $config, (New-Object Text.UTF8Encoding($false))) } } catch {}
+    }
+    $argsToml = ($arguments | ForEach-Object { '"' + ($_ -replace '\\', '\\') + '"' }) -join ', '
+    return [ordered]@{
+        available = $available; script = $script; configFile = $configFile
+        claude = "claude mcp add --scope user gitdeck -- powershell $($arguments[0..3] -join ' ') `"$script`""
+        codex = "[mcp_servers.gitdeck]`ncommand = `"powershell`"`nargs = [$argsToml]"
+        gemini = "gemini mcp add gitdeck powershell $($arguments[0..3] -join ' ') `"$script`""
+    }
+}
+
 # Opens a terminal in a registered worktree and starts the agent with an optional first prompt
 # (passed through a temporary file, so quotes and new lines arrive intact).
 function Start-GitDeckAgent([string]$Path, [string]$Agent, [string]$Prompt) {
@@ -116,6 +136,11 @@ function Start-GitDeckAgent([string]$Path, [string]$Agent, [string]$Prompt) {
         [IO.File]::WriteAllText($file, $Prompt, (New-Object Text.UTF8Encoding($false)))
         $command += "`$prompt = Get-Content -Raw -Encoding UTF8 -LiteralPath $(& $quote $file); Remove-Item -LiteralPath $(& $quote $file); & $(& $quote $chosen.command) `$prompt"
     } else { $command += "& $(& $quote $chosen.command)" }
+    # Claude Code started here can ask Git Deck itself (pending work, a file across a family, config sources).
+    $setup = Get-GitDeckMcpSetup
+    if ($chosen.id -eq 'claude' -and $setup.available) {
+        $command = $command.Replace("& $(& $quote $chosen.command)", "& $(& $quote $chosen.command) --mcp-config $(& $quote $setup.configFile)")
+    }
     $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))
     $terminal = Get-Command wt.exe -ErrorAction SilentlyContinue
     if ($terminal) { Start-Process $terminal.Source -ArgumentList @('-d', ('"' + $Path + '"'), 'powershell.exe', '-NoExit', '-EncodedCommand', $encoded) }

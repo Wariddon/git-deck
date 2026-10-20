@@ -317,6 +317,35 @@ The same provider powers a few more ✨ buttons. AI only explains or proposes; a
 
 **Per-repository policy** (Settings › AI for this repository): *Allowed*, *Local model only (Ollama)* or *Off*. It is stored in that repository's own `.git/config` (`gitdeck.ai`), is never committed, and is enforced by the server — use *Off* or *Local only* for work repositories whose code must not leave your machine.
 
+## Coding agents: Git Deck as an MCP server
+
+`mcp/gitdeck-mcp.ps1` lets Claude Code, Codex or Gemini CLI ask the running Git Deck about every registered repository. It is **read-only** (it calls Git Deck's GET API on this computer; it cannot commit, push or change anything) and needs Git Deck to be open.
+
+| Tool | Answers |
+| --- | --- |
+| `list_repositories` | registered repositories by name prefix (`crs-`) or folder |
+| `pending_work` | uncommitted, to push/pull, branches only here, stashes, latest tag, last commit; one repository or a whole family |
+| `read_file`, `compare_file_across_family` | a file, or the same file in every repository of a family (with a regex: one value each, e.g. the Docker base image) |
+| `effective_config_sources` | `application.yml`, `application-{env}.yml` and the deploy repository's files for that service and environment |
+| `search`, `ticket`, `activity` | commits and branches by text or ticket key; commits in a date range |
+| `push_risk`, `deploy_map` | push checks of the current branch; where a service is deployed |
+
+Claude Code started from **Ticket workspaces** is connected already. Otherwise (Ticket workspaces › *Connect agents to Git Deck* shows these with your path):
+
+```bash
+claude mcp add --scope user gitdeck -- powershell -NoProfile -ExecutionPolicy Bypass -File "C:\GitDeck\mcp\gitdeck-mcp.ps1"
+```
+
+Codex, in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.gitdeck]
+command = "powershell"
+args = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "C:\\GitDeck\\mcp\\gitdeck-mcp.ps1"]
+```
+
+Set `GITDECK_URL` if Git Deck runs on another port.
+
 ## GitHub
 
 For repositories whose `origin` is on github.com, the **GitHub** tab lists open pull requests and recent Actions runs. From there you can open or check out a PR, re-run failed jobs, and push the current branch and create a pull request. It uses your own `gh auth login` session. Git Deck never stores GitHub tokens.

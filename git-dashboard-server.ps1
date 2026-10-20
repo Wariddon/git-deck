@@ -1737,6 +1737,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/stack' { Write-Json $context @{stack=(Get-GitDeckBranchStack $query['path'] $query['base'])} }
         '/api/timeline' { Write-Json $context @{timeline=@(Get-GitDeckTimeline 200)} }
         '/api/agents' { Write-Json $context @{agents=@(Get-GitDeckAgents)} }
+        '/api/mcp' { Write-Json $context @{mcp=(Get-GitDeckMcpSetup)} }
         '/api/ticket-workspaces' { Write-Json $context @{workspaces=@(Get-GitDeckTicketWorkspaces)} }
         '/api/repo/family-edit-source' { Write-Json $context @{source=(Get-GitDeckFamilyEditSource $query['path'] $query['key'] $query['file'] $query['start'])} }
         '/api/repo/effective-config' { Write-Json $context @{config=(Get-GitDeckEffectiveConfigSources $query['path'] $query['env'] $query['ref'] $query['deploy'] $query['deployRef'] $query['name'])} }

@@ -43,6 +43,19 @@
     const agentSelect=document.createElement('select');agentSelect.className='workflow-input';agentSelect.setAttribute('aria-label',t('Coding agent'));
     const prompt=el('textarea','workflow-input ticket-agent-prompt');prompt.rows=6;prompt.setAttribute('aria-label',t('First prompt for the agent'));
     const agentNote=el('small','fleet-muted','');agentBox.append(agentSelect,prompt,agentNote);
+    // Connect any coding agent to Git Deck (MCP, read-only): Claude Code started here gets it already.
+    const mcpBox=el('details','fleet-mr-create ticket-mcp');mcpBox.append(el('summary','',t('Connect agents to Git Deck (MCP)')));
+    mcpBox.addEventListener('toggle',async()=>{
+      if(!mcpBox.open||mcpBox.dataset.loaded)return;mcpBox.dataset.loaded='1';
+      let setup=null;try{setup=(await api('/api/mcp')).mcp;}catch(error){mcpBox.append(el('p','fleet-muted',error.message));return;}
+      mcpBox.append(el('p','fleet-muted',t('Agents can then ask Git Deck for pending work, a file across a family, config sources, tickets and push risk. Read-only: they cannot commit or push through it. Claude Code started from this page is already connected.')));
+      for(const [label,text] of [['Claude Code',setup.claude],['Codex (~/.codex/config.toml)',setup.codex],['Gemini CLI',setup.gemini]]){
+        const row=el('div','ticket-mcp-row');const code=el('pre','ticket-mcp-code',text);const copy=el('button','',t('Copy'));copy.type='button';
+        copy.onclick=async()=>{try{await navigator.clipboard.writeText(text);copy.textContent=t('Copied');}catch{}};
+        row.append(el('strong','',label),copy,code);mcpBox.append(row);
+      }
+    });
+    agentBox.after(mcpBox);
     const status=el('small','multi-repo-status');const out=el('div','multi-repo-body');
     panel.append(bar,el('p','multi-repo-explain',t('For a ticket: a Git worktree per repository on feature/<ticket>, next to the repository, so your own folders stay as they are. Start a coding agent in each, or open them in Git Deck, VS Code or a terminal. Nothing is pushed.')),picker,count,agentBox,status,out);
     const boxes=[];

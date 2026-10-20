@@ -435,3 +435,5 @@ html.ui-modern body .pending-table tr.pending-family strong { font-size: 13px; l
 html.ui-modern body .pending-table tr.pending-family small { opacity: .7; }
 html.ui-modern body .pending-table tr.pending-row:focus { outline: 2px solid color-mix(in srgb, #2563eb 70%, transparent); outline-offset: -2px; }
 html.ui-modern body .pending-keys { margin: 6px 2px 0; font-size: 12px; opacity: .65; }
+html.ui-modern body .ticket-mcp-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; align-items: center; margin-top: 8px; }
+html.ui-modern body .ticket-mcp-code { grid-column: 1 / -1; margin: 0; padding: 8px 10px; border-radius: 6px; background: color-mix(in srgb, currentColor 7%, transparent); font: 12px/1.5 var(--modern-mono, monospace); white-space: pre-wrap; word-break: break-all; }

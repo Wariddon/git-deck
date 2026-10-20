@@ -23,6 +23,8 @@ foreach($file in @(Get-ChildItem -LiteralPath (Join-Path $root 'web') -File | Wh
 foreach($file in @(Get-ChildItem -LiteralPath (Join-Path $root 'lib') -Filter '*.ps1' -File)){
     Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $stage 'lib')
 }
+[void](New-Item -ItemType Directory -Path (Join-Path $stage 'mcp'))
+Copy-Item -LiteralPath (Join-Path $root 'mcp/gitdeck-mcp.ps1') -Destination (Join-Path $stage 'mcp')
 [void](New-Item -ItemType Directory -Path (Join-Path $stage 'assets/brand') -Force)
 Copy-Item -LiteralPath (Join-Path $root 'assets/brand/git-deck-banner.png') -Destination (Join-Path $stage 'assets/brand/git-deck-banner.png')
 Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip
