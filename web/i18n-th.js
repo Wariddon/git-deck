@@ -1590,4 +1590,12 @@ GitDeckI18n.register('th',{
   "Message lists the commits since the last tag":"ข้อความ tag แสดง commit ตั้งแต่ tag ล่าสุด",
   "Changes since {tag}:":"สิ่งที่เปลี่ยนตั้งแต่ {tag}:",
   "Changes:":"สิ่งที่เปลี่ยน:",
+  "Paste a stack trace or error log":"วาง stack trace หรือ error log",
+  "Paste a stack trace or log. Your own frames (framework ones are skipped) are looked up in every repository of the folder: the repository, the file and line, and the last commits that changed it. Nothing leaves this computer.":"วาง stack trace หรือ log บรรทัดที่เป็นโค้ดของคุณ (ข้ามของ framework) จะถูกหาในทุก repository ของโฟลเดอร์: อยู่ repo ไหน ไฟล์และบรรทัดไหน และ commit ล่าสุดที่แก้ไฟล์นั้น ไม่มีอะไรออกจากเครื่องนี้",
+  "No frames of your own code found (only framework lines, or no file:line).":"ไม่พบบรรทัดที่เป็นโค้ดของคุณ (มีแต่ของ framework หรือไม่มี file:line)",
+  "Looking in {done} of {total}…":"กำลังหาใน {done} จาก {total}…",
+  "Not in any repository of this folder":"ไม่อยู่ใน repository ไหนของโฟลเดอร์นี้",
+  "{located} of {frames} frame(s) found in your repositories":"เจอ {located} จาก {frames} บรรทัดใน repository ของคุณ",
+  "Find from an error log":"หาจาก error log",
+  "Which repository, file and commit a stack trace points to":"stack trace ชี้ไปที่ repository, ไฟล์ และ commit ไหน",
 });

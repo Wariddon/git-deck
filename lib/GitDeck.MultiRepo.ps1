@@ -209,6 +209,27 @@ function Find-GitDeckBranch([string]$Path, [string]$Name) {
 }
 
 # Tags created after a time (Unix seconds), newest first, for the Today view's "new tags" list.
+# Tracked files whose path ends with one of the names (com/scb/x/Foo.java, Foo.java), each with the
+# last commits that changed it: "where does this stack trace line live, and who touched it last?".
+function Find-GitDeckFilesBySuffix([string]$Path, [string]$Names) {
+    Assert-Registered $Path
+    $wanted = @(([string]$Names) -split '\|' | ForEach-Object { $_.Trim().Replace('\', '/').TrimStart('/') } | Where-Object { $_ -and $_.Length -le 300 -and $_ -notmatch '\.\.' } | Select-Object -First 20)
+    if (-not $wanted.Count) { return @() }
+    $found = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($file in Get-GitDeckLines (Invoke-GitCapture $Path @('ls-files'))) {
+        foreach ($name in $wanted) {
+            if ($file -eq $name -or $file.EndsWith('/' + $name)) {
+                $commits = @(Get-GitDeckLines (Invoke-GitCapture $Path @('log', '-3', '--format=%h%x09%cs%x09%an%x09%s', '--', $file)) | ForEach-Object {
+                    $f = $_ -split "`t", 4; [ordered]@{ hash = $f[0]; date = $f[1]; author = $f[2]; subject = $(if ($f.Count -gt 3) { $f[3] } else { '' }) } })
+                $found.Add([ordered]@{ name = $name; file = $file; commits = $commits })
+                break
+            }
+        }
+        if ($found.Count -ge 30) { break }
+    }
+    return $found.ToArray()
+}
+
 # Commit subjects on HEAD after a tag (or the last 30 without one), newest first: a tag message
 # that says what the tag contains.
 function Get-GitDeckCommitsSince([string]$Path, [string]$Ref) {

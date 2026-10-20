@@ -171,7 +171,7 @@
     for(const id of primaryViews){const tab=tabs.find(node=>node.dataset.operationsView===id);if(tab){if(id==='fleet')tab.textContent=t('All repositories');if(id==='catalog')tab.textContent=t('Systems');primary.append(tab);}}
     for(const tab of tabs)if(!primary.contains(tab))tools.append(tab);
     // More tools in small groups, so 17 entries read as four kinds of work; anything new goes last.
-    const groups=[[t('Many repositories'),['update-all','switch-all','search-all','tag-all']],[t('Tickets and releases'),['ticket','ticket-workspaces','releases','merge-requests','ci','release-proof','failure-lens']],[t('Code'),['compare-files','effective-config','family-checks','family-edit','dependencies','impact','recipes','capsules']],[t('Git Deck'),['timeline','jobs','automation']]];
+    const groups=[[t('Many repositories'),['update-all','switch-all','search-all','tag-all']],[t('Tickets and releases'),['ticket','ticket-workspaces','releases','merge-requests','ci','release-proof','failure-lens']],[t('Code'),['compare-files','effective-config','family-checks','family-edit','log-locate','dependencies','impact','recipes','capsules']],[t('Git Deck'),['timeline','jobs','automation']]];
     const headings=[];
     for(const [title,ids] of groups){const items=ids.map(id=>tabs.find(tab=>tab.dataset.operationsView===id&&tools.contains(tab))).filter(Boolean);if(!items.length)continue;const heading=el('p','cockpit-tools-heading',title);headings.push(heading);tools.append(heading,...items);}
     const rest=[...tools.querySelectorAll(':scope > button')].filter(tab=>{let node=tab.previousElementSibling;while(node&&!node.classList.contains('cockpit-tools-heading'))node=node.previousElementSibling;return !node;});
