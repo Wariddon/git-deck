@@ -49,6 +49,15 @@ function Invoke-Git([string]$WorkingPath,[string[]]$Arguments) {
     $previousPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
+        # Same escaping as Invoke-GitCapture in the server (Windows PowerShell 5.1 drops inner quotes).
+        if ($PSVersionTable.PSVersion -lt [version]'7.3' -or "$PSNativeCommandArgumentPassing" -eq 'Legacy') {
+            $Arguments = @(foreach ($argument in $Arguments) {
+                if ($argument -eq '') { continue }
+                $escaped = $argument -replace '(\\*)"', '$1$1\"'
+                if ($escaped -match '\s') { $escaped = $escaped -replace '(\\+)$', '$1$1' }
+                $escaped
+            })
+        }
         $items = if ($WorkingPath) { @(& git -c core.quotepath=false -C $WorkingPath @Arguments 2>&1) } else { @(& git -c core.quotepath=false @Arguments 2>&1) }
         $code = $LASTEXITCODE
         $text = ($items | ForEach-Object { if ($_ -is [Management.Automation.ErrorRecord]) { $_.Exception.Message } else { [string]$_ } } | Out-String).TrimEnd()

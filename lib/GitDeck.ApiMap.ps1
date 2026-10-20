@@ -39,7 +39,9 @@ function Get-GitDeckApiSurface([string]$Path, [string]$Ref) {
     if ($Ref -and ($Ref.Length -gt 200 -or $Ref.StartsWith('-') -or $Ref -notmatch '^[A-Za-z0-9._/@{}~^-]+$')) { throw 'Branch or tag name is not valid.' }
     $code = @('*.java', '*.kt')
     # One grep for every interesting line of Java/Kotlin code; split by kind afterwards.
-    $pattern = '@(Request|Get|Post|Put|Delete|Patch)Mapping|@FeignClient|^\s*(public\s+|abstract\s+|final\s+)*(class|interface)\s|@KafkaListener|\.send\(|"/[A-Za-z0-9_{}.-]+(/[A-Za-z0-9_{}.-]+)+"'
+    # No double quote in a pattern: Windows PowerShell 5.1 strips it from a native argument, so a
+    # quoted path literal is found as "not a letter, then /a/b" and checked for its quotes below.
+    $pattern = '@(Request|Get|Post|Put|Delete|Patch)Mapping|@FeignClient|^[[:space:]]*(public[[:space:]]+|abstract[[:space:]]+|final[[:space:]]+)*(class|interface)[[:space:]]|@KafkaListener|\.send\(|[^A-Za-z0-9_.]/[A-Za-z0-9_{}.-]+(/[A-Za-z0-9_{}.-]+)+'
     $lines = @(Get-GitDeckGrepLines $Path $Ref $pattern $code)
     $provides = New-Object 'System.Collections.Generic.List[object]'
     $calls = New-Object 'System.Collections.Generic.List[object]'
@@ -83,8 +85,11 @@ function Get-GitDeckApiSurface([string]$Path, [string]$Ref) {
         }
     }
     # Downstream URLs in configuration (url: ${enterprise-api.host}/v2/customerServices/...): the path
-    # after the host is what this service calls; the key above names it.
-    foreach ($row in @(Get-GitDeckGrepLines $Path $Ref '(url|uri|path|endpoint)[A-Za-z_-]*\s*[:=].*/[A-Za-z]' @('*application*.yml', '*application*.yaml', '*application*.properties'))) {
+    # after the host is what this service calls; the key above names it. Any key counts when the value
+    # starts with a host placeholder or a URL (post-promptpay-by-proxy: ${enterprise-api.host}/...).
+    # (git grep -E is POSIX: [[:space:]], not \s.)
+    $configPattern = '(url|uri|path|endpoint)[A-Za-z_-]*[[:space:]]*[:=].*/[A-Za-z]|[:=][[:space:]]*[^[:space:]A-Za-z0-9]?(\$\{[^}]+\}|https?://[^/[:space:]]+)/[A-Za-z]'
+    foreach ($row in @(Get-GitDeckGrepLines $Path $Ref $configPattern @('*application*.yml', '*application*.yaml', '*application*.properties'))) {
         if ($row.file -match '(^|/)src/test/') { continue }
         $value = ($row.text -replace '^[^:=]*[:=]\s*', '').Trim().Trim('"', "'")
         $value = $value -replace '^https?://[^/]+', '' -replace '^\$\{[^}]+\}', ''

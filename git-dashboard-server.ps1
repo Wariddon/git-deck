@@ -95,6 +95,18 @@ function Test-GitRepository([string]$Path) {
 }
 
 function Invoke-GitCapture([string]$Path, [string[]]$Arguments) {
+    # Windows PowerShell 5.1 passes native arguments without escaping: a double quote inside one is
+    # lost ('fix "x"' became 'fix x') and a trailing backslash in an argument with a space escapes the
+    # closing quote. Escape them the way the C runtime reads a command line. (An empty argument is
+    # still left out, as before: callers pass optional refs that way.)
+    if ($PSVersionTable.PSVersion -lt [version]'7.3' -or "$PSNativeCommandArgumentPassing" -eq 'Legacy') {
+        $Arguments = @(foreach ($argument in $Arguments) {
+            if ($argument -eq '') { continue }
+            $escaped = $argument -replace '(\\*)"', '$1$1\"'
+            if ($escaped -match '\s') { $escaped = $escaped -replace '(\\+)$', '$1$1' }
+            $escaped
+        })
+    }
     $items = @(& git -c core.quotepath=false -C $Path @Arguments 2>&1)
     $code = $LASTEXITCODE
     $text = ($items | ForEach-Object {
