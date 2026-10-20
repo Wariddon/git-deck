@@ -421,3 +421,5 @@ html.ui-modern body .family-edit-head .multi-repo-result { margin-left: auto; }
 html.ui-modern body .family-edit-fields .workflow-input { min-width: 160px; }
 html.ui-modern body .family-edit-message { flex: 1 1 320px; }
 html.ui-modern body .pending-recent-state { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; }
+html.ui-modern body .standup-dialog { width: min(760px, 94vw); }
+html.ui-modern body .standup-text { width: 100%; font-family: var(--modern-mono); font-size: 13px; line-height: 1.5; }

@@ -425,6 +425,7 @@
       if(filter==='recent'){
         const section=el('section','pending-group pending-group-recent');const head=el('div','pending-group-head');
         const title=el('div','pending-group-toggle');title.append(el('span','pending-group-icon','🕒'),el('strong','',t('Worked on this week')),el('b','pending-group-count',String(pool.length)));head.append(title);
+        if(window.GitDeckStandup){const standup=el('button','primary',t('📋 Standup draft'));standup.type='button';standup.title=t('Since the last working day, today and blocked: from your commits and this state');standup.onclick=()=>window.GitDeckStandup.open(pool);head.append(standup);}
         const list=el('div','pending-group-list');
         for(const item of [...pool].sort((a,b)=>Date.parse(b.pending?.lastCommitDate||0)-Date.parse(a.pending?.lastCommitDate||0))){
           const p=item.pending||{};const line=el('div','pending-line');const what=el('div','pending-line-what');what.append(repoLink(item.repo));
