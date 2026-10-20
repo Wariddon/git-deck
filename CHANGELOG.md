@@ -5,6 +5,7 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 ## Unreleased
 
 - **Family checks** (Dashboard › Code): the same rules over every repository of a family (`depinq-`, `src-`, `crs-`…) in one table, so a sibling missed in a batch migration stands out. Default rules: Docker base image and Spring Boot version (odd values marked), `argo_yaml` in the SIT Jenkins build (db-migration excluded), `ci-lib-module` as `provided` (it still ends up in the fat jar), and the configuration file per environment in the deploy repository. Rules are JSON you can edit; they stay on this computer.
+- **Ticket journey** (Ticket view): for each repository, where the ticket has got to: ✓ pushed → ✓ merged into origin/development, origin/release → ✓ first in tag 1.1.0-29 → ✓ UAT / ✗ PROD for every environment from the last Releases load (the environment tag contains the ticket commit or not).
 - **Today is the Dashboard home**, in three columns: *To do* (commit, push, pull and ready-to-tag, one click each), *In progress* (ticket workspaces with work, repositories committed this week) and *News* (new tags, production behind). The 📋 Standup draft is one click away.
 - **Dashboard menu by intent**: Every day · The whole family · Release and deploy · Find and investigate, with **📌 pins** at the top (kept per computer) and tools you have not opened for a month moved under *Less often*.
 - **Fleet map**: every repository of a folder as a tile, grouped by family (aml-, crs-, lns-…), coloured by state, updated live.

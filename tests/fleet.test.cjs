@@ -70,3 +70,7 @@ console.log('PASS: tag suggestions, YAML keys, line diff, new tags and worksets 
 // Tag many: the tag message lists the commits since the previous tag.
 assert.equal(F.releaseNotes('Sprint 42', [{ subject: 'feat: a' }, { subject: 'fix: b' }], '1.2.9'), 'Sprint 42\nChanges since {tag}:\n- feat: a\n- fix: b');
 assert.equal(F.releaseNotes('', [], '1.2.9'), '');
+// Ticket journey steps: pushed, merged, first tag, environments (in, not in, unknown tag).
+assert.deepEqual(JSON.parse(JSON.stringify(F.journeySteps({ pushed: true, merged: ['origin/release/1.5'], firstTag: { name: '1.5.3' }, environments: [{ env: 'uat', tag: '1.5.3', contains: true }, { env: 'prod', tag: '1.5.1', contains: false }, { env: 'sit', tag: 'x', contains: null }] }).map((s) => s.tone))),
+  ['ok', 'ok', 'ok', 'ok', 'bad', 'muted']);
+assert.equal(F.journeySteps({ pushed: false, merged: [], firstTag: null, environments: [] })[0].tone, 'warn');

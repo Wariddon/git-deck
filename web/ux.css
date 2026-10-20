@@ -90,3 +90,6 @@ html.ui-modern body .gd-ticket-chip button { border: 0; background: none; color:
 html.ui-modern body.gd-ticket-mode .repo-tab.gd-off-ticket { opacity: .35; }
 html.ui-modern body .fleet-release-gap { display: block; margin-top: 2px; font-size: 11px; color: var(--tone); }
 html.ui-modern body .gd-card .gd-card-action { padding: 2px 10px; font-size: 12px; }
+html.ui-modern body .fleet-journey { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 6px 0; }
+html.ui-modern body .fleet-journey-step { padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--tone); background: color-mix(in srgb, var(--tone) 12%, transparent); border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent); }
+html.ui-modern body .fleet-journey-step + .fleet-journey-step::before { content: none; }

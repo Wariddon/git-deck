@@ -63,6 +63,33 @@ function Get-GitDeckTicket([string]$Path, [string]$Key) {
     return [ordered]@{ key = $Key; current = $current; branches = $branches.ToArray(); commits = @($list); tags = @($tags | Select-Object -First 12); checkedAt = [DateTime]::UtcNow.ToString('o'); limited = ($branches.Count -ge 30 -or $commits.Count -ge 60 -or $tags.Count -gt 12) }
 }
 
+# Where a ticket's newest commit has got to: pushed, merged into a shared branch (main, master,
+# develop, release...), the first tag that contains it, and for each deployed environment (env:tag
+# from the Releases view) whether that tag contains it. "Is it in UAT yet?" without asking anyone.
+function Get-GitDeckTicketJourney([string]$Path, [string]$Key, [string]$Envs) {
+    Assert-Registered $Path
+    $Key = ([string]$Key).Trim()
+    Assert-GitDeckTicketKey $Key
+    $hash = ([string](Invoke-GitCapture $Path @('log', '--exclude=refs/stash', '--all', '--regexp-ignore-case', '--fixed-strings', "--grep=$Key", '--format=%H', '-1')).Output).Trim()
+    if (-not $hash) { return [ordered]@{ key = $Key; found = $false } }
+    $pushed = (Invoke-GitCapture $Path @('branch', '-r', '--contains', $hash)).Output
+    $shared = @(Get-GitDeckLines (Invoke-GitCapture $Path @('branch', '-r', '--contains', $hash, '--format=%(refname:short)')) |
+        Where-Object { $_ -match '^[^/]+/(main|master|develop|development|dev|release|releases?/.+|release[-_].+|hotfix/.+|staging|uat|sit)$' } | Select-Object -First 6)
+    $tagLines = @(Get-GitDeckLines (Invoke-GitCapture $Path @('tag', '--contains', $hash, '--sort=creatordate', '--format=%(refname:short)%09%(creatordate:iso-strict)')))
+    $firstTag = if ($tagLines.Count) { $f = $tagLines[0] -split "`t"; [ordered]@{ name = $f[0]; date = $(if ($f.Count -gt 1) { $f[1] } else { '' }) } } else { $null }
+    $environments = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($pair in @(([string]$Envs) -split '\|' | Where-Object { $_ -match '^[A-Za-z0-9_-]{1,30}:[A-Za-z0-9._/@+-]{1,120}$' } | Select-Object -First 12)) {
+        $env, $tag = $pair -split ':', 2
+        $ref = ''
+        foreach ($candidate in @("refs/tags/$tag", "refs/tags/v$tag")) { if ((Invoke-GitCapture $Path @('rev-parse', '--verify', '--quiet', "$candidate^{commit}")).Code -eq 0) { $ref = $candidate; break } }
+        $contains = if ($ref) { (Invoke-GitCapture $Path @('merge-base', '--is-ancestor', $hash, $ref)).Code -eq 0 } else { $null }
+        $environments.Add([ordered]@{ env = $env; tag = $tag; contains = $contains })
+    }
+    $subject = ([string](Invoke-GitCapture $Path @('log', '-1', '--format=%h%x09%s', $hash)).Output).Trim() -split "`t", 2
+    return [ordered]@{ key = $Key; found = $true; commit = $subject[0]; subject = $(if ($subject.Count -gt 1) { $subject[1] } else { '' })
+        pushed = [bool]([string]$pushed).Trim(); merged = @($shared); firstTag = $firstTag; environments = $environments.ToArray() }
+}
+
 # A path inside the repository: no drive, no "..", no switches, forward or back slashes.
 function ConvertTo-GitDeckRepoFile([string]$File) {
     $File = ([string]$File).Trim().Replace('\', '/').TrimStart('/')

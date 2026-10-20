@@ -1636,4 +1636,11 @@ GitDeckI18n.register('th',{
   "Ticket key, for example AP2365-3320":"ticket key เช่น AP2365-3320",
   "Every day":"ประจำวัน",
   "Release and deploy":"ปล่อยของ",
+  "✓ Pushed":"✓ push แล้ว",
+  "✗ Not pushed":"✗ ยังไม่ push",
+  "✓ Merged into {branches}":"✓ merge เข้า {branches} แล้ว",
+  "○ Not merged yet":"○ ยังไม่ merge",
+  "✓ First in {tag}":"✓ อยู่ใน {tag} เป็นตัวแรก",
+  "○ Not tagged yet":"○ ยังไม่ติด tag",
+  "Load Releases once to see environments.":"เปิด Releases หนึ่งครั้งเพื่อดูว่าไปถึง env ไหน",
 });

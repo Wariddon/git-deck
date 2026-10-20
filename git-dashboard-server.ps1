@@ -1739,6 +1739,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/pending' { Write-Json $context @{pending=(Get-GitDeckPendingWork $query['path'])} }
         '/api/repo/branch-cleanup' { Write-Json $context @{cleanup=(Get-GitDeckBranchCleanup $query['path'])} }
         '/api/repo/search' { Write-Json $context (Search-GitDeckRepository $query['path'] $query['q'] $query['mode']) }
+        '/api/repo/ticket-journey' { Write-Json $context @{journey=(Get-GitDeckTicketJourney $query['path'] $query['key'] $query['envs'])} }
         '/api/repo/ticket' { Write-Json $context @{ticket=(Get-GitDeckTicket $query['path'] $query['key'])} }
         '/api/repo/file' { Write-Json $context @{file=(Get-GitDeckRepoFile $query['path'] $query['file'] $query['ref'])} }
         '/api/repo/files' { Write-Json $context @{files=@(Find-GitDeckRepoFiles $query['path'] $query['q'])} }

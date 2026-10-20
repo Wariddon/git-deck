@@ -120,6 +120,14 @@
 
   // ---- Ticket -------------------------------------------------------------------------------
   const ticketPattern=/\b[A-Z][A-Z0-9]{1,9}-\d+\b/;
+  // The ticket's journey as steps: pushed, merged into shared branches, first tag, then environments.
+  function journeySteps(j){
+    const steps=[{tone:j.pushed?'ok':'warn',text:j.pushed?t('✓ Pushed'):t('✗ Not pushed')}];
+    steps.push(j.merged?.length?{tone:'ok',text:t('✓ Merged into {branches}',{branches:j.merged.map(name=>name.replace(/^[^/]+\//,'')).join(', ')})}:{tone:'muted',text:t('○ Not merged yet')});
+    steps.push(j.firstTag?{tone:'ok',text:t('✓ First in {tag}',{tag:j.firstTag.name})}:{tone:'muted',text:t('○ Not tagged yet')});
+    for(const env of j.environments||[])steps.push(env.contains===null?{tone:'muted',text:`? ${String(env.env).toUpperCase()} ${env.tag}`}:{tone:env.contains?'ok':'bad',text:`${env.contains?'✓':'✗'} ${String(env.env).toUpperCase()} ${env.tag}`});
+    return steps;
+  }
   function buildTicket(panel){
     const bar=el('div','operations-toolbar');const folder=folderSelect();
     const key=input(t('Ticket key, for example PAY-1234'));key.value=recall('gitdeck.ticketKey','')||(String(state.workspace?.branch||'').match(ticketPattern)?.[0]||'');
@@ -167,9 +175,17 @@
         if(tk.commits.length){const list=el('div','fleet-commits');tk.commits.slice(0,6).forEach(c=>{const line=el('div',`fleet-commit${c.pushed?'':' is-unpushed'}`);line.append(el('code','',c.hash),el('span','',c.subject),el('small','fleet-muted',c.date));if(!c.pushed)line.append(el('em','',t('not pushed')));list.append(line);});
           if(tk.commits.length>6)list.append(el('small','fleet-muted',t('and {count} more',{count:tk.commits.length-6})));card.append(list);}
         if(tk.tags.length){const line=el('div','fleet-chips');tk.tags.forEach(tag=>{const chip=el('span','pending-tag-badge','🏷 '+tag.name);chip.title=tag.contains?t('Contains the newest ticket commit'):t('Named after the ticket');line.append(chip);});card.append(line);}
-        // Environments running a tag that contains the ticket (from the last Releases load).
-        const envs=window.GitDeckIntegrations?.deployedIn(item.repo,tk.tags.filter(tag=>tag.contains).map(tag=>tag.name))||[];
-        if(envs.length){const line=el('div','fleet-chips fleet-deployed');line.append(el('small','fleet-muted',t('Configured in Git')));envs.forEach(env=>line.append(el('span','fleet-state tone-info',env.toUpperCase())));card.append(line);}
+        // Journey: pushed -> merged -> tagged -> each environment (from the last Releases load).
+        const journey=el('div','fleet-journey');card.append(journey);
+        if(tk.commits.length){
+          const deployed=window.GitDeckIntegrations?.deployedTags(item.repo)||[];
+          api('/api/repo/ticket-journey?'+query({path:item.repo.path,key:text,envs:deployed.map(entry=>`${entry.env}:${entry.tag}`).join('|')})).then(answer=>{
+            const j=answer.journey;if(!j?.found)return;
+            for(const step of journeySteps(j))journey.append(el('span',`fleet-journey-step tone-${step.tone}`,step.text));
+            if(!deployed.length)journey.append(el('small','fleet-muted',t('Load Releases once to see environments.')));
+            journey.title=`${j.commit} ${j.subject}`;
+          }).catch(()=>{});
+        }
         const readiness=button(t('Check MR readiness'));const details=el('div','catalog-readiness');
         readiness.onclick=()=>window.GitDeckCatalog?.checkTicket(item.repo,text,details,readiness);
         card.append(readiness,details);
@@ -385,5 +401,5 @@
     const fleetItems=[more.querySelector('[data-work-report]'),...['pending','switch-all','search-all','tag-all','ticket','compare-files','ci'].map(id=>more.querySelector(`[data-multi-repo="${id}"]`))].filter(Boolean);
     more.append(heading,...fleetItems);
   }
-  window.GitDeckFleet.nextTag=nextTag;window.GitDeckFleet.tagGuard=tagGuard;window.GitDeckFleet.releaseNotes=releaseNotes;window.GitDeckFleet.flattenYaml=flattenYaml;window.GitDeckFleet.flattenPom=flattenPom;window.GitDeckFleet.lineDiff=lineDiff;
+  window.GitDeckFleet.nextTag=nextTag;window.GitDeckFleet.tagGuard=tagGuard;window.GitDeckFleet.journeySteps=journeySteps;window.GitDeckFleet.releaseNotes=releaseNotes;window.GitDeckFleet.flattenYaml=flattenYaml;window.GitDeckFleet.flattenPom=flattenPom;window.GitDeckFleet.lineDiff=lineDiff;
 })();
