@@ -209,6 +209,21 @@ function Find-GitDeckBranch([string]$Path, [string]$Name) {
 }
 
 # Tags created after a time (Unix seconds), newest first, for the Today view's "new tags" list.
+# Commit subjects on HEAD after a tag (or the last 30 without one), newest first: a tag message
+# that says what the tag contains.
+function Get-GitDeckCommitsSince([string]$Path, [string]$Ref) {
+    Assert-Registered $Path
+    $Ref = ([string]$Ref).Trim()
+    if ($Ref -and ($Ref.Length -gt 200 -or $Ref.StartsWith('-') -or $Ref -notmatch '^[A-Za-z0-9._/@-]+$')) { throw 'Tag name is not valid.' }
+    $range = if ($Ref) { "refs/tags/$Ref..HEAD" } else { 'HEAD' }
+    $items = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('log', '--no-merges', '--max-count=30', '--format=%h%x09%s', $range))) {
+        $f = $line -split "`t", 2
+        $items.Add([ordered]@{ hash = $f[0]; subject = $(if ($f.Count -gt 1) { $f[1] } else { '' }) })
+    }
+    return $items.ToArray()
+}
+
 function Get-GitDeckRecentTags([string]$Path, [string]$Since) {
     Assert-Registered $Path
     $after = [int64]0

@@ -1587,4 +1587,7 @@ GitDeckI18n.register('th',{
   "Keys: j/k or ↑/↓ move · Enter open · c commit · p push · u pull":"คีย์ลัด: j/k หรือ ↑/↓ เลื่อน · Enter เปิด · c commit · p push · u pull",
   "Connect agents to Git Deck (MCP)":"เชื่อม agent เข้ากับ Git Deck (MCP)",
   "Agents can then ask Git Deck for pending work, a file across a family, config sources, tickets and push risk. Read-only: they cannot commit or push through it. Claude Code started from this page is already connected.":"agent จะถาม Git Deck ได้ทั้งงานค้าง, ไฟล์เดียวกันทั้งตระกูล, แหล่ง config, ticket และ push risk แบบอ่านอย่างเดียว commit หรือ push ผ่านช่องนี้ไม่ได้ ส่วน Claude Code ที่เปิดจากหน้านี้เชื่อมให้อยู่แล้ว",
+  "Message lists the commits since the last tag":"ข้อความ tag แสดง commit ตั้งแต่ tag ล่าสุด",
+  "Changes since {tag}:":"สิ่งที่เปลี่ยนตั้งแต่ {tag}:",
+  "Changes:":"สิ่งที่เปลี่ยน:",
 });

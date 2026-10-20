@@ -67,3 +67,6 @@ console.log('PASS: tag suggestions, YAML keys, line diff, new tags and worksets 
   assert.match(web('fleet.js'), /el\('p','sync-more-group fleet-more-group',t\('All repositories'\)\)/);
   console.log('PASS: More menu icons, grouping and closing');
 }
+// Tag many: the tag message lists the commits since the previous tag.
+assert.equal(F.releaseNotes('Sprint 42', [{ subject: 'feat: a' }, { subject: 'fix: b' }], '1.2.9'), 'Sprint 42\nChanges since {tag}:\n- feat: a\n- fix: b');
+assert.equal(F.releaseNotes('', [], '1.2.9'), '');

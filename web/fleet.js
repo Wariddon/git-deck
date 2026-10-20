@@ -41,6 +41,12 @@
     const word=String(branch).split('/').pop().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'test';
     return word+'-01';
   }
+  // A tag message: your text, then one line per commit since the previous tag.
+  function releaseNotes(typed,commits,previous){
+    const lines=(commits||[]).map(commit=>`- ${commit.subject}`);
+    if(!lines.length)return typed;
+    return [typed,(previous?t('Changes since {tag}:',{tag:previous}):t('Changes:')),...lines].filter(Boolean).join('\n');
+  }
   function buildTagMany(panel){
     const bar=el('div','operations-toolbar');const folder=folderSelect();
     const branch=input(t('Only repositories on this branch (empty: all)'));branch.value=recall('gitdeck.tagManyBranch','');
@@ -49,9 +55,11 @@
     const options=el('div','fleet-options');
     const message=input(t('Tag message (optional)'));
     const pushBox=el('label','settings-check');const push=el('input');push.type='checkbox';push.checked=recall('gitdeck.tagManyPush','1')==='1';pushBox.append(push,el('span','',t('Push each tag to origin')));
+    const notesBox=el('label','settings-check');const notes=el('input');notes.type='checkbox';notes.checked=recall('gitdeck.tagManyNotes','1')==='1';notesBox.append(notes,el('span','',t('Message lists the commits since the last tag')));
+    notes.onchange=()=>remember('gitdeck.tagManyNotes',notes.checked?'1':'0');
     const same=input(t('Same name for all ticked rows'));const applySame=button(t('Use for all'));
     const create=button(t('Create tags'),'primary');create.disabled=true;
-    options.append(message,pushBox,same,applySame,create);options.hidden=true;
+    options.append(message,notesBox,pushBox,same,applySame,create);options.hidden=true;
     const status=el('small','multi-repo-status');const bar2=meter();const out=el('div','multi-repo-body');
     panel.append(bar,explain,options,status,bar2.box,out);
     let rows=[];
@@ -90,11 +98,17 @@
       const todo=rows.filter(item=>item.box.checked&&item.name.value.trim());if(!todo.length)return;
       const summary=todo.map(item=>`${item.repo.name}: ${item.name.value.trim()}`+(tagGuard(item.name.value,item.pending.branch)?'  ⚠ '+t('version number on {branch}',{branch:item.pending.branch}):'')).join('\n');
       if(!confirm(t('Create {count} tags{push}?',{count:todo.length,push:push.checked?t(' and push them to origin'):''})+'\n\n'+summary))return;
+      // Release notes in the tag: the commit subjects since the repository's latest tag.
+      const tagMessage=async(item)=>{
+        const typed=message.value.trim();if(!notes.checked)return typed;
+        let commits=[];try{commits=(await api('/api/repo/commits-since?'+query({path:item.repo.path,tag:item.pending.latestTag||''}))).commits||[];}catch{}
+        return releaseNotes(typed,commits,item.pending.latestTag);
+      };
       create.disabled=load.disabled=true;let ok=0,failed=0;
       await mapLimit(todo,2,async item=>{
         item.result.className='multi-repo-result';item.result.textContent=t('Working…');
         try{
-          const answer=await runQuiet('tag-create',item.repo,{tag:item.name.value.trim(),message:message.value.trim(),push:push.checked,remote:'origin'});
+          const answer=await runQuiet('tag-create',item.repo,{tag:item.name.value.trim(),message:await tagMessage(item),push:push.checked,remote:'origin'});
           item.result.textContent=answer?.message||t('Done');item.result.classList.add('tone-ok');item.box.checked=false;ok++;F.markTagSeen?.(item.repo.path,item.name.value.trim());
         }catch(error){item.result.textContent=error.message;item.result.classList.add('tone-bad');failed++;}
       });
@@ -369,5 +383,5 @@
     const fleetItems=[more.querySelector('[data-work-report]'),...['pending','switch-all','search-all','tag-all','ticket','compare-files','ci'].map(id=>more.querySelector(`[data-multi-repo="${id}"]`))].filter(Boolean);
     more.append(heading,...fleetItems);
   }
-  window.GitDeckFleet.nextTag=nextTag;window.GitDeckFleet.tagGuard=tagGuard;window.GitDeckFleet.flattenYaml=flattenYaml;window.GitDeckFleet.flattenPom=flattenPom;window.GitDeckFleet.lineDiff=lineDiff;
+  window.GitDeckFleet.nextTag=nextTag;window.GitDeckFleet.tagGuard=tagGuard;window.GitDeckFleet.releaseNotes=releaseNotes;window.GitDeckFleet.flattenYaml=flattenYaml;window.GitDeckFleet.flattenPom=flattenPom;window.GitDeckFleet.lineDiff=lineDiff;
 })();
