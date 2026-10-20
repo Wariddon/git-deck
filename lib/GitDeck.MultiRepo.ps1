@@ -27,11 +27,23 @@ function Get-GitDeckOperationType([string]$GitDir) {
     return ''
 }
 
+# The repository's own Git directory without starting Git: ".git" is a folder, or a file pointing
+# at the worktree's directory ("gitdir: ..."), which may be relative.
+function Get-GitDeckGitDir([string]$Path) {
+    $marker = Join-Path $Path '.git'
+    if (Test-Path -LiteralPath $marker -PathType Container) { return $marker }
+    try {
+        $text = ([IO.File]::ReadAllText($marker) -replace '^gitdir:\s*', '').Trim()
+        if (-not [IO.Path]::IsPathRooted($text)) { $text = Join-Path $Path $text }
+        return [IO.Path]::GetFullPath($text)
+    } catch { return '' }
+}
+
 # Everything still open in one repository: uncommitted files, unpushed commits, stashes,
 # merged branches nobody deleted, and an unfinished merge/rebase.
 function Get-GitDeckPendingWork([string]$Path) {
     Assert-Registered $Path
-    # About seven Git commands for a tidy repository: Dashboard checks run this for every repository,
+    # Two Git commands for a tidy repository (three with tags): Dashboard checks run this for every repository,
     # and on Windows each Git start costs ~50 ms, so lookups are combined where Git allows it.
     $status = @(Get-GitDeckLines (Invoke-GitCapture $Path @('status', '--porcelain=v1', '--branch')))
     $head = if ($status.Count -and $status[0].StartsWith('## ')) { $status[0].Substring(3) } else { '' }
@@ -46,9 +58,27 @@ function Get-GitDeckPendingWork([string]$Path) {
     if ($head -match 'behind (\d+)') { $behind = [int]$Matches[1] }
     # The remote branch was deleted (usually: its merge request was merged).
     $upstreamGone = $head -match '\[gone\]$'
+    # One for-each-ref for local branches (upstream, tip, and the last commit of the current one),
+    # tags (newest first, sorted here), the mainline candidates and the stash.
+    $format = '--format=%(refname)%09%(upstream:short)%09%(upstream:track)%09%(objectname)%09%(symref:short)%09%(creatordate:iso-strict)%09%(if)%(HEAD)%(then)%(committerdate:iso-strict)%09%(subject)%(end)'
+    $heads = New-Object 'System.Collections.Generic.List[object]'
+    $tags = New-Object 'System.Collections.Generic.List[object]'
+    $refs = @{}; $last = @()
+    foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', $format, 'refs/heads', 'refs/tags', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main', 'refs/remotes/origin/master', 'refs/stash'))) {
+        $f = $line -split "`t", 8
+        if ($f[0].StartsWith('refs/tags/')) {
+            $when = [DateTimeOffset]::MinValue; [void][DateTimeOffset]::TryParse($(if ($f.Count -gt 5) { $f[5] } else { '' }), [ref]$when)
+            $tags.Add([pscustomobject]@{ name = $f[0].Substring(10); date = $(if ($f.Count -gt 5) { $f[5] } else { '' }); when = $when })
+            continue
+        }
+        $refs[$f[0]] = $(if ($f.Count -gt 4) { $f[4] } else { '' })
+        if ($f[0].StartsWith('refs/heads/')) {
+            $heads.Add([object[]]@($f[0].Substring(11), $f[1], $f[2], $f[3]))
+            if ($f.Count -gt 6 -and $f[6]) { $last = @($f[6], $(if ($f.Count -gt 7) { $f[7] } else { '' })) }
+        }
+    }
     # Other local branches with commits that are on no remote.
     $unpushed = New-Object 'System.Collections.Generic.List[object]'
-    $heads = @(Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--format=%(refname:short)%09%(upstream:short)%09%(upstream:track)%09%(objectname)', 'refs/heads')) | ForEach-Object { , ($_ -split "`t") })
     $loose = New-Object 'System.Collections.Generic.List[string]'
     $tips = @{}; $upstreams = @{}
     foreach ($f in $heads) {
@@ -63,7 +93,8 @@ function Get-GitDeckPendingWork([string]$Path) {
     # is unpushed for a branch when it can be reached from the branch tip through unpushed commits.
     if ($loose.Count) {
         $parents = @{}
-        foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path (@('rev-list', '--parents') + $loose.ToArray() + @('--not', '--remotes')))) { $ids = $line.Split(' '); $parents[$ids[0]] = $ids }
+        # Full ref names: a branch called like a tag (v1.0.4-test) must not resolve to the tag.
+        foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path (@('rev-list', '--parents') + @($loose | ForEach-Object { "refs/heads/$_" }) + @('--not', '--remotes')))) { $ids = $line.Split(' '); $parents[$ids[0]] = $ids }
         if ($parents.Count) {
             foreach ($name in $loose) {
                 $seen = New-Object 'System.Collections.Generic.HashSet[string]'
@@ -77,11 +108,7 @@ function Get-GitDeckPendingWork([string]$Path) {
             }
         }
     }
-    # Mainline (as Get-GitDeckMainline decides it) and whether a stash exists, in one lookup.
-    $refs = @{}
-    foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--format=%(refname)%09%(symref:short)', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main', 'refs/remotes/origin/master', 'refs/heads/main', 'refs/heads/master', 'refs/stash'))) {
-        $f = $line -split "`t", 2; $refs[$f[0]] = $(if ($f.Count -gt 1) { $f[1] } else { '' })
-    }
+    # Mainline (as Get-GitDeckMainline decides it) and whether a stash exists.
     $mainline = if ($refs['refs/remotes/origin/HEAD']) { $refs['refs/remotes/origin/HEAD'] } else { '' }
     if (-not $mainline) { foreach ($pair in @(@('refs/remotes/origin/main', 'origin/main'), @('refs/remotes/origin/master', 'origin/master'), @('refs/heads/main', 'main'), @('refs/heads/master', 'master'))) { if ($refs.ContainsKey($pair[0])) { $mainline = $pair[1]; break } } }
     $stashes = @()
@@ -94,10 +121,16 @@ function Get-GitDeckPendingWork([string]$Path) {
         $merged = @(Get-GitDeckLines (Invoke-GitCapture $Path @('branch', '--format=%(refname:short)', '--merged', $mainline)) |
             Where-Object { $_ -ne $branch -and $script:ProtectedBranches -notcontains $_ -and "origin/$_" -ne $mainline })
     }
-    $operation = Get-GitDeckOperationType ([string](Invoke-GitCapture $Path @('rev-parse', '--absolute-git-dir')).Output).Trim()
-    $tag = Get-GitDeckLatestTag $Path
-    # When the current branch last changed, and with what.
-    $last = ([string](Invoke-GitCapture $Path @('log', '-1', '--format=%cI%x09%s')).Output).Trim() -split "`t", 2
+    $operation = Get-GitDeckOperationType (Get-GitDeckGitDir $Path)
+    # Newest tag (by tag or commit date) and the commits the current branch has after it.
+    $tag = @{ name = ''; date = ''; since = 0; count = $tags.Count }
+    if ($tags.Count) {
+        $newest = @($tags | Sort-Object -Property @{ Expression = 'when'; Descending = $true }, @{ Expression = 'name'; Descending = $false })[0]
+        $tag.name = $newest.name; $tag.date = $newest.date
+        $since = 0; [void][int]::TryParse(([string](Invoke-GitCapture $Path @('rev-list', '--count', "refs/tags/$($newest.name)..HEAD")).Output).Trim(), [ref]$since); $tag.since = $since
+    }
+    # When the current branch last changed, and with what (a detached HEAD asks Git once more).
+    if (-not $last.Count) { $last = ([string](Invoke-GitCapture $Path @('log', '-1', '--format=%cI%x09%s')).Output).Trim() -split "`t", 2 }
     return [ordered]@{
         branch = $branch; upstream = $upstream; upstreamGone = $upstreamGone; ahead = $ahead; behind = $behind
         changed = $files.Count - $untracked; untracked = $untracked; conflicts = $conflicts

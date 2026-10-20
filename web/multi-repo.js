@@ -577,7 +577,7 @@
       const progress=(done)=>t('Checking {done} of {total}…',{done,total:repos.length})+(since?' · '+t('showing the last check from {time} until then',{time:since}):'');
       expanded.clear();seenRows.clear();let done=0;checking=repos.length>0;setMeter(0,repos.length);drawChips();draw();
       status.textContent=progress(0);
-      await mapLimit(repos,6,async repo=>{if(id!==runId)return;const item=await check(repo);if(id!==runId)return;const at=results.findIndex(entry=>entry.repo.path===item.repo.path);if(at>=0)results[at]=item;else results.push(item);status.textContent=progress(++done);setMeter(done,repos.length);schedule();});
+      await mapLimit(repos,8,async repo=>{if(id!==runId)return;const item=await check(repo);if(id!==runId)return;const at=results.findIndex(entry=>entry.repo.path===item.repo.path);if(at>=0)results[at]=item;else results.push(item);status.textContent=progress(++done);setMeter(done,repos.length);schedule();});
       if(id!==runId)return;checking=false;setMeter(0,0);checkedAt=new Date();saveSnapshot(results);
       let added=false;for(const item of results){const tag=item.pending?.latestTag;if(tag&&!seenTags[item.repo.path]){seenTags[item.repo.path]=tag;added=true;}}if(added)saveSeenTags(seenTags);
       summary();drawChips();draw();

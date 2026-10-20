@@ -1803,7 +1803,7 @@ catch {
 # GET requests only read Git state and run in parallel; POST actions stay serial.
 $pool = $null
 if (-not $Serial) {
-    try { $pool = New-GitDeckRequestPool 6 }
+    try { $pool = New-GitDeckRequestPool ([Math]::Max(4, [Math]::Min(10, [Environment]::ProcessorCount))) }
     catch { Write-Host "[WARN] Parallel requests disabled: $($_.Exception.Message)" -ForegroundColor Yellow; $pool = $null }
 }
 
