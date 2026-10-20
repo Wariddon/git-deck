@@ -433,3 +433,5 @@ html.ui-modern body .pending-chip.tone-muted { --tone: #64748b; }
 html.ui-modern body .pending-table tr.pending-family td { padding-top: 14px; border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent); }
 html.ui-modern body .pending-table tr.pending-family strong { font-size: 13px; letter-spacing: .02em; margin-right: 10px; }
 html.ui-modern body .pending-table tr.pending-family small { opacity: .7; }
+html.ui-modern body .pending-table tr.pending-row:focus { outline: 2px solid color-mix(in srgb, #2563eb 70%, transparent); outline-offset: -2px; }
+html.ui-modern body .pending-keys { margin: 6px 2px 0; font-size: 12px; opacity: .65; }

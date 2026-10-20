@@ -1583,4 +1583,6 @@ GitDeckI18n.register('th',{
   "✏️ uncommitted · ⬆️ to push · ⬇️ to pull · 📦 stashes · 🌿 branches only here · 🧹 merged branches; click one for the list":"✏️ ยังไม่ commit · ⬆️ ต้อง push · ⬇️ ต้อง pull · 📦 stash · 🌿 branch ที่มีแค่ในเครื่อง · 🧹 branch ที่ merge แล้ว กดเพื่อดูรายการ",
   "{count} repositories · {busy} with pending work":"{count} repository · มีงานค้าง {busy}",
   "Others":"อื่นๆ",
+  "Tagged by {who}":"ติด tag โดย {who}",
+  "Keys: j/k or ↑/↓ move · Enter open · c commit · p push · u pull":"คีย์ลัด: j/k หรือ ↑/↓ เลื่อน · Enter เปิด · c commit · p push · u pull",
 });

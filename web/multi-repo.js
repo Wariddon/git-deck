@@ -180,7 +180,10 @@
   const readSeenTags=()=>{try{return JSON.parse(localStorage.getItem(seenTagsKey)||'{}')||{};}catch{return {};}};
   const saveSeenTags=(seen)=>{try{localStorage.setItem(seenTagsKey,JSON.stringify(seen));}catch{}};
   let seenTags=readSeenTags();
-  const isNewTag=(item)=>{const tag=item.pending?.latestTag;const seen=seenTags[item.repo.path];return Boolean(tag&&seen&&seen!==tag);};
+  // Your own Git e-mail: a tag you made yourself (here, in GitLab or a terminal) is not news.
+  let myEmail='';try{Promise.resolve(api('/api/activity/me')).then(answer=>{myEmail=String(answer?.identity?.email||'').toLowerCase();}).catch(()=>{});}catch{}
+  const isMine=(item)=>Boolean(myEmail&&String(item.pending?.latestTagBy||'').toLowerCase()===myEmail);
+  const isNewTag=(item)=>{const tag=item.pending?.latestTag;const seen=seenTags[item.repo.path];return Boolean(tag&&seen&&seen!==tag&&!isMine(item));};
   // Whether a checked repository belongs under a filter chip.
   function pendingMatches(item,filter){
     const c=item.counts||pendingCounts(item.pending);
@@ -268,7 +271,7 @@
     let view=recall('gitdeck.pendingView','tasks')==='table'?'table':'tasks';
     tagFilter.value=[...tagFilter.options].some(option=>option.value===recall('gitdeck.pendingTag',''))?recall('gitdeck.pendingTag',''):'any';
     // Tag name, with its date and the commits since it in the tooltip.
-    const tagBadge=(item)=>{const p=item.pending;const badge=el('span','pending-tag-badge','🏷 '+p.latestTag);if(isNewTag(item)){badge.classList.add('pending-tag-new');badge.append(el('b','pending-tag-new-mark',t('new')));}badge.title=[t('Latest tag: {tag}',{tag:p.latestTag}),p.latestTagDate?String(p.latestTagDate).slice(0,10)+' ('+ageOf(p.latestTagDate)+')':'',Number(p.commitsSinceTag)>0?t('{count} commit(s) on {branch} after this tag',{count:p.commitsSinceTag,branch:p.branch||'HEAD'}):t('Nothing new since this tag'),t('{count} tag(s) in total',{count:p.tagCount||1})].filter(Boolean).join('\n');return badge;};
+    const tagBadge=(item)=>{const p=item.pending;const badge=el('span','pending-tag-badge','🏷 '+p.latestTag);if(isNewTag(item)){badge.classList.add('pending-tag-new');badge.append(el('b','pending-tag-new-mark',t('new')));}badge.title=[t('Latest tag: {tag}',{tag:p.latestTag}),p.latestTagBy?t('Tagged by {who}',{who:p.latestTagBy}):'',p.latestTagDate?String(p.latestTagDate).slice(0,10)+' ('+ageOf(p.latestTagDate)+')':'',Number(p.commitsSinceTag)>0?t('{count} commit(s) on {branch} after this tag',{count:p.commitsSinceTag,branch:p.branch||'HEAD'}):t('Nothing new since this tag'),t('{count} tag(s) in total',{count:p.tagCount||1})].filter(Boolean).join('\n');return badge;};
     // Columns can be widened to read long names in full: drag the edge of a column name.
     // Widths are remembered; double-click the edge to go back to the automatic width.
     const colKey='gitdeck.pendingColumns';
@@ -512,6 +515,22 @@
       if(!shownAny&&checkedAt){const empty=el('div','multi-repo-empty');empty.append(el('strong','',t('🎉 Everything is tidy')),el('p','',t('Every repository in this folder is committed, pushed and up to date.')));out.append(empty);}
       else if(tidy)out.append(el('p','pending-tidy',t('✓ {count} repositories need nothing',{count:tidy})));
     };
+    // Keyboard in the table: move with j/k, act on the focused row without the mouse.
+    let focusedPath='',keyboardActive=false;
+    out.addEventListener('focusin',(event)=>{const row=event.target.closest?.('tr.pending-row');if(row)focusedPath=row.dataset.path;});
+    out.addEventListener('keydown',(event)=>{
+      const row=event.target.closest?.('tr.pending-row');if(!row||event.ctrlKey||event.metaKey||event.altKey)return;
+      const rows=[...out.querySelectorAll('tr.pending-row')];const at=rows.indexOf(row);
+      const item=results.find(entry=>entry.repo.path===row.dataset.path);const key=event.key;
+      const move=(step)=>{const next=rows[Math.max(0,Math.min(rows.length-1,at+step))];if(next){keyboardActive=true;next.focus();next.scrollIntoView({block:'nearest'});}};
+      if(key==='j'||key==='ArrowDown'){event.preventDefault();move(1);return;}
+      if(key==='k'||key==='ArrowUp'){event.preventDefault();move(-1);return;}
+      if(!item)return;
+      if(key==='Enter'||key==='o'){event.preventDefault();document.getElementById('operations-close')?.click();openWorkspace(item.repo,'history',null);return;}
+      if(key==='c'){event.preventDefault();act(item,'commit',el('button'));return;}
+      if(key==='p'&&item.counts?.push){event.preventDefault();keyboardActive=true;act(item,'push',el('button'));return;}
+      if(key==='u'&&item.counts?.pull){event.preventDefault();keyboardActive=true;act(item,'pull',el('button'));}
+    });
     const draw=()=>{
       if(checking&&!results.length){out.replaceChildren(skeleton(view==='tasks'?5:7));return;}
       if(view==='tasks')return drawTasks();
@@ -548,7 +567,7 @@
         const lastCell=el('td','pending-last-cell');
         if(p?.lastCommitDate){lastCell.append(el('span','',dayOf(p.lastCommitDate)),el('small','',ageOf(p.lastCommitDate)));if(p.lastCommitSubject)lastCell.append(el('small','pending-last-subject',p.lastCommitSubject));lastCell.title=p.lastCommitSubject||'';}
         else lastCell.append(el('span','pending-zero','·'));
-        const tr=el('tr');if(!seenRows.has(key)){seenRows.add(key);tr.classList.add('gd-enter');}tr.append(name,branch,tagCell,lastCell,todo,
+        const tr=el('tr','pending-row');tr.tabIndex=0;tr.dataset.path=key;if(!seenRows.has(key)){seenRows.add(key);tr.classList.add('gd-enter');}tr.append(name,branch,tagCell,lastCell,todo,
           stateCell([
             {icon:'✏️',value:c.changes,tone:'warn',title:t('{count} uncommitted file(s)',{count:c.changes})},
             {icon:'⬆️',value:c.push,tone:'warn',title:t('{count} to push',{count:c.push})},
@@ -565,6 +584,8 @@
         for(const kind of ['localOnly','merged','stashes'])if(expanded.has(key+'|'+kind))grid.append(detailRow(item,kind));
       }
       out.append(grid);sizeColumns(grid);
+      out.append(el('p','pending-keys',t('Keys: j/k or ↑/↓ move · Enter open · c commit · p push · u pull')));
+      if(focusedPath){const again=[...grid.querySelectorAll('tr.pending-row')].find(row=>row.dataset.path===focusedPath);if(again&&out.contains(document.activeElement)===false&&keyboardActive)again.focus({preventScroll:true});}
       if(rows.length>300)out.append(el('p','multi-repo-note',t('Showing the first 300. Narrow the folder or filter.')));
     };
     const summary=()=>{

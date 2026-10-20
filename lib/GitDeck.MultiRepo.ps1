@@ -60,21 +60,21 @@ function Get-GitDeckPendingWork([string]$Path) {
     $upstreamGone = $head -match '\[gone\]$'
     # One for-each-ref for local branches (upstream, tip, and the last commit of the current one),
     # tags (newest first, sorted here), the mainline candidates and the stash.
-    $format = '--format=%(refname)%09%(upstream:short)%09%(upstream:track)%09%(objectname)%09%(symref:short)%09%(creatordate:iso-strict)%09%(if)%(HEAD)%(then)%(committerdate:iso-strict)%09%(subject)%(end)'
+    $format = '--format=%(refname)%09%(upstream:short)%09%(upstream:track)%09%(objectname)%09%(symref:short)%09%(creatordate:iso-strict)%09%(if)%(taggeremail)%(then)%(taggeremail)%(else)%(authoremail)%(end)%09%(if)%(HEAD)%(then)%(committerdate:iso-strict)%09%(subject)%(end)'
     $heads = New-Object 'System.Collections.Generic.List[object]'
     $tags = New-Object 'System.Collections.Generic.List[object]'
     $refs = @{}; $last = @()
     foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', $format, 'refs/heads', 'refs/tags', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main', 'refs/remotes/origin/master', 'refs/stash'))) {
-        $f = $line -split "`t", 8
+        $f = $line -split "`t", 9
         if ($f[0].StartsWith('refs/tags/')) {
             $when = [DateTimeOffset]::MinValue; [void][DateTimeOffset]::TryParse($(if ($f.Count -gt 5) { $f[5] } else { '' }), [ref]$when)
-            $tags.Add([pscustomobject]@{ name = $f[0].Substring(10); date = $(if ($f.Count -gt 5) { $f[5] } else { '' }); when = $when })
+            $tags.Add([pscustomobject]@{ name = $f[0].Substring(10); date = $(if ($f.Count -gt 5) { $f[5] } else { '' }); when = $when; by = $(if ($f.Count -gt 6) { $f[6].Trim('<', '>') } else { '' }) })
             continue
         }
         $refs[$f[0]] = $(if ($f.Count -gt 4) { $f[4] } else { '' })
         if ($f[0].StartsWith('refs/heads/')) {
             $heads.Add([object[]]@($f[0].Substring(11), $f[1], $f[2], $f[3]))
-            if ($f.Count -gt 6 -and $f[6]) { $last = @($f[6], $(if ($f.Count -gt 7) { $f[7] } else { '' })) }
+            if ($f.Count -gt 7 -and $f[7]) { $last = @($f[7], $(if ($f.Count -gt 8) { $f[8] } else { '' })) }
         }
     }
     # Other local branches with commits that are on no remote.
@@ -123,10 +123,10 @@ function Get-GitDeckPendingWork([string]$Path) {
     }
     $operation = Get-GitDeckOperationType (Get-GitDeckGitDir $Path)
     # Newest tag (by tag or commit date) and the commits the current branch has after it.
-    $tag = @{ name = ''; date = ''; since = 0; count = $tags.Count }
+    $tag = @{ name = ''; date = ''; by = ''; since = 0; count = $tags.Count }
     if ($tags.Count) {
         $newest = @($tags | Sort-Object -Property @{ Expression = 'when'; Descending = $true }, @{ Expression = 'name'; Descending = $false })[0]
-        $tag.name = $newest.name; $tag.date = $newest.date
+        $tag.name = $newest.name; $tag.date = $newest.date; $tag.by = $newest.by
         $since = 0; [void][int]::TryParse(([string](Invoke-GitCapture $Path @('rev-list', '--count', "refs/tags/$($newest.name)..HEAD")).Output).Trim(), [ref]$since); $tag.since = $since
     }
     # When the current branch last changed, and with what (a detached HEAD asks Git once more).
@@ -136,7 +136,7 @@ function Get-GitDeckPendingWork([string]$Path) {
         changed = $files.Count - $untracked; untracked = $untracked; conflicts = $conflicts
         operation = $operation
         unpushedBranches = $unpushed.ToArray(); stashes = @($stashes); mergedBranches = $merged; mainline = $mainline
-        latestTag = $tag.name; latestTagDate = $tag.date; commitsSinceTag = $tag.since; tagCount = $tag.count
+        latestTag = $tag.name; latestTagDate = $tag.date; latestTagBy = $tag.by; commitsSinceTag = $tag.since; tagCount = $tag.count
         lastCommitDate = $(if ($last[0] -match '^\d{4}-') { $last[0] } else { '' }); lastCommitSubject = $(if ($last.Count -gt 1) { $last[1] } else { '' })
     }
 }

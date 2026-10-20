@@ -148,3 +148,6 @@ console.log('PASS: multi-repository pending labels, switch plans, cleanup, ticke
 assert.match(web('live-refresh.js'), /addEventListener\('repo-changed'[\s\S]*gitdeck:repo-changed/);
 assert.match(web('multi-repo.js'), /addEventListener\('gitdeck:repo-changed'/);
 assert.ok(fs.readFileSync(path.join(__dirname, '../lib/GitDeck.Runtime.ps1'), 'utf8').includes("event: repo-changed"));
+// Your own tags are not "new"; the table moves with j/k and acts with c/p/u.
+assert.match(web('multi-repo.js'), /const isNewTag=\(item\)=>\{[^}]*!isMine\(item\)/);
+assert.match(web('multi-repo.js'), /if\(key==='j'\|\|key==='ArrowDown'\)/);
