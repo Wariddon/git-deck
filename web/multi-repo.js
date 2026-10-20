@@ -578,6 +578,13 @@
       status.textContent=parts.join(' · ')+(time?' · '+t('at {time}',{time}):'');
     };
     let timer=0;const schedule=()=>{if(timer)return;timer=setTimeout(()=>{timer=0;drawChips();draw();},250);};
+    // Live: a commit, push, fetch or switch made anywhere (IntelliJ, terminal) re-checks that row only.
+    window.addEventListener('gitdeck:repo-changed',async(event)=>{
+      const path=String(event.detail?.path||'').toLowerCase();if(!path||!panel.isConnected)return;
+      const at=results.findIndex(entry=>entry.repo.path.toLowerCase()===path);if(at<0)return;
+      const fresh=await check(results[at].repo);const now=results.findIndex(entry=>entry.repo.path.toLowerCase()===path);if(now<0)return;
+      results[now]={...fresh,live:true};seenRows.delete(fresh.repo.path);lastPending=results;saveSnapshot(results);schedule();
+    });
     const start=async()=>{
       const id=++runId;const selectedFolder=folder.value;
       checking=true;setMeter(0,0);

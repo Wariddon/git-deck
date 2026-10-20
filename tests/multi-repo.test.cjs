@@ -144,3 +144,7 @@ console.log('PASS: multi-repository pending labels, switch plans, cleanup, ticke
   require('node:assert/strict').match(source, /t\('Checked \{total\} repositories',\{total:results\.length\}\)/);
   console.log('PASS: search shows repositories with nothing pending; summary says all were checked');
 }
+// Live: ref changes anywhere re-check one row; the server watches every repository's Git folder.
+assert.match(web('live-refresh.js'), /addEventListener\('repo-changed'[\s\S]*gitdeck:repo-changed/);
+assert.match(web('multi-repo.js'), /addEventListener\('gitdeck:repo-changed'/);
+assert.ok(fs.readFileSync(path.join(__dirname, '../lib/GitDeck.Runtime.ps1'), 'utf8').includes("event: repo-changed"));

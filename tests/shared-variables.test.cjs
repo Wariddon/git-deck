@@ -8,7 +8,7 @@ const root = path.join(__dirname, '..');
 // (custom actions once failed to load this way).
 const server = fs.readFileSync(path.join(root, 'git-dashboard-server.ps1'), 'utf8');
 const shared = new Set([...server.match(/\$script:SharedVariableNames = @\(([^)]*)\)/)[1].matchAll(/'(\w+)'/g)].map((m) => m[1]));
-const runtimeOnly = new Set(['EventClients', 'EverHadClient', 'LastActivityAt', 'PendingChanges', 'PendingRequests', 'PooledHandler', 'RepoWatchers']);
+const runtimeOnly = new Set(['EventClients', 'EverHadClient', 'LastActivityAt', 'PendingChanges', 'PendingRequests', 'PooledHandler', 'RepoWatchers', 'FleetWatchers', 'FleetPending', 'FleetCheckedAt']);
 for (const file of fs.readdirSync(path.join(root, 'lib')).filter((name) => name.endsWith('.ps1'))) {
   const source = fs.readFileSync(path.join(root, 'lib', file), 'utf8');
   for (const [, name] of source.matchAll(/^\$script:(\w+)\s*=/gm)) {

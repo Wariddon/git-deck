@@ -95,6 +95,11 @@ $script:RepoWatchers = @{}
 $script:PendingChanges = @{}
 $script:LastActivityAt = [DateTime]::UtcNow
 $script:EverHadClient = $false
+# Fleet watchers: the Git folder of every registered repository, refs only (commit, push, fetch,
+# switch made anywhere), so Pending work can update a row without a full check.
+$script:FleetWatchers = @{}
+$script:FleetPending = @{}
+$script:FleetCheckedAt = [DateTime]::MinValue
 
 function Test-GitDeckRelevantChange([string]$Root, [string]$FullPath) {
     if (-not $FullPath) { return '' }
@@ -107,6 +112,48 @@ function Test-GitDeckRelevantChange([string]$Root, [string]$FullPath) {
     }
     if ($relative -match '(^|/)(node_modules|\.gradle|\.vs)(/|$)') { return '' }
     return 'files'
+}
+
+# A ref change inside a Git folder: HEAD, refs, packed-refs or an operation marker (not the index,
+# which "git status" itself refreshes, nor FETCH_HEAD, which every fetch rewrites).
+function Test-GitDeckRefChange([string]$GitDir, [string]$FullPath) {
+    if (-not $FullPath -or $FullPath.Length -le $GitDir.Length) { return $false }
+    $relative = $FullPath.Substring($GitDir.Length).TrimStart('\','/') -replace '\\','/'
+    if ($relative -match '\.lock$') { return $false }
+    return $relative -match '^(HEAD|ORIG_HEAD|MERGE_HEAD|CHERRY_PICK_HEAD|REVERT_HEAD|packed-refs|refs/.+|rebase-merge|rebase-apply)$'
+}
+
+function Update-GitDeckFleetWatchers {
+    $wanted = @{}
+    foreach ($path in @(Get-Repositories)) {
+        $gitDir = Get-GitDeckGitDir $path
+        if ($gitDir -and (Test-Path -LiteralPath $gitDir -PathType Container)) { $wanted[$path.ToLowerInvariant()] = @($path, $gitDir) }
+    }
+    foreach ($key in @($script:FleetWatchers.Keys)) {
+        if ($wanted.ContainsKey($key)) { continue }
+        $entry = $script:FleetWatchers[$key]
+        foreach ($id in $entry.Ids) { Unregister-Event -SourceIdentifier $id -ErrorAction SilentlyContinue }
+        $entry.Watcher.Dispose(); $script:FleetWatchers.Remove($key)
+    }
+    foreach ($key in $wanted.Keys) {
+        if ($script:FleetWatchers.ContainsKey($key)) { continue }
+        try {
+            $watcher = New-Object IO.FileSystemWatcher
+            $watcher.Path = $wanted[$key][1]
+            $watcher.IncludeSubdirectories = $true
+            $watcher.InternalBufferSize = 16384
+            $watcher.NotifyFilter = [IO.NotifyFilters]'FileName, LastWrite'
+            $ids = @()
+            foreach ($eventName in @('Changed','Created','Deleted','Renamed')) {
+                $id = 'GitDeckGit:' + [Guid]::NewGuid().ToString('N')
+                [void](Register-ObjectEvent -InputObject $watcher -EventName $eventName -SourceIdentifier $id -MessageData $wanted[$key])
+                $ids += $id
+            }
+            $watcher.EnableRaisingEvents = $true
+            $script:FleetWatchers[$key] = [pscustomobject]@{ Watcher = $watcher; Ids = $ids }
+        } catch {}
+    }
+    $script:FleetCheckedAt = [DateTime]::UtcNow
 }
 
 function Add-GitDeckRepoWatcher([string]$Path) {
@@ -182,6 +229,22 @@ function Invoke-GitDeckEventPump {
         $pending.Kinds[$kind] = $true
         $pending.DueAt = $now.AddMilliseconds(700)
     }
+    # Fleet ref changes: one "repo-changed" per repository, to every window, 1.5 s after the last one.
+    foreach ($item in @(Get-Event -ErrorAction SilentlyContinue | Where-Object { $_.SourceIdentifier -like 'GitDeckGit:*' })) {
+        $pair = $item.MessageData; $eventArgs = $item.SourceEventArgs
+        Remove-Event -EventIdentifier $item.EventIdentifier -ErrorAction SilentlyContinue
+        $hit = Test-GitDeckRefChange $pair[1] $eventArgs.FullPath
+        if (-not $hit -and $eventArgs -is [IO.RenamedEventArgs]) { $hit = Test-GitDeckRefChange $pair[1] $eventArgs.OldFullPath }
+        if ($hit) { $script:FleetPending[$pair[0].ToLowerInvariant()] = [pscustomobject]@{ Path = $pair[0]; DueAt = $now.AddMilliseconds(1500) } }
+    }
+    foreach ($key in @($script:FleetPending.Keys)) {
+        $pending = $script:FleetPending[$key]
+        if ($pending.DueAt -gt $now) { continue }
+        $script:FleetPending.Remove($key)
+        $payload = @{ path = $pending.Path; at = $now.ToString('o') } | ConvertTo-Json -Compress
+        foreach ($client in $script:EventClients.ToArray()) { if (-not (Write-GitDeckEvent $client "event: repo-changed`ndata: $payload`n`n")) { Close-GitDeckEventClient $client } }
+    }
+    if ($script:EventClients.Count -and ($now - $script:FleetCheckedAt).TotalSeconds -ge 60) { Update-GitDeckFleetWatchers }
     # Emit debounced change notifications.
     foreach ($key in @($script:PendingChanges.Keys)) {
         $pending = $script:PendingChanges[$key]
@@ -216,6 +279,8 @@ function Test-GitDeckIdleShutdown([int]$IdleSeconds) {
 function Stop-GitDeckRuntime {
     foreach ($client in $script:EventClients.ToArray()) { Close-GitDeckEventClient $client }
     foreach ($key in @($script:RepoWatchers.Keys)) { Remove-GitDeckRepoWatcher $key }
+    foreach ($entry in @($script:FleetWatchers.Values)) { foreach ($id in $entry.Ids) { Unregister-Event -SourceIdentifier $id -ErrorAction SilentlyContinue }; $entry.Watcher.Dispose() }
+    $script:FleetWatchers = @{}
 }
 
 # Open Git Deck as its own app window (Edge --app: no tabs or address bar) when
