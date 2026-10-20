@@ -44,6 +44,7 @@ $script:ActionJournal = Join-Path $PSScriptRoot 'git-action-journal.json'
 $script:UiState = Join-Path $PSScriptRoot 'git-deck-ui-state.json'
 # Small per-computer preferences (onboarding done, pinned Dashboard tools, docked Dashboard).
 $script:PrefsFile = Join-Path $PSScriptRoot 'git-deck-prefs.json'
+$script:TrapRulesFile = Join-Path $PSScriptRoot 'git-deck-traps.json'
 $script:PrefKeys = @('onboarding','pinnedTools','dashboardDock')
 $script:ExportsRoot = Join-Path $PSScriptRoot 'exports'
 $script:SelectedPatch = ''
@@ -52,7 +53,7 @@ $script:BaseUrl = "http://127.0.0.1:$Port/"
 [void](New-Item -ItemType Directory -Path $script:JobsRoot -Force)
 [void](New-Item -ItemType Directory -Path $script:ExportsRoot -Force)
 # Script variables copied into each parallel request runspace.
-$script:SharedVariableNames = @('PrefsFile','PrefKeys','AgentCommands','PushRiskRules','PushTrapRules','ConfigResourceDirs','ValidRepoChecks','Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
+$script:SharedVariableNames = @('TrapRulesFile','PrefsFile','PrefKeys','AgentCommands','PushRiskRules','PushTrapRules','ConfigResourceDirs','ValidRepoChecks','Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }
@@ -1080,6 +1081,7 @@ function Invoke-Action($Body) {
     $path = [string]$Body.path
     switch ($action) {
         'training-create' { return New-TrainingRepository }
+        'traps-save' { return Save-GitDeckCustomTraps @($Body.rules) }
         'prefs-save' {
             $key=([string]$Body.key).Trim();if($key -notin $script:PrefKeys){throw 'Unknown preference.'}
             $value=$Body.value;$json=ConvertTo-Json -InputObject $value -Depth 5 -Compress;if($json.Length -gt 8192){throw 'Preference is too large.'}
@@ -1732,6 +1734,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/readiness' { Write-Json $context (Get-SetupReadiness) }
         '/api/custom-actions' { Write-Json $context @{ actions = @(Get-GitDeckCustomActions) } }
         '/api/repo/push-preview' { Write-Json $context (Get-PushPreview $query['path'] $query['remote'] $query['local'] $query['target']) }
+        '/api/traps' { Write-Json $context @{builtIn=@($script:PushTrapRules|ForEach-Object{[ordered]@{id=$_.id;label=$_.label;file=$_.file;line=$_.line;also=$_.also;detail=$_.detail}});custom=@(Get-GitDeckCustomTraps)} }
         '/api/prefs' { $prefs=@{};if(Test-Path -LiteralPath $script:PrefsFile -PathType Leaf){try{$prefs=Get-Content -Encoding UTF8 -LiteralPath $script:PrefsFile -Raw|ConvertFrom-Json}catch{}};Write-Json $context @{prefs=$prefs} }
         '/api/ui-state' { $ui=[ordered]@{schemaVersion=2;path='';tab='history';openRepos=@()};if(Test-Path -LiteralPath $script:UiState -PathType Leaf){try{$saved=Get-Content -Encoding UTF8 -LiteralPath $script:UiState -Raw|ConvertFrom-Json;$savedPath=if($saved.path){[string]$saved.path}else{''};$savedTab=if($saved.tab){[string]$saved.tab}else{'history'};[string[]]$savedOpenRepos=if($null-ne $saved.openRepos){@($saved.openRepos|ForEach-Object{[string]$_})}elseif($savedPath){@($savedPath)}else{@()};$savedSchemaVersion=if($saved.schemaVersion){[int]$saved.schemaVersion}else{1};$ui=[ordered]@{schemaVersion=$savedSchemaVersion;path=$savedPath;tab=$savedTab;openRepos=$savedOpenRepos}}catch{}};Write-Json $context @{view=$ui} }
         '/api/jobs' { Write-Json $context @{jobs=@(Get-GitJobs)} }

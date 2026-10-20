@@ -9,7 +9,7 @@
     ['Every day',['briefing','pending','fleet','my-work','focus-inbox','ticket-workspaces','forgotten']],
     ['The whole family',['fleet-map','catalog','family-checks','family-edit','tag-all','update-all','switch-all']],
     ['Release and deploy',['releases','ticket','merge-requests','ci','release-proof']],
-    ['Find and investigate',['search-all','api-map','incident','log-locate','effective-config','compare-files','failure-lens','impact']],
+    ['Find and investigate',['search-all','api-map','incident','log-locate','effective-config','compare-files','failure-lens','impact','known-traps']],
   ];
   const moreViews=['dependencies','recipes','capsules','timeline','jobs','automation'];
   const primaryViews=intentGroups[0][1];
