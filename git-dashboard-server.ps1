@@ -23,6 +23,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Timeline.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Stack.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Traps.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.ApiMap.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Catalog.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Cockpit.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
@@ -1755,6 +1756,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/agents' { Write-Json $context @{agents=@(Get-GitDeckAgents)} }
         '/api/mcp' { Write-Json $context @{mcp=(Get-GitDeckMcpSetup)} }
         '/api/ticket-workspaces' { Write-Json $context @{workspaces=@(Get-GitDeckTicketWorkspaces)} }
+        '/api/repo/api-surface' { Write-Json $context @{surface=(Get-GitDeckApiSurface $query['path'] $query['ref'])} }
         '/api/repo/commit-pairs' { Write-Json $context @{pairs=(Get-GitDeckCommitPairs $query['path'] $query['commit'])} }
         '/api/repo/family-edit-source' { Write-Json $context @{source=(Get-GitDeckFamilyEditSource $query['path'] $query['key'] $query['file'] $query['start'])} }
         '/api/repo/effective-config' { Write-Json $context @{config=(Get-GitDeckEffectiveConfigSources $query['path'] $query['env'] $query['ref'] $query['deploy'] $query['deployRef'] $query['name'])} }

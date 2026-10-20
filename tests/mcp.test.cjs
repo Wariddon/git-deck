@@ -29,7 +29,7 @@ server.listen(0, '127.0.0.1', async () => {
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
     const list = await call('tools/list', {});
     const names = list.result.tools.map((item) => item.name);
-    for (const name of ['pending_work', 'compare_file_across_family', 'effective_config_sources', 'ticket', 'push_risk']) assert.ok(names.includes(name), name);
+    for (const name of ['pending_work', 'compare_file_across_family', 'effective_config_sources', 'ticket', 'push_risk', 'api_usage']) assert.ok(names.includes(name), name);
     assert.ok(Array.isArray(list.result.tools.find((item) => item.name === 'read_file').inputSchema.required));
     const family = JSON.parse((await tool('compare_file_across_family', { prefix: 'crs-', file: 'Dockerfile', pattern: 'eclipse-temurin:([0-9a-z.-]+)' })).text);
     assert.deepEqual(family.map((row) => [row.repo, row.value]), [['crs-a', '17-scb-1.53'], ['crs-b', '17-scb-1.40']]);

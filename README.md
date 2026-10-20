@@ -329,6 +329,7 @@ The same provider powers a few more ✨ buttons. AI only explains or proposes; a
 | `effective_config_sources` | `application.yml`, `application-{env}.yml` and the deploy repository's files for that service and environment |
 | `search`, `ticket`, `activity` | commits and branches by text or ticket key; commits in a date range |
 | `push_risk`, `deploy_map` | push checks of the current branch; where a service is deployed |
+| `api_usage` | who provides and who calls an endpoint (controllers, Feign, URLs in application.yml) and Kafka topics |
 
 Claude Code started from **Ticket workspaces** is connected already. Otherwise (Ticket workspaces › *Connect agents to Git Deck* shows these with your path):
 

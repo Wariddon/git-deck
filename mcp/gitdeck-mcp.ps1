@@ -89,6 +89,8 @@ $script:Tools = @(
        inputSchema = @{ type = 'object'; properties = @{ since = @{ type = 'string' }; until = @{ type = 'string' }; author = @{ type = 'string' }; repo = @{ type = 'string' }; prefix = @{ type = 'string' } }; required = @('since') } },
     @{ name = 'push_risk'; description = 'Push checks of the current branch: risk level and why (secrets, config, migrations, build files), and the checklist to run before pushing.'
        inputSchema = @{ type = 'object'; properties = @{ repo = @{ type = 'string' } }; required = @('repo') } },
+    @{ name = 'api_usage'; description = 'Who provides and who calls an HTTP endpoint, read from the source of every repository (Spring controllers, Feign clients, URLs in application.yml, path literals), plus Kafka topics. Give part of a path or topic, e.g. findByProxy or case/create-request.'
+       inputSchema = @{ type = 'object'; properties = @{ text = @{ type = 'string' }; prefix = @{ type = 'string' }; folder = @{ type = 'string' } }; required = @('text') } },
     @{ name = 'deploy_map'; description = 'Where a service is deployed: environments, image tags and the deploy files that mention it.'
        inputSchema = @{ type = 'object'; properties = @{ repo = @{ type = 'string' }; ref = @{ type = 'string' } }; required = @('repo') } }
 )
@@ -166,6 +168,17 @@ function Invoke-McpTool([string]$Name, $Arguments) {
             if (-not $p.branch) { throw 'No branch is checked out.' }
             $target = if ($p.upstream -and $p.upstream.StartsWith('origin/')) { $p.upstream.Substring(7) } else { $p.branch }
             return (Get-GitDeckJson '/api/repo/push-checks' @{ path = $r.path; remote = 'origin'; local = $p.branch; target = $target; force = 'false' }).pushChecks
+        }
+        'api_usage' {
+            $text = & $arg 'text'; if (-not $text) { throw 'text is required.' }
+            $rows = foreach ($r in Select-McpRepos (& $arg 'prefix') (& $arg 'folder') 250) {
+                try { $s = (Get-GitDeckJson '/api/repo/api-surface' @{ path = $r.path }).surface } catch { continue }
+                $match = { param($value) ([string]$value).IndexOf($text, [StringComparison]::OrdinalIgnoreCase) -ge 0 }
+                $p = @($s.provides | Where-Object { & $match $_.path }); $c = @($s.calls | Where-Object { & $match $_.path })
+                $k = @(@($s.listens) + @($s.sends) | Where-Object { (& $match $_.topic) -or (& $match $_.resolved) })
+                if ($p.Count -or $c.Count -or $k.Count) { [ordered]@{ repo = $r.name; provides = $p; calls = $c; kafka = $k } }
+            }
+            return ,@($rows)
         }
         'deploy_map' {
             $r = Resolve-McpRepo (& $arg 'repo')

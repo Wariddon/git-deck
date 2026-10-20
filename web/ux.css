@@ -93,3 +93,8 @@ html.ui-modern body .gd-card .gd-card-action { padding: 2px 10px; font-size: 12p
 html.ui-modern body .fleet-journey { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 6px 0; }
 html.ui-modern body .fleet-journey-step { padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--tone); background: color-mix(in srgb, var(--tone) 12%, transparent); border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent); }
 html.ui-modern body .fleet-journey-step + .fleet-journey-step::before { content: none; }
+html.ui-modern body .api-table td { vertical-align: top; }
+html.ui-modern body .api-where { margin: 1px 0; }
+html.ui-modern body .api-where small { word-break: break-all; }
+html.ui-modern body .api-drift { margin-bottom: 10px; }
+html.ui-modern body .api-drift code { font-weight: 700; }
