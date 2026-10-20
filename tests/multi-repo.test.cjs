@@ -32,6 +32,7 @@ assert.ok(m.pendingCounts({ ...clean, operation: 'merge', conflicts: 1 }).score 
 const item = (p, error = '') => ({ pending: p, counts: m.pendingCounts(p), error });
 assert.equal(m.pendingMatches(item(clean), 'any'), false, 'A tidy repository is not pending');
 assert.equal(m.pendingMatches(item(clean), 'all'), true);
+assert.ok(m.pendingLabels({ ...clean, branch: 'feature/x', upstreamGone: true }).some((label) => /deleted on the remote/.test(label.text)));
 // A tidy repository committed this week still shows under "Worked on this week".
 assert.equal(m.pendingMatches({ pending: { ...clean, lastCommitDate: new Date().toISOString() } }, 'recent'), true);
 assert.equal(m.pendingMatches({ pending: { ...clean, lastCommitDate: '2020-01-01T00:00:00Z' } }, 'recent'), false);

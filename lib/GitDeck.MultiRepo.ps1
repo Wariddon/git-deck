@@ -44,16 +44,20 @@ function Get-GitDeckPendingWork([string]$Path) {
     if ($head -match '\.\.\.(\S+)') { $upstream = $Matches[1] }
     if ($head -match 'ahead (\d+)') { $ahead = [int]$Matches[1] }
     if ($head -match 'behind (\d+)') { $behind = [int]$Matches[1] }
+    # The remote branch was deleted (usually: its merge request was merged).
+    $upstreamGone = $head -match '\[gone\]$'
     # Other local branches with commits that are on no remote.
     $unpushed = New-Object 'System.Collections.Generic.List[object]'
     $heads = @(Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--format=%(refname:short)%09%(upstream:short)%09%(upstream:track)%09%(objectname)', 'refs/heads')) | ForEach-Object { , ($_ -split "`t") })
     $loose = New-Object 'System.Collections.Generic.List[string]'
-    $tips = @{}
+    $tips = @{}; $upstreams = @{}
     foreach ($f in $heads) {
         if ($f[0] -eq $branch) { continue }
-        if ($f.Count -gt 1 -and $f[1]) {
-            if ($f.Count -gt 2 -and $f[2] -match 'ahead (\d+)') { $unpushed.Add(@{ branch = $f[0]; commits = [int]$Matches[1]; upstream = $f[1] }) }
-        } else { $loose.Add($f[0]); $tips[$f[0]] = $(if ($f.Count -gt 3) { $f[3] } else { '' }) }
+        # Ahead of its upstream or without one: counted below as commits that no remote branch has, so
+        # a local main moved onto (already pushed) develop work is not "962 commits not pushed".
+        if (-not ($f.Count -gt 1 -and $f[1]) -or ($f.Count -gt 2 -and $f[2] -match 'ahead \d+')) {
+            $loose.Add($f[0]); $tips[$f[0]] = $(if ($f.Count -gt 3) { $f[3] } else { '' }); $upstreams[$f[0]] = $(if ($f.Count -gt 1) { $f[1] } else { '' })
+        }
     }
     # Branches without an upstream: one list of the commits no remote has, with their parents. A commit
     # is unpushed for a branch when it can be reached from the branch tip through unpushed commits.
@@ -69,7 +73,7 @@ function Get-GitDeckPendingWork([string]$Path) {
                     $id = $queue.Dequeue(); if (-not $seen.Add($id)) { continue }
                     $ids = $parents[$id]; for ($i = 1; $i -lt $ids.Count; $i++) { if ($parents.ContainsKey($ids[$i])) { $queue.Enqueue($ids[$i]) } }
                 }
-                if ($seen.Count) { $unpushed.Add(@{ branch = $name; commits = $seen.Count; upstream = '' }) }
+                if ($seen.Count) { $unpushed.Add(@{ branch = $name; commits = $seen.Count; upstream = [string]$upstreams[$name] }) }
             }
         }
     }
@@ -95,7 +99,7 @@ function Get-GitDeckPendingWork([string]$Path) {
     # When the current branch last changed, and with what.
     $last = ([string](Invoke-GitCapture $Path @('log', '-1', '--format=%cI%x09%s')).Output).Trim() -split "`t", 2
     return [ordered]@{
-        branch = $branch; upstream = $upstream; ahead = $ahead; behind = $behind
+        branch = $branch; upstream = $upstream; upstreamGone = $upstreamGone; ahead = $ahead; behind = $behind
         changed = $files.Count - $untracked; untracked = $untracked; conflicts = $conflicts
         operation = $operation
         unpushedBranches = $unpushed.ToArray(); stashes = @($stashes); mergedBranches = $merged; mainline = $mainline

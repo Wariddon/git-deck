@@ -69,6 +69,8 @@
     if(p.changed||p.untracked)labels.push({tone:'warn',text:t('{count} uncommitted file(s)',{count:p.changed+p.untracked})});
     if(p.ahead)labels.push({tone:'warn',text:t('{count} to push',{count:p.ahead})});
     if(p.upstream===''&&p.branch&&!['main','master','develop'].includes(p.branch))labels.push({tone:'warn',text:t('Branch not published')});
+    // The remote branch is gone (its merge request was usually merged): time to move on from it.
+    if(p.upstreamGone)labels.push({tone:'info',text:t('{branch} was deleted on the remote (merged?)',{branch:p.branch})});
     for(const item of p.unpushedBranches||[])labels.push({tone:'warn',text:t('{branch}: {count} not pushed',{branch:item.branch,count:item.commits})});
     if(p.behind)labels.push({tone:'info',text:t('{count} to pull',{count:p.behind})});
     if((p.stashes||[]).length)labels.push({tone:'info',text:t('{count} stash(es)',{count:p.stashes.length})});
@@ -419,6 +421,27 @@
       const pool=results.filter(item=>shown(item)&&(filter!=='recent'||pendingMatches(item,'recent')));const terms=parseTerms(search.value);
       const byTyped=(a,b)=>(terms.length>1?termRank(a,terms)-termRank(b,terms):0)||a.repo.name.localeCompare(b.repo.name);
       if(!pool.length){out.append(el('div','multi-repo-empty',results.length?t('No repository matches this filter.'):t('Checking…')));return;}
+      // This week's work as a timeline, newest first: what you did and where it stands now.
+      if(filter==='recent'){
+        const section=el('section','pending-group pending-group-recent');const head=el('div','pending-group-head');
+        const title=el('div','pending-group-toggle');title.append(el('span','pending-group-icon','🕒'),el('strong','',t('Worked on this week')),el('b','pending-group-count',String(pool.length)));head.append(title);
+        const list=el('div','pending-group-list');
+        for(const item of [...pool].sort((a,b)=>Date.parse(b.pending?.lastCommitDate||0)-Date.parse(a.pending?.lastCommitDate||0))){
+          const p=item.pending||{};const line=el('div','pending-line');const what=el('div','pending-line-what');what.append(repoLink(item.repo));
+          if(p.latestTag)what.append(tagBadge(item));
+          what.append(el('span','pending-line-text',[p.branch,p.lastCommitSubject].filter(Boolean).join(' · ')));
+          if(p.lastCommitDate)what.append(el('small','pending-line-date',whenOf(p.lastCommitDate)));
+          const state=el('div','pending-recent-state');const labels=pendingLabels(p).slice(0,3);
+          for(const label of labels)state.append(el('span',`fleet-state tone-${label.tone==='bad'?'bad':label.tone==='warn'?'warn':'muted'}`,label.text));
+          if(!labels.length)state.append(el('span','fleet-state tone-ok',t('Committed and pushed')));
+          if(Number(p.commitsSinceTag)>0)state.append(el('span','fleet-state tone-muted',p.latestTag?t('{count} commit(s) since {tag}',{count:p.commitsSinceTag,tag:p.latestTag}):t('No tag yet')));
+          what.append(state);
+          const open=el('button','',t('Open'));open.type='button';open.onclick=()=>{document.getElementById('operations-close')?.click();openWorkspace(item.repo,'history',null);};
+          line.append(what,open);list.append(line);
+        }
+        section.append(head,el('p','pending-group-hint',t('Every repository with a commit in the last 7 days, newest first, pending or not.')),list);out.append(section);
+        return;
+      }
       let shownAny=false;
       // At a glance: one tile per group with its count; a click jumps to the group.
       const overview=el('div','pending-overview');out.append(overview);

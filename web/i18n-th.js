@@ -1553,4 +1553,8 @@ GitDeckI18n.register('th',{
   "Family edit":"แก้ทั้งตระกูล",
   "The same change to one file in every repository of a family":"แก้ไฟล์เดียวกันในทุก repository ของตระกูล",
   "Worked on this week":"ทำงานสัปดาห์นี้",
+  "Committed and pushed":"commit และ push แล้ว",
+  "{count} commit(s) since {tag}":"{count} commit หลัง {tag}",
+  "Every repository with a commit in the last 7 days, newest first, pending or not.":"ทุก repository ที่มี commit ใน 7 วันที่ผ่านมา ล่าสุดอยู่บน ไม่ว่าจะมีงานค้างหรือไม่",
+  "{branch} was deleted on the remote (merged?)":"{branch} ถูกลบบน remote แล้ว (merge ไปแล้ว?)",
 });

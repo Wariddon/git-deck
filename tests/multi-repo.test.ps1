@@ -56,6 +56,18 @@ try{
     $tidy=Join-Path $base 'tidy';Run-Git $base @('clone','-q','-c','core.autocrlf=false',$remote,$tidy)
     $q=Get-GitDeckPendingWork $tidy
     if($q.branch -ne 'main' -or $q.changed -ne 0 -or $q.untracked -ne 0 -or $q.upstream -ne 'origin/main'){throw "Clean repository misread: $($q | ConvertTo-Json -Compress)"}
+    # A tracked branch ahead of its upstream only with commits another remote branch has is not
+    # "not pushed"; one real local commit is. A current branch whose remote was deleted is flagged.
+    Run-Git $local @('push','-q','origin','feature/AP-2:shared-work');Run-Git $tidy @('fetch','-q')
+    Run-Git $tidy @('config','user.email','t@example.test');Run-Git $tidy @('config','user.name','Test')
+    Run-Git $tidy @('branch','-q','--track','moved','origin/main');Run-Git $tidy @('update-ref','refs/heads/moved','origin/shared-work')
+    if(@((Get-GitDeckPendingWork $tidy).unpushedBranches).Count -ne 0){throw 'Commits on another remote branch counted as not pushed'}
+    Run-Git $tidy @('switch','-q','moved');Run-Git $tidy @('commit','-q','--allow-empty','-m','local only');Run-Git $tidy @('switch','-q','main')
+    $m=@((Get-GitDeckPendingWork $tidy).unpushedBranches)
+    if($m.Count -ne 1 -or $m[0].branch -ne 'moved' -or $m[0].commits -ne 1 -or $m[0].upstream -ne 'origin/main'){throw "Real local commit not counted: $($m|ConvertTo-Json -Compress)"}
+    Run-Git $tidy @('switch','-q','--track','origin/shared-work');Run-Git $local @('push','-q','origin','--delete','shared-work');Run-Git $tidy @('fetch','-q','--prune')
+    if(-not (Get-GitDeckPendingWork $tidy).upstreamGone){throw 'Deleted remote branch not flagged'}
+    Run-Git $tidy @('switch','-q','main')
     $c=Get-GitDeckBranchCleanup $local
     $byName=@{};foreach($b in $c.branches){$byName[$b.name]=$b}
     if(-not $byName['done-work'].merged -or $byName['done-work'].protected){throw 'done-work should be merged and deletable'}
