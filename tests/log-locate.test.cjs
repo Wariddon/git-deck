@@ -22,6 +22,6 @@ assert.equal(L.parseLog('nothing here').frames.length, 0);
 
 const web = (file) => fs.readFileSync(path.join(__dirname, '../web', file), 'utf8');
 assert.ok(web('index.html').indexOf('/log-locate.js') < web('index.html').indexOf('/cockpit.js'));
-assert.match(web('cockpit.js'), /'family-edit','log-locate'/);
+assert.ok(((id) => require('../web/cockpit.js').intentGroups.flatMap(([, ids]) => ids).concat(require('../web/cockpit.js').moreViews).includes(id))('log-locate'), 'In the Dashboard menu');
 assert.ok(fs.readFileSync(path.join(__dirname, '../git-dashboard-server.ps1'), 'utf8').includes("'/api/repo/find-files'"));
 console.log('PASS: find from an error log (own frames, exceptions, wiring)');

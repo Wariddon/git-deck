@@ -8,8 +8,8 @@
 (function(){
   if(typeof document==='undefined')return;
   // Background polls: the bar would blink every few seconds for work the user did not ask for.
-  const quiet=/^\/api\/(version|jobs|gitlab\/inbox|gitlab\/hosts|ui-state)\b/;
-  const isQuiet=(path,options)=>quiet.test(String(path||''))||(()=>{try{return /"action":"ui-state-/.test(String(options?.body||''));}catch{return false;}})();
+  const quiet=/^\/api\/(version|jobs|gitlab\/inbox|gitlab\/hosts|ui-state|prefs)\b/;
+  const isQuiet=(path,options)=>quiet.test(String(path||''))||(()=>{try{return /"action":"(ui-state-|prefs-save)/.test(String(options?.body||''));}catch{return false;}})();
 
   // ---- top progress bar --------------------------------------------------------------------------
   const bar=document.createElement('div');bar.id='gd-progress';bar.setAttribute('aria-hidden','true');bar.append(document.createElement('span'));

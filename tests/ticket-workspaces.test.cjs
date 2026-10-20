@@ -17,7 +17,7 @@ assert.deepEqual(groups.map((group) => `${group.key}:${group.items.map((item) =>
 const web = (file) => fs.readFileSync(path.join(__dirname, '../web', file), 'utf8');
 const html = web('index.html');
 assert.ok(html.indexOf('/ticket-workspaces.js') > html.indexOf('/fleet.js') && html.indexOf('/ticket-workspaces.js') < html.indexOf('/cockpit.js'));
-assert.match(web('cockpit.js'), /\['ticket','ticket-workspaces',/);
+assert.ok(((id) => require('../web/cockpit.js').intentGroups.flatMap(([, ids]) => ids).concat(require('../web/cockpit.js').moreViews).includes(id))('ticket-workspaces'), 'In the Dashboard menu');
 const server = fs.readFileSync(path.join(__dirname, '../git-dashboard-server.ps1'), 'utf8');
 for (const route of ["'/api/agents'", "'/api/ticket-workspaces'", "'ticket-workspace-create'", "'agent-start'"]) assert.ok(server.includes(route), route);
 console.log('PASS: ticket workspaces (keys, first prompt, grouping, wiring)');

@@ -24,5 +24,5 @@ assert.equal(C.evaluate({ type: 'contains', pattern: '(', expect: true }, 'x').v
 
 const web = (file) => fs.readFileSync(path.join(__dirname, '../web', file), 'utf8');
 assert.ok(web('index.html').indexOf('/family-checks.js') < web('index.html').indexOf('/cockpit.js'));
-assert.match(web('cockpit.js'), /'effective-config','family-checks'/);
+assert.ok(((id) => require('../web/cockpit.js').intentGroups.flatMap(([, ids]) => ids).concat(require('../web/cockpit.js').moreViews).includes(id))('family-checks'), 'In the Dashboard menu');
 console.log('PASS: family checks (capture, contains, exclusions, odd ones out)');

@@ -19,7 +19,25 @@
     return out.sort((a,b)=>a.service.localeCompare(b.service));
   }
   const dayOf=(date)=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-  const helpers={releaseDrift,dayOf};
+  const recentWork=(p,now=Date.now())=>{const at=Date.parse(p?.lastCommitDate||'');return Number.isFinite(at)&&now-at<7*864e5;};
+  // What to do today, from the repository cache (changes, ahead, behind) and the last Pending check
+  // (committed this week; clean, pushed and with commits after the latest tag = ready to tag).
+  function todayPlan(repos,snapshot,now=Date.now()){
+    const list=(repos||[]).filter(repo=>repo.valid!==false);
+    const byPath=new Map(list.map(repo=>[String(repo.path).toLowerCase(),repo]));
+    const commit=list.filter(repo=>Number(repo.changes)>0).sort((a,b)=>Number(b.changes)-Number(a.changes));
+    const push=list.filter(repo=>Number(repo.ahead)>0).sort((a,b)=>Number(b.ahead)-Number(a.ahead));
+    const pull=list.filter(repo=>Number(repo.behind)>0&&!Number(repo.changes)).sort((a,b)=>Number(b.behind)-Number(a.behind));
+    const week=[],tag=[];
+    for(const item of snapshot?.items||[]){
+      const repo=byPath.get(String(item.path).toLowerCase());if(!repo||!recentWork(item.pending,now))continue;
+      week.push({repo,pending:item.pending});
+      const p=item.pending;if(Number(p.commitsSinceTag)>0&&!p.ahead&&!p.changed&&!p.untracked&&p.upstream&&!Number(repo.ahead)&&!Number(repo.changes))tag.push({repo,pending:p});
+    }
+    week.sort((a,b)=>Date.parse(b.pending.lastCommitDate)-Date.parse(a.pending.lastCommitDate));
+    return {commit,push,pull,week,tag};
+  }
+  const helpers={releaseDrift,dayOf,todayPlan,recentWork};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
 
   const F=window.GitDeckFleet;
@@ -31,48 +49,55 @@
   const sinceKey='gitdeck.briefingSince';
   const since=()=>Number(recall(sinceKey,''))||Math.floor(Date.now()/1000)-24*3600;
   const usable=()=>(state.repos||[]).filter(repo=>repo.valid!==false&&!repo.pending);
+  const readSnapshot=()=>{try{return JSON.parse(localStorage.getItem('gitdeck.pendingSnapshot')||'null');}catch{return null;}};
   const readCache=()=>{try{return JSON.parse(localStorage.getItem('gitdeck.deployMap')||'null');}catch{return null;}};
 
   function card(title,count,tone){const box=el('section',`briefing-card tone-${tone}`);const head=el('div','briefing-head');head.append(el('strong','',title),el('span',`fleet-state tone-${tone}`,String(count)));box.append(head);return box;}
   function list(box,items,render,empty){if(!items.length){box.append(el('p','fleet-muted',empty));return;}const ul=el('ul','briefing-list');for(const item of items.slice(0,12)){const li=el('li');render(li,item);ul.append(li);}box.append(ul);if(items.length>12)box.append(el('small','fleet-muted',t('and {count} more',{count:items.length-12})));}
 
+  // Today in three columns: to do (one click each), in progress, news. Instant parts come from the
+  // repository cache and the last Pending check; new tags need one light request per repository.
   function build(panel){
     const head=el('header','briefing-intro');const title=el('h2','',t('Today'));const sub=el('p','fleet-muted','');
-    const read=button(t('Mark all as seen'));const refresh=button(t('Refresh'));const actions=el('div','fleet-actions');actions.append(refresh,read);
-    head.append(title,sub,actions);
-    const grid=el('div','briefing-grid');const status=el('small','multi-repo-status');
-    panel.append(head,status,grid);
+    const read=button(t('Mark all as seen'));const refresh=button(t('Refresh'));const standup=button(t('📋 Standup draft'));
+    const actions=el('div','fleet-actions');actions.append(standup,refresh,read);head.append(title,sub,actions);
+    const columns=el('div','gd-today');const status=el('small','multi-repo-status');
+    panel.append(head,status,columns);
+    const column=(icon,name)=>{const box=el('section','gd-today-col');const h=el('h3','');h.append(el('span','',icon),el('span','',name),el('b','','…'));box.append(h);return {box,count:(n)=>{h.lastChild.textContent=String(n);}};};
+    const openRepo=(repo,tab)=>{document.getElementById('operations-close')?.click();if(typeof openWorkspace==='function')openWorkspace(repo,tab,null);};
+    const cardOf=(tone,titleText,detail,label,run)=>{const node=el('div',`gd-card tone-${tone}`);node.append(el('strong','',titleText),el('small','',detail));if(label){const go=button(label,tone==='warn'?'primary':'');go.onclick=()=>run(go);node.append(go);}return node;};
+    const fill=(col,cards,empty)=>{col.count(cards.length);if(!cards.length)col.box.append(el('p','gd-empty',empty));for(const node of cards.slice(0,10))col.box.append(node);if(cards.length>10)col.box.append(el('p','gd-empty',t('and {count} more',{count:cards.length-10})));};
+    const runAndMark=async(go,action,repo)=>{go.disabled=true;go.textContent=t('Working…');try{const answer=await F.runQuiet(action,repo,action==='pull'?{strategy:state.meta?.pullStrategy||'ff-only',autostash:true}:{});go.textContent=t('Done');showActionFeedback(`${repo.name} · ${String(answer?.message||t('Done')).split('\n')[0]}`);}catch(error){go.disabled=false;go.textContent=t('Retry');showActionFeedback(error.message,{error:true,context:repo.name});}};
+    standup.onclick=()=>{const plan=todayPlan(usable(),readSnapshot());if(window.GitDeckStandup)window.GitDeckStandup.open(plan.week);};
     async function load(){
       const from=since();const repos=usable();
       sub.textContent=t('Since {time}',{time:new Date(from*1000).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})});
-      grid.replaceChildren();
-      // Local, instant: from the repository status cache.
-      const pull=repos.filter(repo=>Number(repo.behind)>0).sort((a,b)=>Number(b.behind)-Number(a.behind));
-      const push=repos.filter(repo=>Number(repo.ahead)>0||Number(repo.changes)>0).sort((a,b)=>Number(b.ahead)+Number(b.changes)-Number(a.ahead)-Number(a.changes));
-      const pullCard=card(t('Commits to pull'),pull.length,pull.length?'info':'ok');
-      list(pullCard,pull,(li,repo)=>li.append(repoLink(repo),el('span','fleet-muted',` ↓${repo.behind} · ${repo.branch||''}`)),t('Every repository is up to date with its remote (as of the last fetch).'));
-      const pushCard=card(t('Your work not pushed'),push.length,push.length?'warn':'ok');
-      list(pushCard,push,(li,repo)=>li.append(repoLink(repo),el('span','fleet-muted',[Number(repo.ahead)?` ↑${repo.ahead}`:'',Number(repo.changes)?` · ${t('{count} changed',{count:repo.changes})}`:''].join(''))),t('Nothing waiting: everything is committed and pushed.'));
+      columns.replaceChildren();
+      const todo=column('✅',t('To do')),doing=column('🛠',t('In progress')),news=column('📰',t('News'));columns.append(todo.box,doing.box,news.box);
+      const plan=todayPlan(repos,readSnapshot());
+      const todoCards=[
+        ...plan.commit.map(repo=>cardOf('warn',repo.name,t('{count} changed file(s) on {branch}',{count:repo.changes,branch:repo.branch||''}),t('Commit…'),()=>openRepo(repo,'changes'))),
+        ...plan.push.map(repo=>cardOf('warn',repo.name,t('{count} commit(s) to push on {branch}',{count:repo.ahead,branch:repo.branch||''}),t('Push'),(go)=>runAndMark(go,'push',repo))),
+        ...plan.pull.map(repo=>cardOf('info',repo.name,t('{count} new commit(s) on {branch}',{count:repo.behind,branch:repo.branch||''}),t('Pull'),(go)=>runAndMark(go,'pull',repo))),
+        ...plan.tag.map(item=>cardOf('info',item.repo.name,t('{count} commit(s) after {tag}: ready to tag?',{count:item.pending.commitsSinceTag,tag:item.pending.latestTag||'—'}),t('Tag…'),()=>showOperationsCenter('tag-all'))),
+      ];
+      fill(todo,todoCards,t('Nothing to do: everything is committed, pushed and up to date.'));
       const drift=releaseDrift(readCache()?.entries);
-      const driftCard=card(t('Production behind'),drift.length,drift.length?'warn':'ok');
-      list(driftCard,drift,(li,item)=>li.append(el('strong','',item.service),el('span','fleet-muted',` PROD ${item.prod} · ${item.env.toUpperCase()} ${item.tag}`)),readCache()?t('Production runs the same tags as the lower environments.'):t('Load Releases once to compare environments.'));
-      const tagsCard=card(t('New tags'),'…','muted');tagsCard.append(el('p','fleet-muted',t('Checking {count} repositories…',{count:repos.length})));
-      const workCard=card(t('Ticket workspaces'),'…','muted');
-      grid.append(tagsCard,pullCard,pushCard,workCard,driftCard);
-      // Ticket workspaces (one request) and new tags (one light request per repository).
+      const newsCards=drift.map(item=>cardOf('warn',item.service,`PROD ${item.prod} · ${item.env.toUpperCase()} ${item.tag}`,t('Releases'),()=>showOperationsCenter('releases')));
+      const doingCards=plan.week.map(item=>cardOf('muted',item.repo.name,`${item.pending.branch||''} · ${item.pending.lastCommitSubject||''}`,t('Open'),()=>openRepo(item.repo,'history')));
+      fill(doing,doingCards,t('No commits this week (from the last Pending check).'));
       api('/api/ticket-workspaces').then(answer=>{
-        const items=(answer.workspaces||[]).filter(item=>item.changes||item.ahead);
-        const box=card(t('Ticket workspaces'),items.length,items.length?'info':'ok');
-        list(box,items,(li,item)=>li.append(el('strong','',`${item.key||item.branch} · ${item.mainName}`),el('span','fleet-muted',` ${item.changes?t('{count} changed',{count:item.changes}):''}${item.ahead?' ↑'+item.ahead:''}`)),t('No ticket workspace has unfinished work.'));
-        workCard.replaceWith(box);
-      }).catch(()=>workCard.remove());
+        const items=(answer.workspaces||[]).filter(item=>item.changes||item.ahead);if(!items.length)return;
+        const cards=items.map(item=>cardOf('info',[item.key||item.branch,item.mainName].filter(Boolean).join(' · ')||item.path,[item.changes?t('{count} changed',{count:item.changes}):'',item.ahead?'↑'+item.ahead:''].filter(Boolean).join(' · '),t('Open'),()=>{const repo=(state.repos||[]).find(entry=>entry.path===item.path);if(repo)openRepo(repo,'changes');}));
+        const heading=doing.box.querySelector('h3');for(const node of cards.reverse())heading.after(node);
+        doing.count(doingCards.length+cards.length);doing.box.querySelector('.gd-empty')?.remove();
+      }).catch(()=>{});
       let done=0;
       const found=await mapLimit(repos,6,async repo=>{let tags=[];try{tags=(await api('/api/repo/recent-tags?'+query({path:repo.path,since:from}))).tags||[];}catch{}status.textContent=t('Checking {done} of {total}…',{done:++done,total:repos.length});return {repo,tags};});
       status.textContent='';
       const withTags=found.filter(item=>item.tags.length).sort((a,b)=>String(b.tags[0].date).localeCompare(String(a.tags[0].date)));
-      const box=card(t('New tags'),withTags.reduce((n,item)=>n+item.tags.length,0),withTags.length?'info':'ok');
-      list(box,withTags,(li,item)=>li.append(repoLink(item.repo),el('span','fleet-muted',' '+item.tags.map(tag=>tag.name).join(', ')+' · '+whenOf(item.tags[0].date))),t('No new tags since then.'));
-      tagsCard.replaceWith(box);
+      for(const item of withTags)newsCards.push(cardOf('info',item.repo.name,`🏷 ${item.tags.map(tag=>tag.name).join(', ')} · ${whenOf(item.tags[0].date)}`,t('Open'),()=>openRepo(item.repo,'tags')));
+      fill(news,newsCards,t('No new tags since then.'));
     }
     read.onclick=()=>{remember(sinceKey,String(Math.floor(Date.now()/1000)));load();};
     refresh.onclick=load;

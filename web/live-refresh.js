@@ -18,6 +18,7 @@
     if(source){source.close();source=null;}
     connectedPath=path;
     source=new EventSource(path?`/api/events?path=${encodeURIComponent(path)}`:'/api/events');
+    const signal=(on)=>(window.gitDeckLive=on,window.dispatchEvent(new CustomEvent('gitdeck:live',{detail:{on}})));source.addEventListener('open',()=>signal(true));source.addEventListener('error',()=>signal(false));
     source.addEventListener('repo-changed',(event)=>{let data={};try{data=JSON.parse(event.data);}catch{}if(data.path)window.dispatchEvent(new CustomEvent('gitdeck:repo-changed',{detail:data}));});
     source.addEventListener('changed',(event)=>{let data={};try{data=JSON.parse(event.data);}catch{}if(data.path&&data.path.toLowerCase()!==connectedPath.toLowerCase())return;schedule();});
   };

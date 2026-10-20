@@ -131,12 +131,23 @@ function Get-GitDeckPendingWork([string]$Path) {
     }
     # When the current branch last changed, and with what (a detached HEAD asks Git once more).
     if (-not $last.Count) { $last = ([string](Invoke-GitCapture $Path @('log', '-1', '--format=%cI%x09%s')).Output).Trim() -split "`t", 2 }
+    # Commits per day on local branches over the last 14 days (oldest first), only for a repository
+    # touched in that time: one more Git command for active repositories, none for quiet ones.
+    $activity = @()
+    $lastWhen = [DateTimeOffset]::MinValue
+    if ([DateTimeOffset]::TryParse([string]$last[0], [ref]$lastWhen) -and ([DateTimeOffset]::Now - $lastWhen).TotalDays -lt 14) {
+        $days = @{}
+        foreach ($day in Get-GitDeckLines (Invoke-GitCapture $Path @('log', '--branches', '--no-merges', '--since=14.days.ago', '--max-count=500', '--format=%cs'))) { $days[$day] = [int]$days[$day] + 1 }
+        $today = (Get-Date).Date
+        $activity = @(for ($i = 13; $i -ge 0; $i--) { [int]$days[$today.AddDays(-$i).ToString('yyyy-MM-dd')] })
+    }
     return [ordered]@{
         branch = $branch; upstream = $upstream; upstreamGone = $upstreamGone; ahead = $ahead; behind = $behind
         changed = $files.Count - $untracked; untracked = $untracked; conflicts = $conflicts
         operation = $operation
         unpushedBranches = $unpushed.ToArray(); stashes = @($stashes); mergedBranches = $merged; mainline = $mainline
         latestTag = $tag.name; latestTagDate = $tag.date; latestTagBy = $tag.by; commitsSinceTag = $tag.since; tagCount = $tag.count
+        activity = $activity
         lastCommitDate = $(if ($last[0] -match '^\d{4}-') { $last[0] } else { '' }); lastCommitSubject = $(if ($last.Count -gt 1) { $last[1] } else { '' })
     }
 }
@@ -228,6 +239,28 @@ function Find-GitDeckFilesBySuffix([string]$Path, [string]$Names) {
         if ($found.Count -ge 30) { break }
     }
     return $found.ToArray()
+}
+
+# How far each deployed tag is behind the main line: commits on the main line that the tag does not
+# have (the Releases trail: "UAT 1.5.1 · 12 behind"). Unknown tags are reported as missing.
+function Get-GitDeckTagDistance([string]$Path, [string]$Tags, [string]$Target) {
+    Assert-Registered $Path
+    # Against the newest tag when given (environments lag the latest release), else the main line.
+    $Target = ([string]$Target).Trim()
+    $mainline = ''
+    if ($Target -and $Target -match '^[A-Za-z0-9._/@+-]+$' -and -not $Target.StartsWith('-') -and (Invoke-GitCapture $Path @('rev-parse', '--verify', '--quiet', "refs/tags/$Target^{commit}")).Code -eq 0) { $mainline = "refs/tags/$Target" }
+    if (-not $mainline) { $mainline = Get-GitDeckMainline $Path }
+    if (-not $mainline) { $mainline = 'HEAD' }
+    $out = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($tag in @(([string]$Tags) -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique -First 20)) {
+        if ($tag.Length -gt 120 -or $tag.StartsWith('-') -or $tag -notmatch '^[A-Za-z0-9._/@+-]+$') { continue }
+        $ref = ''
+        foreach ($candidate in @("refs/tags/$tag", "refs/tags/v$tag")) { if ((Invoke-GitCapture $Path @('rev-parse', '--verify', '--quiet', "$candidate^{commit}")).Code -eq 0) { $ref = $candidate; break } }
+        if (-not $ref) { $out.Add([ordered]@{ tag = $tag; found = $false; behind = $null }); continue }
+        $count = 0; [void][int]::TryParse(([string](Invoke-GitCapture $Path @('rev-list', '--count', "$ref..$mainline")).Output).Trim(), [ref]$count)
+        $out.Add([ordered]@{ tag = $tag; found = $true; behind = $count })
+    }
+    return [ordered]@{ mainline = $mainline; tags = $out.ToArray() }
 }
 
 # Commit subjects on HEAD after a tag (or the last 30 without one), newest first: a tag message

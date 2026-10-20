@@ -16,6 +16,6 @@ assert.ok(E.applyEdit('x', { find: '(', regex: true }).error);
 const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 assert.ok(read('web/index.html').indexOf('/family-edit.js') < read('web/index.html').indexOf('/cockpit.js'));
 assert.ok(read('web/index.html').indexOf('/fleet.js') < read('web/index.html').indexOf('/family-edit.js'), 'lineDiff comes from fleet.js');
-assert.match(read('web/cockpit.js'), /'family-checks','family-edit'/);
+assert.ok(((id) => require('../web/cockpit.js').intentGroups.flatMap(([, ids]) => ids).concat(require('../web/cockpit.js').moreViews).includes(id))('family-edit'), 'In the Dashboard menu');
 for (const route of ["'family-edit'", "'/api/repo/family-edit-source'"]) assert.ok(read('git-dashboard-server.ps1').includes(route), route);
 console.log('PASS: family edit (literal and regex edits, presets, wiring)');

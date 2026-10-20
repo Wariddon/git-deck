@@ -63,7 +63,7 @@ const html = web('index.html');
 assert.ok(html.indexOf('/effective-config.js') > html.indexOf('/fleet.js') && html.indexOf('/effective-config.js') < html.indexOf('/cockpit.js'));
 const server = fs.readFileSync(path.join(__dirname, '../git-dashboard-server.ps1'), 'utf8');
 assert.ok(server.includes("'/api/repo/effective-config'"));
-assert.match(web('cockpit.js'), /'compare-files','effective-config'/);
+assert.ok(((id) => require('../web/cockpit.js').intentGroups.flatMap(([, ids]) => ids).concat(require('../web/cockpit.js').moreViews).includes(id))('effective-config'), 'In the Dashboard menu');
 console.log('PASS: effective config (relaxed binding, ConfigMap keys/files, env lists, layer order, placeholders)');
 
 // lns-deployment-2 style: manifestvalues/{env}/lns-app-configuration/{svc}.yml is a plain Spring file.

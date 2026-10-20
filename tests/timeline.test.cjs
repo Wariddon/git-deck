@@ -16,7 +16,7 @@ assert.deepEqual(batches.map((batch) => `${batch.action}:${batch.items.map((item
 
 const web = (file) => fs.readFileSync(path.join(__dirname, '../web', file), 'utf8');
 assert.ok(web('index.html').indexOf('/timeline.js') < web('index.html').indexOf('/cockpit.js'));
-assert.match(web('cockpit.js'), /\['timeline','jobs','automation'\]/);
+assert.ok(((id) => require('../web/cockpit.js').intentGroups.flatMap(([, ids]) => ids).concat(require('../web/cockpit.js').moreViews).includes(id))('timeline'), 'In the Dashboard menu');
 const server = fs.readFileSync(path.join(__dirname, '../git-dashboard-server.ps1'), 'utf8');
 assert.ok(server.includes("'/api/timeline'") && server.includes("'timeline-restore'"));
 assert.match(server, /\$tracked = @\([^)]*'timeline-restore'/, 'Going back is journaled, so it can be undone');

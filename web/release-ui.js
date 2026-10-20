@@ -50,8 +50,8 @@ async function showReadiness(){
     }
     ui.body.append(list,el('p','gd-check-privacy',t('Repository metadata and cache stay on this computer. No telemetry is sent.')));
     // Closing it any way counts as seen once everything required is ready; a missing Git or identity shows it again next start.
-    if(checks.filter(check=>!check[3]).every(check=>check[1]))ui.dialog.addEventListener('close',()=>{try{localStorage.setItem('git-deck-onboarding-v1','done');}catch{}},{once:true});
-    const done=el('button','primary',t('Got it'));done.onclick=()=>{try{localStorage.setItem('git-deck-onboarding-v1','done');}catch{}ui.dialog.close();};ui.actions.append(done);
+    if(checks.filter(check=>!check[3]).every(check=>check[1]))ui.dialog.addEventListener('close',()=>readinessDone(),{once:true});
+    const done=el('button','primary',t('Got it'));done.onclick=()=>{readinessDone();ui.dialog.close();};ui.actions.append(done);
   }catch(error){ui.body.textContent=t('Could not check: {message}',{message:error.message});}
 }
 async function showSafeReport(){
@@ -108,7 +108,11 @@ $('push-form').addEventListener('submit',async event=>{
   }catch(error){ui.body.textContent='Review failed. Push was not sent: '+error.message;}
   finally{preflightBusy=false;}
 },true);
-const readinessTimer=setInterval(()=>{if(state.initializing)return;clearInterval(readinessTimer);if(localStorage.getItem('git-deck-onboarding-v1')!=='done')showReadiness();},500);
+// Shown once per computer (kept by the server), not once per browser profile.
+const readinessDone=()=>{try{localStorage.setItem('git-deck-onboarding-v1','done');}catch{}void api('/api/action',{method:'POST',body:JSON.stringify({action:'prefs-save',key:'onboarding',value:'done'})}).catch(()=>{});};
+const readinessTimer=setInterval(async()=>{if(state.initializing)return;clearInterval(readinessTimer);let local='';try{local=localStorage.getItem('git-deck-onboarding-v1')||'';}catch{}if(local==='done')return;
+  try{const prefs=(await api('/api/prefs')).prefs||{};if(prefs.onboarding==='done'){try{localStorage.setItem('git-deck-onboarding-v1','done');}catch{}return;}}catch{}
+  showReadiness();},500);
 
 // Compact workbench: preserve existing controls/listeners instead of duplicating actions.
 document.body.classList.add('compact-workbench');

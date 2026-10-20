@@ -108,7 +108,7 @@
       const guess=repos.find(item=>item.path===keep)||repos.find(item=>/deploy|gitops|helm|k8s|kube|manifest|infra|argocd/i.test(item.name));if(guess)repo.value=guess.path;
     };
     fill();panel.addEventListener('focusin',()=>{if(repo.options.length!==usableRepos().length)fill();});
-    let rows=[];let latest=new Map();let envs=[];let deploy=null;
+    let rows=[];let latest=new Map();let envs=[];let deploy=null;let distances=new Map();let distanceMain=new Map();
     const draw=()=>{
       const words=filter.value.trim().toLowerCase();out.replaceChildren();
       const shown=rows.filter(item=>!words||item.service.toLowerCase().includes(words)||(item.repo?.name||'').toLowerCase().includes(words));
@@ -119,7 +119,11 @@
         const cells=envs.map(env=>{
           const list=item.envs[env];if(!list)return el('span','fleet-muted','—');
           const box=el('span','fleet-release-cell');
-          for(const entry of list){const chip=el('span',`fleet-state tone-${newest&&entry.tag===newest?'ok':newest?'info':'muted'}`,entry.tag);chip.title=`${entry.file}:${entry.line}${entry.more?' …':''}`;box.append(chip);}
+          for(const entry of list){const chip=el('span',`fleet-state tone-${newest&&entry.tag===newest?'ok':newest?'info':'muted'}`,entry.tag);chip.title=`${entry.file}:${entry.line}${entry.more?' …':''}`;box.append(chip);
+            // Release trail: how many main-line commits this environment does not have yet.
+            const gap=item.repo?distances.get(item.repo.path)?.get(entry.tag):null;
+            if(gap&&gap.found){const behind=el('small',`fleet-release-gap tone-${gap.behind?'warn':'ok'}`,gap.behind?t('{count} behind',{count:gap.behind}):t('up to date'));behind.title=t('Commits on {mainline} that {tag} does not have',{mainline:String(distanceMain.get(item.repo.path)||'main').replace(/^refs\/tags\//,''),tag:entry.tag});box.append(behind);}
+            else if(gap&&!gap.found){const missing=el('small','fleet-release-gap tone-muted',t('tag not found'));box.append(missing);}}
           return box;
         });
         const name=el('div','fleet-release-service');name.append(el('b','',item.service));if(item.repo)name.append(repoLink(item.repo));
@@ -143,6 +147,9 @@
       envs=sortEnvs(deploy.entries.map(entry=>entry.env));
       const linked=[...new Set(rows.map(item=>item.repo).filter(Boolean))];
       latest=await latestTags(linked,(done,total)=>bar2.set(done,total));bar2.set(0,0);load.disabled=false;copy.disabled=false;
+      distances=new Map();distanceMain=new Map();
+      await mapLimit(linked,6,async repoItem=>{const tags=[...new Set(rows.filter(item=>item.repo===repoItem).flatMap(item=>Object.values(item.envs).flat().map(entry=>entry.tag)))];
+        try{const answer=(await api('/api/repo/tag-distance?'+query({path:repoItem.path,tags:tags.join('|'),target:latest.get(repoItem.path)||''}))).distance;distanceMain.set(repoItem.path,answer.mainline);distances.set(repoItem.path,new Map((answer.tags||[]).map(item=>[item.tag,item])));}catch{}});
       remember(cacheKey,JSON.stringify({repo:chosen.name,ref:deploy.ref,at:Date.now(),entries:deploy.entries.map(({env,service,tag})=>({env,service,tag}))}));
       status.textContent=t('{services} services · {envs} environments · {ref} at {commit} ({when})',{services:rows.length,envs:envs.length,ref:deploy.ref,commit:deploy.commit,when:deploy.date?whenOf(deploy.date):''});
       draw();

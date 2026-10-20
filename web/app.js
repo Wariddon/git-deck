@@ -295,7 +295,7 @@ async function api(path, options = {}) {
   // Never reuse a display snapshot across a write, including failed/partial writes.
   if(options.method&&options.method.toUpperCase()!=='GET'){
     let action='';try{action=JSON.parse(options.body||'{}').action;}catch{}
-    if(!['ui-state-save','ui-state-clear'].includes(action)){workspaceSnapshots.clear();persistWorkspaceSnapshots();}
+    if(!['ui-state-save','ui-state-clear','prefs-save'].includes(action)){workspaceSnapshots.clear();persistWorkspaceSnapshots();}
   }
   const response = await fetch(path, {
     ...options,

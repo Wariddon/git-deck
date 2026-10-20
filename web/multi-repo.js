@@ -120,6 +120,15 @@
   }
   // The filter box takes several names at once: "billing-svc, deploy-config ledger". Each term matches
   // a repository name, branch or latest tag; the rank (which term matched first) keeps the typed order.
+  // What a row shows, as one string: a row glows once when this changes after a check or live update.
+  const rowSignature=(item)=>item?.error?'error:'+item.error:JSON.stringify([item?.pending?.branch,pendingLabels(item?.pending||{}).map(label=>label.text),item?.pending?.latestTag]);
+  // Commits per day for the last 14 days as tiny bars (nothing for a quiet repository).
+  function sparkline(counts){
+    if(!Array.isArray(counts)||!counts.length||!counts.some(Boolean))return null;
+    const max=Math.max(...counts);const box=el('span','gd-spark');box.title=t('{count} commit(s) in the last 14 days',{count:counts.reduce((a,b)=>a+b,0)});
+    for(const value of counts){const bar=el('i',value?'':'zero');bar.style.height=`${value?Math.max(3,Math.round(value/max*14)):1}px`;box.append(bar);}
+    return box;
+  }
   // The family of a repository: its name up to the first dash (aml-batch -> aml, crs-webview -> crs).
   const familyOf=(name)=>{const text=String(name||'');const at=text.indexOf('-');return (at>0?text.slice(0,at):text).toLowerCase();};
   const parseTerms=(text)=>String(text||'').toLowerCase().split(/[,\s]+/).map(term=>term.trim()).filter(Boolean);
@@ -266,7 +275,7 @@
     // Filter and sort are remembered between visits.
     const remember=(key,value)=>{try{localStorage.setItem(key,value);}catch{}};
     const recall=(key,fallback)=>{try{return localStorage.getItem(key)||fallback;}catch{return fallback;}};
-    let checking=false;const seenRows=new Set();
+    let checking=false;const seenRows=new Set();const changedAt=new Map();
     let results=[];let filter=recall('gitdeck.pendingFilter','any');let runId=0;let checkedAt=null;const expanded=new Set();
     let view=recall('gitdeck.pendingView','tasks')==='table'?'table':'tasks';
     tagFilter.value=[...tagFilter.options].some(option=>option.value===recall('gitdeck.pendingTag',''))?recall('gitdeck.pendingTag',''):'any';
@@ -434,7 +443,7 @@
       out.replaceChildren();
       const pool=results.filter(item=>shown(item)&&(filter!=='recent'||pendingMatches(item,'recent')));const terms=parseTerms(search.value);
       const byTyped=(a,b)=>(terms.length>1?termRank(a,terms)-termRank(b,terms):0)||a.repo.name.localeCompare(b.repo.name);
-      if(!pool.length){out.append(el('div','multi-repo-empty',results.length?t('No repository matches this filter.'):t('Checking…')));return;}
+      if(!pool.length){out.append(results.length?el('div','multi-repo-empty',t('No repository matches this filter.')):(()=>{const box=el('div','gd-skeleton-list');box.setAttribute('aria-label',t('Checking…'));for(let i=0;i<6;i++)box.append(el('div','gd-skeleton'));return box;})());return;}
       // This week's work as a timeline, newest first: what you did and where it stands now.
       if(filter==='recent'){
         const section=el('section','pending-group pending-group-recent');const head=el('div','pending-group-head');
@@ -540,6 +549,7 @@
         const done=results.length&&checkedAt;
         const tidy=done&&filter==='any'&&!search.value.trim();
         const empty=el('div','multi-repo-empty');
+        if(!results.length&&checking){out.append((()=>{const box=el('div','gd-skeleton-list');box.setAttribute('aria-label',t('Checking…'));for(let i=0;i<6;i++)box.append(el('div','gd-skeleton'));return box;})());return;}
         empty.append(el('strong','',!results.length?t('Checking…'):tidy?t('🎉 Everything is tidy'):t('No repository matches this filter.')));
         if(tidy)empty.append(el('p','',t('Every repository in this folder is committed, pushed and up to date.')));
         else if(done&&filter!=='all'){const all=el('button','',t('Show all repositories'));all.type='button';all.onclick=()=>{filter='all';remember('gitdeck.pendingFilter','all');search.value='';drawChips();draw();};empty.append(all);}
@@ -565,9 +575,9 @@
         if(p?.latestTag){tagCell.append(tagBadge(item));tagCell.append(el('small','',[whenOf(p.latestTagDate),Number(p.commitsSinceTag)>0?t('+{count} since',{count:p.commitsSinceTag}):''].filter(Boolean).join(' · ')));}
         else tagCell.append(el('span','pending-zero',p?t('no tag'):'·'));
         const lastCell=el('td','pending-last-cell');
-        if(p?.lastCommitDate){lastCell.append(el('span','',dayOf(p.lastCommitDate)),el('small','',ageOf(p.lastCommitDate)));if(p.lastCommitSubject)lastCell.append(el('small','pending-last-subject',p.lastCommitSubject));lastCell.title=p.lastCommitSubject||'';}
+        if(p?.lastCommitDate){lastCell.append(el('span','',dayOf(p.lastCommitDate)),el('small','',ageOf(p.lastCommitDate)));if(p.lastCommitSubject)lastCell.append(el('small','pending-last-subject',p.lastCommitSubject));const spark=sparkline(p.activity);if(spark)lastCell.append(spark);lastCell.title=p.lastCommitSubject||'';}
         else lastCell.append(el('span','pending-zero','·'));
-        const tr=el('tr','pending-row');tr.tabIndex=0;tr.dataset.path=key;if(!seenRows.has(key)){seenRows.add(key);tr.classList.add('gd-enter');}tr.append(name,branch,tagCell,lastCell,todo,
+        const tr=el('tr','pending-row');tr.tabIndex=0;tr.dataset.path=key;if(Date.now()-(changedAt.get(key)||0)<1500){tr.classList.add('gd-changed');changedAt.delete(key);}if(!seenRows.has(key)){seenRows.add(key);tr.classList.add('gd-enter');}tr.append(name,branch,tagCell,lastCell,todo,
           stateCell([
             {icon:'✏️',value:c.changes,tone:'warn',title:t('{count} uncommitted file(s)',{count:c.changes})},
             {icon:'⬆️',value:c.push,tone:'warn',title:t('{count} to push',{count:c.push})},
@@ -599,12 +609,15 @@
       status.textContent=parts.join(' · ')+(time?' · '+t('at {time}',{time}):'');
     };
     let timer=0;const schedule=()=>{if(timer)return;timer=setTimeout(()=>{timer=0;drawChips();draw();},250);};
+    // Ticket mode (web/ux.js): Pending shows the ticket's repositories and branches.
+    {const active=window.GitDeckTicketMode?.current?.();if(active?.key)search.value=active.key;}
+    window.addEventListener('gitdeck:ticket',(event)=>{const key=event.detail?.key||'';if(search.value===key)return;search.value=key;search.dispatchEvent(new Event('input'));});
     // Live: a commit, push, fetch or switch made anywhere (IntelliJ, terminal) re-checks that row only.
     window.addEventListener('gitdeck:repo-changed',async(event)=>{
       const path=String(event.detail?.path||'').toLowerCase();if(!path||!panel.isConnected)return;
       const at=results.findIndex(entry=>entry.repo.path.toLowerCase()===path);if(at<0)return;
       const fresh=await check(results[at].repo);const now=results.findIndex(entry=>entry.repo.path.toLowerCase()===path);if(now<0)return;
-      results[now]={...fresh,live:true};seenRows.delete(fresh.repo.path);lastPending=results;saveSnapshot(results);schedule();
+      if(rowSignature(results[now])!==rowSignature(fresh))changedAt.set(fresh.repo.path,Date.now());results[now]={...fresh,live:true};seenRows.delete(fresh.repo.path);lastPending=results;saveSnapshot(results);schedule();
     });
     const start=async()=>{
       const id=++runId;const selectedFolder=folder.value;
@@ -624,7 +637,7 @@
       const progress=(done)=>t('Checking {done} of {total}…',{done,total:repos.length})+(since?' · '+t('showing the last check from {time} until then',{time:since}):'');
       expanded.clear();seenRows.clear();let done=0;checking=repos.length>0;setMeter(0,repos.length);drawChips();draw();
       status.textContent=progress(0);
-      await mapLimit(repos,8,async repo=>{if(id!==runId)return;const item=await check(repo);if(id!==runId)return;const at=results.findIndex(entry=>entry.repo.path===item.repo.path);if(at>=0)results[at]=item;else results.push(item);status.textContent=progress(++done);setMeter(done,repos.length);schedule();});
+      await mapLimit(repos,8,async repo=>{if(id!==runId)return;const item=await check(repo);if(id!==runId)return;const at=results.findIndex(entry=>entry.repo.path===item.repo.path);if(at>=0){if(rowSignature(results[at])!==rowSignature(item))changedAt.set(item.repo.path,Date.now());results[at]=item;}else results.push(item);status.textContent=progress(++done);setMeter(done,repos.length);schedule();});
       if(id!==runId)return;checking=false;setMeter(0,0);checkedAt=new Date();saveSnapshot(results);
       let added=false;for(const item of results){const tag=item.pending?.latestTag;if(tag&&!seenTags[item.repo.path]){seenTags[item.repo.path]=tag;added=true;}}if(added)saveSeenTags(seenTags);
       summary();drawChips();draw();
@@ -953,7 +966,8 @@
     };
     if(typeof MutationObserver==='function')new MutationObserver(place).observe(backdrop,{attributes:true,attributeFilter:['class']});
     window.addEventListener('resize',()=>{if(document.body.classList.contains('dashboard-page-open'))place();});
-    const leave=()=>{if(!backdrop.classList.contains('hidden')&&typeof hideOperationsCenter==='function')hideOperationsCenter();};
+    // Docked beside the repository (web/ux.js), the Dashboard stays open while you move around.
+    const leave=()=>{if(document.body.classList.contains('gd-docked')&&window.innerWidth>=1280)return;if(!backdrop.classList.contains('hidden')&&typeof hideOperationsCenter==='function')hideOperationsCenter();};
     // Opening another repository or another view leaves the page; a refresh of the same view does not.
     if(typeof openWorkspace==='function'){
       const baseOpen=openWorkspace;
@@ -1012,5 +1026,5 @@
     }
     setTimeout(checkGitLab,30000);setInterval(checkGitLab,10*60*1000);
   }
-  window.GitDeckMultiRepo={familyOf,dayOf,whenOf,pendingLabels,pendingActions,pendingCounts,pendingMatches,nextSteps,explainError,parseTerms,termRank,tagMatches,ageOf,switchPlan,cleanupReasons,ticketPrefix,gitlabNews,openBranchCleanup,checkGitLab};
+  window.GitDeckMultiRepo={rowSignature,familyOf,dayOf,whenOf,pendingLabels,pendingActions,pendingCounts,pendingMatches,nextSteps,explainError,parseTerms,termRank,tagMatches,ageOf,switchPlan,cleanupReasons,ticketPrefix,gitlabNews,openBranchCleanup,checkGitLab};
 })();

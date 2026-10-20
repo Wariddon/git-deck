@@ -125,6 +125,8 @@
     const key=input(t('Ticket key, for example PAY-1234'));key.value=recall('gitdeck.ticketKey','')||(String(state.workspace?.branch||'').match(ticketPattern)?.[0]||'');
     const find=button(t('Find'),'primary');const copy=button(t('Copy as Markdown'));copy.disabled=true;
     bar.append(folder,key,find,copy);
+    window.addEventListener('gitdeck:ticket',(event)=>{if(event.detail?.key)key.value=event.detail.key;});
+    {const active=window.GitDeckTicketMode?.current?.();if(active?.key)key.value=active.key;}
     const status=el('small','multi-repo-status');const bar2=meter();const out=el('div','multi-repo-body fleet-ticket');
     panel.append(bar,el('p','multi-repo-explain',t('Every branch, commit and tag that mentions the ticket, in every repository: what is pushed, what is only on this computer, and which tags already contain it.')),status,bar2.box,out);
     let found=[];let searchedKey='';let revision=0;

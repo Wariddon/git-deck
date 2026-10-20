@@ -1,7 +1,12 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const C=require('../web/cockpit.js');
-assert.deepEqual(C.primaryViews,['briefing','fleet','pending','my-work','focus-inbox','catalog']);
+assert.deepEqual(C.primaryViews,['briefing','pending','fleet','my-work','focus-inbox','ticket-workspaces']);
+assert.deepEqual(C.intentGroups.map(([title])=>title),['Every day','The whole family','Release and deploy','Find and investigate']);
+// Rarely used: only after 30 days of recorded use, tools not opened for 30 days.
+{const day=864e5,now=100*day;
+ assert.deepEqual(C.rarelyUsed(['a','b'],{since:now-10*day,used:{}},now),[],'Too early to judge');
+ assert.deepEqual(C.rarelyUsed(['a','b','c'],{since:now-60*day,used:{a:now-day,b:now-45*day}},now),['b','c']);}
 for(const term of ['all repos','ALL REPOSITORIES','repository health','repos','all-repos'])assert(C.toolMatches('fleet','All repositories',term));
 assert(!C.toolMatches('my-work','My work','all repos'));assert(!C.toolMatches('fleet','All repositories','not-a-tool'));assert(C.toolMatches('fleet','All repositories',''));
 assert(C.ticketKey('PAY-123'));assert(!C.ticketKey('PAY-123 secret'));assert(!C.ticketKey('--switch'));

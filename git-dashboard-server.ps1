@@ -41,6 +41,9 @@ $script:JobsRoot = Join-Path $PSScriptRoot 'jobs'
 $script:JobWorker = Join-Path $PSScriptRoot 'git-job-worker.ps1'
 $script:ActionJournal = Join-Path $PSScriptRoot 'git-action-journal.json'
 $script:UiState = Join-Path $PSScriptRoot 'git-deck-ui-state.json'
+# Small per-computer preferences (onboarding done, pinned Dashboard tools, docked Dashboard).
+$script:PrefsFile = Join-Path $PSScriptRoot 'git-deck-prefs.json'
+$script:PrefKeys = @('onboarding','pinnedTools','dashboardDock')
 $script:ExportsRoot = Join-Path $PSScriptRoot 'exports'
 $script:SelectedPatch = ''
 $script:Running = $true
@@ -48,7 +51,7 @@ $script:BaseUrl = "http://127.0.0.1:$Port/"
 [void](New-Item -ItemType Directory -Path $script:JobsRoot -Force)
 [void](New-Item -ItemType Directory -Path $script:ExportsRoot -Force)
 # Script variables copied into each parallel request runspace.
-$script:SharedVariableNames = @('AgentCommands','PushRiskRules','PushTrapRules','ConfigResourceDirs','ValidRepoChecks','Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
+$script:SharedVariableNames = @('PrefsFile','PrefKeys','AgentCommands','PushRiskRules','PushTrapRules','ConfigResourceDirs','ValidRepoChecks','Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }
@@ -1076,6 +1079,12 @@ function Invoke-Action($Body) {
     $path = [string]$Body.path
     switch ($action) {
         'training-create' { return New-TrainingRepository }
+        'prefs-save' {
+            $key=([string]$Body.key).Trim();if($key -notin $script:PrefKeys){throw 'Unknown preference.'}
+            $value=$Body.value;$json=ConvertTo-Json -InputObject $value -Depth 5 -Compress;if($json.Length -gt 8192){throw 'Preference is too large.'}
+            $prefs=[ordered]@{};if(Test-Path -LiteralPath $script:PrefsFile -PathType Leaf){try{$saved=Get-Content -Encoding UTF8 -LiteralPath $script:PrefsFile -Raw|ConvertFrom-Json;foreach($p in $saved.PSObject.Properties){if($p.Name -in $script:PrefKeys){$prefs[$p.Name]=$p.Value}}}catch{}}
+            $prefs[$key]=$value;Write-JsonFile $script:PrefsFile $prefs;return @{message='Saved.'}
+        }
         'ui-state-save' {
             $savedPath=([string]$Body.path).Trim();$tab=([string]$Body.tab).Trim();Assert-Registered $savedPath
             $allowed=@('changes','history','compare','gitlab-inbox','github','search-history','rebase','conflicts','health','worktrees','patches','branches','stashes','tags','remotes','recovery','tools','settings')
@@ -1721,6 +1730,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/readiness' { Write-Json $context (Get-SetupReadiness) }
         '/api/custom-actions' { Write-Json $context @{ actions = @(Get-GitDeckCustomActions) } }
         '/api/repo/push-preview' { Write-Json $context (Get-PushPreview $query['path'] $query['remote'] $query['local'] $query['target']) }
+        '/api/prefs' { $prefs=@{};if(Test-Path -LiteralPath $script:PrefsFile -PathType Leaf){try{$prefs=Get-Content -Encoding UTF8 -LiteralPath $script:PrefsFile -Raw|ConvertFrom-Json}catch{}};Write-Json $context @{prefs=$prefs} }
         '/api/ui-state' { $ui=[ordered]@{schemaVersion=2;path='';tab='history';openRepos=@()};if(Test-Path -LiteralPath $script:UiState -PathType Leaf){try{$saved=Get-Content -Encoding UTF8 -LiteralPath $script:UiState -Raw|ConvertFrom-Json;$savedPath=if($saved.path){[string]$saved.path}else{''};$savedTab=if($saved.tab){[string]$saved.tab}else{'history'};[string[]]$savedOpenRepos=if($null-ne $saved.openRepos){@($saved.openRepos|ForEach-Object{[string]$_})}elseif($savedPath){@($savedPath)}else{@()};$savedSchemaVersion=if($saved.schemaVersion){[int]$saved.schemaVersion}else{1};$ui=[ordered]@{schemaVersion=$savedSchemaVersion;path=$savedPath;tab=$savedTab;openRepos=$savedOpenRepos}}catch{}};Write-Json $context @{view=$ui} }
         '/api/jobs' { Write-Json $context @{jobs=@(Get-GitJobs)} }
         '/api/integration' { Write-Json $context @{integration=(Get-WindowsIntegrationState)} }
@@ -1735,6 +1745,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/ci' { Write-Json $context @{ci=(Get-GitDeckCiStatus $query['path'] $query['ref'])} }
         '/api/repo/absorb-plan' { $plan=Get-GitDeckAbsorbPlan $query['path']; Write-Json $context @{plan=[ordered]@{ready=$plan.ready;reason=$plan.reason;fingerprint=$plan.fingerprint;targets=@($plan.targets|ForEach-Object{[ordered]@{commit=$_.commit;short=$_.short;subject=$_.subject;files=$_.files;hunks=$_.hunks}});unassigned=$plan.unassigned}} }
         '/api/repo/find-files' { Write-Json $context @{files=@(Find-GitDeckFilesBySuffix $query['path'] $query['names'])} }
+        '/api/repo/tag-distance' { Write-Json $context @{distance=(Get-GitDeckTagDistance $query['path'] $query['tags'] $query['target'])} }
         '/api/repo/commits-since' { Write-Json $context @{commits=@(Get-GitDeckCommitsSince $query['path'] $query['tag'])} }
         '/api/repo/recent-tags' { Write-Json $context @{tags=@(Get-GitDeckRecentTags $query['path'] $query['since'])} }
         '/api/repo/stack' { Write-Json $context @{stack=(Get-GitDeckBranchStack $query['path'] $query['base'])} }

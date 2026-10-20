@@ -3,7 +3,21 @@
 (function(){
   const keyOf=value=>String(value||'').trim().toLowerCase();
   const providerRef=branch=>branch?.remote?branch.name.slice(branch.name.indexOf('/')+1):branch?.name||'';
-  const primaryViews=['briefing','fleet','pending','my-work','focus-inbox','catalog'];
+  // The Dashboard menu by what you want to do; the first group is always on top. Tools you pin go
+  // above it; tools not opened for 30 days (after 30 days of use) move under More.
+  const intentGroups=[
+    ['Every day',['briefing','pending','fleet','my-work','focus-inbox','ticket-workspaces']],
+    ['The whole family',['fleet-map','catalog','family-checks','family-edit','tag-all','update-all','switch-all']],
+    ['Release and deploy',['releases','ticket','merge-requests','ci','release-proof']],
+    ['Find and investigate',['search-all','log-locate','effective-config','compare-files','failure-lens','impact']],
+  ];
+  const moreViews=['dependencies','recipes','capsules','timeline','jobs','automation'];
+  const primaryViews=intentGroups[0][1];
+  // Tools that have not been opened for `days`, once usage has been recorded for that long.
+  function rarelyUsed(ids,usage,now=Date.now(),days=30){
+    const span=days*864e5;if(!usage?.since||now-usage.since<span)return [];
+    return ids.filter(id=>now-(usage.used?.[id]||0)>=span);
+  }
   function toolMatches(id,label,term){
     const aliases={fleet:'all repos all repositories repository dashboard repository health repos repositories',pending:'pending work unfinished work'};
     const words=keyOf(term).replace(/[-_]+/g,' ').split(/\s+/).filter(Boolean);
@@ -50,7 +64,7 @@
     const root=keyOf(folder).replace(/[\\/]+$/,'').replaceAll('\\','/')+'/';
     return items.filter(item=>{const path=keyOf(item.path).replaceAll('\\','/').replace(/\/+$/,'');return path===root.slice(0,-1)||path.startsWith(root);});
   }
-  const helpers={ticketKey,matches,attention,remoteAttention,impact,proof,safeUrl,capsuleReport,scopedServices,providerRef,primaryViews,toolMatches};
+  const helpers={ticketKey,matches,attention,remoteAttention,impact,proof,safeUrl,capsuleReport,scopedServices,providerRef,primaryViews,toolMatches,intentGroups,moreViews,rarelyUsed};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
   // The helpers above return English states (tests and comparisons use them); show them translated.
   function nextStepLabel(value){return {review:t('Review the code'),test:t('Test'),push:t('Push'),'request-review':t('Ask for review'),'check-environment':t('Check the environment')}[value]||String(value||'');}
@@ -167,22 +181,49 @@
     const tabs=[...nav.querySelectorAll('[data-operations-view]')];
     const search=nav.querySelector('input'),mobile=nav.querySelector('select');
     const tools=el('details','cockpit-tools'),summary=el('summary','',t('More tools'));tools.append(summary);
-    const primary=el('section','catalog-nav-group cockpit-primary');
-    for(const id of primaryViews){const tab=tabs.find(node=>node.dataset.operationsView===id);if(tab){if(id==='fleet')tab.textContent=t('All repositories');if(id==='catalog')tab.textContent=t('Systems');primary.append(tab);}}
-    for(const tab of tabs)if(!primary.contains(tab))tools.append(tab);
-    // More tools in small groups, so 17 entries read as four kinds of work; anything new goes last.
-    const groups=[[t('Many repositories'),['update-all','switch-all','search-all','tag-all']],[t('Tickets and releases'),['ticket','ticket-workspaces','releases','merge-requests','ci','release-proof','failure-lens']],[t('Code'),['compare-files','effective-config','family-checks','family-edit','log-locate','dependencies','impact','recipes','capsules']],[t('Git Deck'),['timeline','jobs','automation']]];
-    const headings=[];
-    for(const [title,ids] of groups){const items=ids.map(id=>tabs.find(tab=>tab.dataset.operationsView===id&&tools.contains(tab))).filter(Boolean);if(!items.length)continue;const heading=el('p','cockpit-tools-heading',title);headings.push(heading);tools.append(heading,...items);}
-    const rest=[...tools.querySelectorAll(':scope > button')].filter(tab=>{let node=tab.previousElementSibling;while(node&&!node.classList.contains('cockpit-tools-heading'))node=node.previousElementSibling;return !node;});
-    if(rest.length&&headings.length){const heading=el('p','cockpit-tools-heading',t('Other'));headings.push(heading);tools.append(heading,...rest);}
-    const syncHeadings=()=>{for(const heading of headings){let node=heading.nextElementSibling,any=false;while(node&&!node.classList.contains('cockpit-tools-heading')){if(!node.hidden)any=true;node=node.nextElementSibling;}heading.hidden=!any;}};
+    const byId=(id)=>tabs.find(node=>node.dataset.operationsView===id);
+    for(const [id,label] of [['fleet',t('All repositories')],['catalog',t('Systems')]]){const tab=byId(id);if(tab)tab.textContent=label;}
+    let usage={since:0,used:{}};try{usage=JSON.parse(localStorage.getItem('gitdeck.toolUsage')||'null')||usage;}catch{}
+    if(!usage.since){usage.since=Date.now();try{localStorage.setItem('gitdeck.toolUsage',JSON.stringify(usage));}catch{}}
+    let pinned=[];try{pinned=JSON.parse(localStorage.getItem('gitdeck.pinnedTools')||'[]');}catch{}
+    pinned=pinned.filter(id=>byId(id));
+    const groupTitles={'Every day':t('Every day'),'The whole family':t('The whole family'),'Release and deploy':t('Release and deploy'),'Find and investigate':t('Find and investigate')};
+    const sections=[];const headings=[];
+    const pinGroup=el('section','catalog-nav-group cockpit-pinned');const pinHeading=el('p','cockpit-tools-heading',t('📌 Pinned'));pinGroup.append(pinHeading);
+    for(const id of pinned)pinGroup.append(byId(id));
+    const rare=new Set(rarelyUsed(intentGroups.slice(1).flatMap(([,ids])=>ids),usage).filter(id=>!pinned.includes(id)));
+    intentGroups.forEach(([title,ids],index)=>{
+      const group=el('section',`catalog-nav-group cockpit-intent${index===0?' cockpit-primary':''}`);
+      const heading=el('p','cockpit-tools-heading',groupTitles[title]||title);group.append(heading);
+      for(const id of ids){const tab=byId(id);if(tab&&!pinned.includes(id)&&!rare.has(id))group.append(tab);}
+      sections.push(group);
+    });
+    const primary=sections[0];
+    // More: the less common tools, anything new, and tools you have not opened for a month.
+    const moreHeading=el('p','cockpit-tools-heading',t('Less often'));headings.push(moreHeading);tools.append(moreHeading);
+    for(const id of [...moreViews,...rare])if(byId(id)&&!pinned.includes(id))tools.append(byId(id));
+    const placed=new Set([...pinGroup.querySelectorAll('button'),...sections.flatMap(group=>[...group.querySelectorAll('button')]),...tools.querySelectorAll('button')]);
+    const rest=tabs.filter(tab=>!placed.has(tab));
+    if(rest.length){const heading=el('p','cockpit-tools-heading',t('Other'));headings.push(heading);tools.append(heading,...rest);}
+    const syncHeadings=()=>{for(const heading of headings){let node=heading.nextElementSibling,any=false;while(node&&!node.classList.contains('cockpit-tools-heading')){if(!node.hidden)any=true;node=node.nextElementSibling;}heading.hidden=!any;}
+      for(const group of [pinGroup,...sections])group.hidden=![...group.querySelectorAll('button')].some(tab=>!tab.hidden);};
     const empty=el('p','cockpit-nav-empty',t('No matching tools. Try repository, CI or release.'));empty.hidden=true;empty.setAttribute('role','status');
-    nav.replaceChildren(primary,tools,empty);if(search)nav.prepend(search);
-    if(mobile){mobile.replaceChildren();for(const tab of [...primary.children,...tools.querySelectorAll('button')])mobile.append(new Option(tab.textContent,tab.dataset.operationsView));mobile.onchange=()=>tabs.find(tab=>tab.dataset.operationsView===mobile.value)?.click();nav.append(mobile);}
-    const ordered=[...primary.children,...tools.querySelectorAll('button')];
-    function filterTools(){const term=search?.value.trim()||'';for(const tab of tabs)tab.hidden=!toolMatches(tab.dataset.operationsView,tab.textContent,term);empty.hidden=tabs.some(tab=>!tab.hidden);primary.hidden=![...primary.children].some(tab=>!tab.hidden);tools.hidden=![...tools.querySelectorAll('button')].some(tab=>!tab.hidden);syncHeadings();const active=tabs.find(tab=>tab.classList.contains('active'));tools.open=Boolean(term)||Boolean(active&&tools.contains(active));}
-    function syncActive(){const active=tabs.find(tab=>tab.classList.contains('active'));if(active?.hidden&&search?.value){search.value='';filterTools();}for(const tab of tabs){if(tab===active)tab.setAttribute('aria-current','page');else tab.removeAttribute('aria-current');}if(active&&mobile)mobile.value=active.dataset.operationsView;if(active&&tools.contains(active))tools.open=true;}
+    nav.replaceChildren(pinGroup,...sections,tools,empty);if(search)nav.prepend(search);
+    const allButtons=()=>[...pinGroup.querySelectorAll('button'),...sections.flatMap(group=>[...group.querySelectorAll('button')]),...tools.querySelectorAll('button')];
+    if(mobile){mobile.replaceChildren();for(const tab of allButtons())mobile.append(new Option(tab.textContent,tab.dataset.operationsView));mobile.onchange=()=>tabs.find(tab=>tab.dataset.operationsView===mobile.value)?.click();nav.append(mobile);}
+    const ordered=allButtons();
+    function filterTools(){const term=search?.value.trim()||'';for(const tab of tabs)tab.hidden=!toolMatches(tab.dataset.operationsView,tab.textContent,term);empty.hidden=tabs.some(tab=>!tab.hidden);tools.hidden=![...tools.querySelectorAll('button')].some(tab=>!tab.hidden);syncHeadings();const active=tabs.find(tab=>tab.classList.contains('active'));tools.open=Boolean(term)||Boolean(active&&tools.contains(active));}
+    // Pin or unpin the open tool from the Dashboard header; pins are kept on this computer.
+    const pin=el('button','gd-pin-toggle','📌');pin.type='button';
+    const savePins=()=>{try{localStorage.setItem('gitdeck.pinnedTools',JSON.stringify(pinned));}catch{}try{void api('/api/action',{method:'POST',body:JSON.stringify({action:'prefs-save',key:'pinnedTools',value:pinned})}).catch(()=>{});}catch{}};
+    const homeOf=(id)=>{const index=intentGroups.findIndex(([,ids])=>ids.includes(id));return index>=0&&!rare.has(id)?sections[index]:tools;};
+    const syncPin=()=>{const id=tabs.find(tab=>tab.classList.contains('active'))?.dataset.operationsView;pin.hidden=!id;const on=pinned.includes(id);pin.classList.toggle('on',on);pin.title=on?t('Unpin this tool'):t('Pin this tool to the top of the menu');pin.setAttribute('aria-pressed',String(on));};
+    pin.onclick=()=>{const tab=tabs.find(node=>node.classList.contains('active'));if(!tab)return;const id=tab.dataset.operationsView;
+      if(pinned.includes(id)){pinned=pinned.filter(entry=>entry!==id);homeOf(id).append(tab);}else{pinned.push(id);pinGroup.append(tab);}
+      savePins();syncHeadings();syncPin();};
+    document.querySelector('.operations-head #operations-close')?.before(pin);
+    pinGroup.hidden=!pinned.length;
+    function syncActive(){const active=tabs.find(tab=>tab.classList.contains('active'));if(active){usage.used[active.dataset.operationsView]=Date.now();try{localStorage.setItem('gitdeck.toolUsage',JSON.stringify(usage));}catch{}}syncPin();if(active?.hidden&&search?.value){search.value='';filterTools();}for(const tab of tabs){if(tab===active)tab.setAttribute('aria-current','page');else tab.removeAttribute('aria-current');}if(active&&mobile)mobile.value=active.dataset.operationsView;if(active&&tools.contains(active))tools.open=true;}
     for(const tab of tabs)tab.addEventListener('click',syncActive);
     if(search)search.onkeydown=event=>{if(event.key!=='Enter')return;const target=ordered.find(tab=>!tab.hidden);if(target){event.preventDefault();target.click();target.focus();}};
     new MutationObserver(syncActive).observe(nav,{subtree:true,attributes:true,attributeFilter:['class']});syncActive();
@@ -192,5 +233,5 @@
     if(search)search.oninput=filterTools;
   }
   window.GitDeckCockpit={...helpers,records};
-  const dashboard=document.getElementById('dashboard-button');if(dashboard){dashboard.onclick=()=>showOperationsCenter('pending');dashboard.title=t('Pending work in every repository, plus All repositories, My work, Needs attention and Systems');}
+  const dashboard=document.getElementById('dashboard-button');if(dashboard){dashboard.onclick=()=>showOperationsCenter('briefing');dashboard.title=t('Pending work in every repository, plus All repositories, My work, Needs attention and Systems');}
 })();
