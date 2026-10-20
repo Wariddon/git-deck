@@ -1772,7 +1772,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/agents' { Write-Json $context @{agents=@(Get-GitDeckAgents)} }
         '/api/mcp' { Write-Json $context @{mcp=(Get-GitDeckMcpSetup)} }
         '/api/ticket-workspaces' { Write-Json $context @{workspaces=@(Get-GitDeckTicketWorkspaces)} }
-        '/api/repo/api-surface' { Write-Json $context @{surface=(Get-GitDeckApiSurface $query['path'] $query['ref'])} }
+        '/api/repo/api-surface' { Write-Json $context @{surface=(Get-GitDeckApiSurface $query['path'] $query['ref'] ($query['fresh'] -eq '1'))} }
         '/api/repo/commit-pairs' { Write-Json $context @{pairs=(Get-GitDeckCommitPairs $query['path'] $query['commit'])} }
         '/api/repo/family-edit-source' { Write-Json $context @{source=(Get-GitDeckFamilyEditSource $query['path'] $query['key'] $query['file'] $query['start'])} }
         '/api/repo/ref-at' { Write-Json $context @{ref=(Get-GitDeckRefAt $query['path'] $query['at'] $query['ref'])} }

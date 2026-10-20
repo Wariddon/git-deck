@@ -1728,4 +1728,6 @@ GitDeckI18n.register('th',{
   "{builtIn} built in · {custom} yours":"มีมาให้ {builtIn} · ของคุณ {custom}",
   "Name, files and added line are required.":"ต้องใส่ชื่อ ไฟล์ และบรรทัดที่เพิ่ม",
   "Known traps":"กับดักที่รู้จัก",
+  "Re-read files":"อ่านไฟล์ใหม่",
+  "Scans are remembered per commit; tick to also read edits that are not staged yet":"ผลสแกนจำไว้ตาม commit ติ๊กเพื่ออ่านการแก้ที่ยังไม่ได้ stage ด้วย",
 });

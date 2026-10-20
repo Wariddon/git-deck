@@ -33,10 +33,23 @@ function Join-GitDeckApiPath([string]$Base, [string]$Path) {
     return $joined
 }
 
-function Get-GitDeckApiSurface([string]$Path, [string]$Ref) {
+# Cached per commit: the same HEAD (or ref) with the same uncommitted Java/Kotlin/config changes gives
+# the same answer, so scanning a folder again is instant until something changes.
+function Get-GitDeckApiSurface([string]$Path, [string]$Ref, [bool]$Fresh = $false) {
     Assert-Registered $Path
     $Ref = ([string]$Ref).Trim()
     if ($Ref -and ($Ref.Length -gt 200 -or $Ref.StartsWith('-') -or $Ref -notmatch '^[A-Za-z0-9._/@{}~^-]+$')) { throw 'Branch or tag name is not valid.' }
+    if ($Fresh -or -not (Get-Command Get-GitDeckImmutable -ErrorAction SilentlyContinue)) { return Get-GitDeckApiSurfaceUncached $Path $Ref }
+    $commit = ([string](Invoke-GitCapture $Path @('rev-parse', '--verify', '--quiet', "$(if ($Ref) { $Ref } else { 'HEAD' })^{commit}")).Output).Trim()
+    if (-not $commit) { return Get-GitDeckApiSurfaceUncached $Path $Ref }
+    # On disk: the index file changes with every add, commit, switch or pull, without starting Git.
+    # Edits that are not staged yet show up with "Re-read files" (Fresh).
+    $stamp = ''
+    if (-not $Ref) { $index = Join-Path (Get-GitDeckGitDir $Path) 'index'; if (Test-Path -LiteralPath $index) { $stamp = (Get-Item -LiteralPath $index).LastWriteTimeUtc.Ticks } }
+    return Get-GitDeckImmutable "api-surface|$($Path.ToLowerInvariant())|$Ref|$commit|$stamp" { Get-GitDeckApiSurfaceUncached $Path $Ref }
+}
+
+function Get-GitDeckApiSurfaceUncached([string]$Path, [string]$Ref) {
     $code = @('*.java', '*.kt')
     # One grep for every interesting line of Java/Kotlin code; split by kind afterwards.
     # No double quote in a pattern: Windows PowerShell 5.1 strips it from a native argument, so a

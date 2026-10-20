@@ -61,7 +61,10 @@
     const bar=el('div','operations-toolbar');const folder=folderSelect();
     const family=input(t('Family, for example depinq- or crs-'));try{family.value=localStorage.getItem('gitdeck.familyPrefix')||'';}catch{}
     const ref=input(t('Branch or tag (empty: files on disk)'));ref.classList.add('fleet-ref');
-    const run=button(t('Scan'),'primary');const filter=input(t('Filter, for example findByProxy'));bar.append(folder,family,ref,run,filter);
+    const run=button(t('Scan'),'primary');const filter=input(t('Filter, for example findByProxy'));
+    // Results are kept per commit; tick this to also read edits you have not staged yet.
+    const freshLabel=el('label','fleet-check');const fresh=el('input');fresh.type='checkbox';freshLabel.append(fresh,el('span','',t('Re-read files')));freshLabel.title=t('Scans are remembered per commit; tick to also read edits that are not staged yet');
+    bar.append(folder,family,ref,run,freshLabel,filter);
     const status=el('small','multi-repo-status');const out=el('div','multi-repo-body');
     panel.append(bar,el('p','multi-repo-explain',t('Who provides each HTTP endpoint and who calls it (Feign clients, URLs in application.yml, path literals), plus Kafka topics with producers and consumers, read from the source of every repository. Check it before changing an endpoint, a request body or a message.')),status,out);
     let results=[];
@@ -108,7 +111,7 @@
       if(!repos.length){status.textContent=t('No repositories in this folder.');return;}
       run.disabled=true;let done=0;results=[];
       const found=await mapLimit(repos,6,async repo=>{
-        let surface=null;try{surface=(await api('/api/repo/api-surface?'+query({path:repo.path,ref:ref.value.trim()}))).surface;}catch{}
+        let surface=null;try{surface=(await api('/api/repo/api-surface?'+query({path:repo.path,ref:ref.value.trim(),fresh:fresh.checked?'1':''}))).surface;}catch{}
         status.textContent=t('Scanning {done} of {total}…',{done:++done,total:repos.length});return {repo,surface};
       });
       results=found.filter(item=>item.surface);run.disabled=false;
