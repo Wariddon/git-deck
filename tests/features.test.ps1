@@ -2,6 +2,7 @@ $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 $script:Root=$root
 . (Join-Path $root 'lib\GitDeck.Features.ps1')
+. (Join-Path $root 'lib\GitDeck.Traps.ps1')
 . (Join-Path $root 'lib\GitDeck.Ai.ps1')
 . (Join-Path $root 'lib\GitDeck.Runtime.ps1')
 

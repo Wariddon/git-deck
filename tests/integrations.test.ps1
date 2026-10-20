@@ -12,6 +12,7 @@ foreach($name in @('Invoke-GitCapture','Invoke-GitOrThrow')){
 . (Join-Path $root 'lib\GitDeck.MultiRepo.ps1')
 . (Join-Path $root 'lib\GitDeck.Parity.ps1')
 . (Join-Path $root 'lib\GitDeck.Features.ps1')
+. (Join-Path $root 'lib\GitDeck.Traps.ps1')
 . (Join-Path $root 'lib\GitDeck.Integrations.ps1')
 function Assert-Registered($Path){}
 function Run-Git([string]$Path,[string[]]$Arguments){[void](Invoke-GitOrThrow $Path $Arguments)}

@@ -81,6 +81,10 @@ function Get-PushChecks([string]$Path, [string]$Remote, [string]$Local, [string]
     if ($blocking.Count) { $checks.Add([ordered]@{level='block'; label='Possible secrets'; detail="$($blocking.Count) added line(s) look like keys or tokens. Remove them and rewrite the commit before pushing."}) }
     elseif ($findings.Count) { $checks.Add([ordered]@{level='warn'; label='Possible secrets'; detail="$($findings.Count) added line(s) look like hard-coded credentials. Review before pushing."}) }
     else { $checks.Add([ordered]@{level='ok'; label='Secret scan'; detail=$(if ($truncated) { 'No secrets found in the first 8 MB of outgoing changes.' } else { 'No keys or tokens found in outgoing changes.' })}) }
+    # Known traps in added lines (lib/GitDeck.Traps.ps1): warnings with the file and line.
+    foreach ($trap in @(Find-GitDeckKnownTraps $patch)) {
+        $checks.Add([ordered]@{level='warn'; label="Known trap: $($trap.label)"; detail="$($trap.detail) ($(@($trap.places) -join ', '))"; trap=$trap.id})
+    }
     # Large and sensitive files.
     $raw = Invoke-GitCapture $Path (@('log', '--no-color', '--format=', '--raw', '--no-abbrev', '-n', '200') + $range)
     $blobs = @{}
