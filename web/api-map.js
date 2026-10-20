@@ -55,7 +55,8 @@
   const {addPanel,folderSelect,reposIn,repoLink,table,row,mapLimit,query}=F;
   const button=(label,className='')=>{const node=el('button',className,label);node.type='button';return node;};
   const input=(placeholder)=>{const node=el('input','workflow-input');node.type='search';node.placeholder=placeholder;node.setAttribute('aria-label',placeholder);return node;};
-  const where=(item)=>{const box=el('div','api-where');box.append(repoLink(item.repo),el('small','fleet-muted',` ${item.file}:${item.line}${item.via?` · ${item.via}`:''}`));return box;};
+  // The file name and line (the full path on hover), so long Java paths do not break the table.
+  const where=(item)=>{const box=el('div','api-where');const place=el('small','fleet-muted',` ${String(item.file).split('/').pop()}:${item.line}${item.via?` · ${item.via}`:''}`);place.title=`${item.file}:${item.line}`;box.append(repoLink(item.repo),place);return box;};
 
   function build(panel){
     const bar=el('div','operations-toolbar');const folder=folderSelect();

@@ -95,7 +95,7 @@ html.ui-modern body .fleet-journey-step { padding: 1px 8px; border-radius: 999px
 html.ui-modern body .fleet-journey-step + .fleet-journey-step::before { content: none; }
 html.ui-modern body .api-table td { vertical-align: top; }
 html.ui-modern body .api-where { margin: 1px 0; }
-html.ui-modern body .api-where small { word-break: break-all; }
+html.ui-modern body .api-where small { overflow-wrap: anywhere; }
 html.ui-modern body .api-drift { margin-bottom: 10px; }
 html.ui-modern body .api-drift code { font-weight: 700; }
 html.ui-modern body .incident-day { margin: 14px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; opacity: .7; }
