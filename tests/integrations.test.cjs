@@ -56,7 +56,7 @@ assert.match(html, /data-workspace-quick="open-idea"/);
 const server = fs.readFileSync(path.join(__dirname, '../git-dashboard-server.ps1'), 'utf8');
 for (const route of ["'/api/repo/deploy-map'", "'/api/repo/mrs'", "'/api/editors'", "'/api/repo/latest-tag'", "'notify-toast'", "'open-editor'", "'open-idea'"]) assert.ok(server.includes(route), route);
 assert.match(web('modern.js'), /releases:'cloud','merge-requests':'merge',dependencies:'tools'/);
-assert.match(web('fleet.js'), /GitDeckIntegrations\?\.deployedIn/);
+assert.match(web('fleet.js'), /GitDeckIntegrations\?\.deployedTags/);
 assert.match(web('integrations.js'), /not verified live deployments/);
 assert.match(web('fleet.js'), /t\('Configured in Git'\)/);
 assert.doesNotMatch(web('fleet.js'), /t\('Deployed to'\)/, 'Git configuration must not claim runtime deployment');

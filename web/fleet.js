@@ -181,7 +181,8 @@
           const deployed=window.GitDeckIntegrations?.deployedTags(item.repo)||[];
           api('/api/repo/ticket-journey?'+query({path:item.repo.path,key:text,envs:deployed.map(entry=>`${entry.env}:${entry.tag}`).join('|')})).then(answer=>{
             const j=answer.journey;if(!j?.found)return;
-            for(const step of journeySteps(j))journey.append(el('span',`fleet-journey-step tone-${step.tone}`,step.text));
+            // Environment tags are what the deploy repository configures, not a verified live deployment.
+            journeySteps(j).forEach((step,index)=>{if(index===3)journey.append(el('small','fleet-muted',t('Configured in Git')+':'));journey.append(el('span',`fleet-journey-step tone-${step.tone}`,step.text));});
             if(!deployed.length)journey.append(el('small','fleet-muted',t('Load Releases once to see environments.')));
             journey.title=`${j.commit} ${j.subject}`;
           }).catch(()=>{});
