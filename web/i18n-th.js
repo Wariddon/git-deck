@@ -1579,4 +1579,8 @@ GitDeckI18n.register('th',{
   "Reading your commits…":"กำลังอ่าน commit ของคุณ…",
   "Your commits ({author}) since {date}, and the state of this week's repositories. Edit before sending.":"commit ของคุณ ({author}) ตั้งแต่ {date} และสถานะ repository ที่ทำสัปดาห์นี้ แก้ได้ก่อนส่ง",
   "Commits by everyone since {date} (no Git identity found). Edit before sending.":"commit ของทุกคนตั้งแต่ {date} (ไม่พบชื่อผู้ใช้ Git) แก้ได้ก่อนส่ง",
+  "By family (aml-, crs-…)":"ตามตระกูล (aml-, crs-…)",
+  "✏️ uncommitted · ⬆️ to push · ⬇️ to pull · 📦 stashes · 🌿 branches only here · 🧹 merged branches; click one for the list":"✏️ ยังไม่ commit · ⬆️ ต้อง push · ⬇️ ต้อง pull · 📦 stash · 🌿 branch ที่มีแค่ในเครื่อง · 🧹 branch ที่ merge แล้ว กดเพื่อดูรายการ",
+  "{count} repositories · {busy} with pending work":"{count} repository · มีงานค้าง {busy}",
+  "Others":"อื่นๆ",
 });

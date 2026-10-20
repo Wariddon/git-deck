@@ -120,6 +120,8 @@
   }
   // The filter box takes several names at once: "billing-svc, deploy-config ledger". Each term matches
   // a repository name, branch or latest tag; the rank (which term matched first) keeps the typed order.
+  // The family of a repository: its name up to the first dash (aml-batch -> aml, crs-webview -> crs).
+  const familyOf=(name)=>{const text=String(name||'');const at=text.indexOf('-');return (at>0?text.slice(0,at):text).toLowerCase();};
   const parseTerms=(text)=>String(text||'').toLowerCase().split(/[,\s]+/).map(term=>term.trim()).filter(Boolean);
   function termRank(item,terms){
     if(!terms.length)return 0;
@@ -233,7 +235,7 @@
     const bar=el('div','operations-toolbar');const folder=folderSelect();
     const search=el('input','workflow-input pending-search');search.type='search';search.placeholder=t('Names, branches or tags: several at once, separated by commas');search.setAttribute('aria-label',t('Filter by names, branches or tags'));search.title=t('Type several names to see only those repositories, in the order you typed them. Example: billing-svc-common, deploy-config-2, ledger');
     const sort=document.createElement('select');sort.className='workflow-input';sort.setAttribute('aria-label',t('Sort'));
-    [['pending',t('Most pending first')],['name',t('Name A–Z')],['push',t('Most to push')],['changes',t('Most uncommitted')],['tag',t('Newest tag first')],['recent',t('Recently changed first')]].forEach(([value,label])=>sort.append(new Option(label,value)));
+    [['pending',t('Most pending first')],['name',t('Name A–Z')],['family',t('By family (aml-, crs-…)')],['push',t('Most to push')],['changes',t('Most uncommitted')],['tag',t('Newest tag first')],['recent',t('Recently changed first')]].forEach(([value,label])=>sort.append(new Option(label,value)));
     const run=el('button','primary',t('Check'));run.type='button';
     const more=document.createElement('details');more.className='pending-more';const moreLabel=el('summary','',t('Bulk actions'));more.append(moreLabel);
     const menu=el('div','pending-more-menu');more.append(menu);
@@ -317,6 +319,7 @@
     byTable.onclick=()=>{view='table';remember('gitdeck.pendingView',view);syncView();drawChips();draw();};
     sort.value=[...sort.options].some(option=>option.value===recall('gitdeck.pendingSort',''))?recall('gitdeck.pendingSort',''):'pending';
     const headerHelp={
+      [t('State')]:t('✏️ uncommitted · ⬆️ to push · ⬇️ to pull · 📦 stashes · 🌿 branches only here · 🧹 merged branches; click one for the list'),
       [t('Uncommitted')]:t('Files changed on this computer and not committed yet'),
       [t('To push')]:t('Commits on the current branch that the remote does not have yet'),
       [t('To pull')]:t('New commits on the remote that this computer does not have yet'),
@@ -347,6 +350,7 @@
       // Several names typed: keep the order they were typed in.
       const terms=parseTerms(search.value);if(terms.length>1){const diff=termRank(a,terms)-termRank(b,terms);if(diff)return diff;}
       if(by==='name')return a.repo.name.localeCompare(b.repo.name);
+      if(by==='family')return groupOf(a).localeCompare(groupOf(b))||(cb.score-ca.score)||a.repo.name.localeCompare(b.repo.name);
       if(by==='recent')return String(b.pending?.lastCommitDate||'').localeCompare(String(a.pending?.lastCommitDate||''))||a.repo.name.localeCompare(b.repo.name);
       if(by==='tag')return String(b.pending?.latestTagDate||'').localeCompare(String(a.pending?.latestTagDate||''))||a.repo.name.localeCompare(b.repo.name);
       if(by==='push')return (cb.push+cb.localOnlyCommits)-(ca.push+ca.localOnlyCommits)||a.repo.name.localeCompare(b.repo.name);
@@ -357,7 +361,11 @@
     // Typing a name means "show me that repository": with the default "Anything pending" filter a
     // repository with nothing pending (say, only a new tag) used to vanish from the search.
     const activeFilter=()=>filter==='any'&&parseTerms(search.value).length?'all':filter;
-    const visible=()=>results.filter(item=>pendingMatches(item,activeFilter())&&shown(item)).sort(order);
+    // Families with one repository in this folder go together at the end under "Others".
+    let familySizes=new Map();
+    const groupOf=(item)=>{const family=familyOf(item.repo.name);return (familySizes.get(family)||0)>1?family:'￿';};
+    const visible=()=>{familySizes=new Map();for(const item of results){const family=familyOf(item.repo.name);familySizes.set(family,(familySizes.get(family)||0)+1);}
+      return results.filter(item=>pendingMatches(item,activeFilter())&&shown(item)).sort(order);};
 
     // One click per fix: the button does the safe step or opens the right view.
     const act=async(item,id,button)=>{
@@ -372,15 +380,18 @@
       }catch(error){item.actionError={kind:id,reason:explainError(error.message),raw:String(error.message||'')};showActionFeedback(error.message,{error:true,context:`${repo.name} · ${id}`});}
       Object.assign(item,await check(repo));drawChips();draw();
     };
-    const numberCell=(value,{tone='',detail='',title=''}={})=>{
-      const td=el('td','pending-num');if(!value){td.append(el('span','pending-zero','·'));return td;}
-      const text=String(value);
-      if(detail){const button=el('button',`pending-count tone-${tone}`,text);button.type='button';button.title=title;button.setAttribute('aria-expanded',String(expanded.has(detail)));button.onclick=()=>{expanded.has(detail)?expanded.delete(detail):expanded.add(detail);draw();};td.append(button);}
-      else{const span=el('span',`pending-count tone-${tone}`,text);span.title=title;td.append(span);}
+    // Every count of a repository in one cell, as small chips; the ones with a list open it below.
+    const stateCell=(chips)=>{
+      const td=el('td','pending-state');let any=false;
+      for(const chip of chips){if(!chip.value)continue;any=true;
+        const node=el(chip.detail?'button':'span',`pending-chip tone-${chip.tone}`,`${chip.icon}${chip.value}`);node.title=chip.title;
+        if(chip.detail){node.type='button';node.setAttribute('aria-expanded',String(expanded.has(chip.detail)));node.onclick=()=>{expanded.has(chip.detail)?expanded.delete(chip.detail):expanded.add(chip.detail);draw();};}
+        td.append(node);}
+      if(!any)td.append(el('span','pending-zero','✓'));
       return td;
     };
     const detailRow=(item,kind)=>{
-      const tr=el('tr','pending-detail');const td=el('td');td.colSpan=11;const p=item.pending;const box=el('div','pending-detail-box');
+      const tr=el('tr','pending-detail');const td=el('td');td.colSpan=6;const p=item.pending;const box=el('div','pending-detail-box');
       if(kind==='localOnly'){
         box.append(el('strong','',t('Branches with commits that are on no remote')));
         const list=el('div','pending-detail-list');[...p.unpushedBranches].sort((a,b)=>b.commits-a.commits).forEach(b=>list.append(el('span','',`${b.branch} · ${b.commits}`)));box.append(list);
@@ -515,9 +526,10 @@
         else if(done&&filter!=='all'){const all=el('button','',t('Show all repositories'));all.type='button';all.onclick=()=>{filter='all';remember('gitdeck.pendingFilter','all');search.value='';drawChips();draw();};empty.append(all);}
         out.append(empty);return;
       }
-      const grid=table([t('Repository'),t('Branch'),t('Latest tag'),t('Last commit'),t('What to do'),t('Uncommitted'),t('To push'),t('To pull'),t('Stashes'),t('Unpushed branches'),t('Merged branches')]);
-      grid.classList.add('pending-table');
+      const grid=table([t('Repository'),t('Branch'),t('Latest tag'),t('Last commit'),t('What to do'),t('State')]);
+      grid.classList.add('pending-table','pending-table-compact');
       grid.querySelectorAll('th').forEach(th=>{if(headerHelp[th.textContent]){th.title=headerHelp[th.textContent];th.classList.add('pending-has-help');}});
+      let lastFamily=null;
       for(const item of rows.slice(0,300)){
         const c=item.counts,p=item.pending,key=item.repo.path;
         const name=el('td','pending-repo');name.append(repoLink(item.repo));if(item.error)name.append(el('small','pending-error',item.error));else if(p?.operation)name.append(el('small','pending-error',t('{operation} in progress',{operation:p.operation})+(c.conflicts?` · ${t('{count} conflict(s)',{count:c.conflicts})}`:'')));
@@ -537,12 +549,18 @@
         if(p?.lastCommitDate){lastCell.append(el('span','',dayOf(p.lastCommitDate)),el('small','',ageOf(p.lastCommitDate)));if(p.lastCommitSubject)lastCell.append(el('small','pending-last-subject',p.lastCommitSubject));lastCell.title=p.lastCommitSubject||'';}
         else lastCell.append(el('span','pending-zero','·'));
         const tr=el('tr');if(!seenRows.has(key)){seenRows.add(key);tr.classList.add('gd-enter');}tr.append(name,branch,tagCell,lastCell,todo,
-          numberCell(c.changes,{tone:'warn',title:t('{count} uncommitted file(s)',{count:c.changes})}),
-          numberCell(c.push,{tone:'warn',title:t('{count} to push',{count:c.push})}),
-          numberCell(c.pull,{tone:'info',title:t('{count} to pull',{count:c.pull})}),
-          numberCell(c.stashes,{tone:'info',detail:c.stashes?key+'|stashes':'',title:t('Show stashes')}),
-          numberCell(c.localOnly,{tone:'warn',detail:c.localOnly?key+'|localOnly':'',title:t('{count} branches, {commits} commits on no remote',{count:c.localOnly,commits:c.localOnlyCommits})}),
-          numberCell(c.merged,{tone:'muted',detail:c.merged?key+'|merged':'',title:t('Show merged branches')}));
+          stateCell([
+            {icon:'✏️',value:c.changes,tone:'warn',title:t('{count} uncommitted file(s)',{count:c.changes})},
+            {icon:'⬆️',value:c.push,tone:'warn',title:t('{count} to push',{count:c.push})},
+            {icon:'⬇️',value:c.pull,tone:'info',title:t('{count} to pull',{count:c.pull})},
+            {icon:'📦',value:c.stashes,tone:'info',detail:key+'|stashes',title:t('Show stashes')},
+            {icon:'🌿',value:c.localOnly,tone:'warn',detail:key+'|localOnly',title:t('{count} branches, {commits} commits on no remote',{count:c.localOnly,commits:c.localOnlyCommits})},
+            {icon:'🧹',value:c.merged,tone:'muted',detail:key+'|merged',title:t('Show merged branches')}]));
+        // By family: a heading row with the family's totals before its first repository.
+        const family=groupOf(item);
+        if(sort.value==='family'&&family!==lastFamily){lastFamily=family;const members=results.filter(entry=>groupOf(entry)===family);
+          const head=el('tr','pending-family');const cell=el('td');cell.colSpan=6;const busy=members.filter(entry=>pendingMatches(entry,'any')).length;
+          cell.append(el('strong','',family==='￿'?t('Others'):family+'-'),el('small','',t('{count} repositories · {busy} with pending work',{count:members.length,busy})));head.append(cell);grid.append(head);}
         grid.append(tr);
         for(const kind of ['localOnly','merged','stashes'])if(expanded.has(key+'|'+kind))grid.append(detailRow(item,kind));
       }
@@ -966,5 +984,5 @@
     }
     setTimeout(checkGitLab,30000);setInterval(checkGitLab,10*60*1000);
   }
-  window.GitDeckMultiRepo={dayOf,whenOf,pendingLabels,pendingActions,pendingCounts,pendingMatches,nextSteps,explainError,parseTerms,termRank,tagMatches,ageOf,switchPlan,cleanupReasons,ticketPrefix,gitlabNews,openBranchCleanup,checkGitLab};
+  window.GitDeckMultiRepo={familyOf,dayOf,whenOf,pendingLabels,pendingActions,pendingCounts,pendingMatches,nextSteps,explainError,parseTerms,termRank,tagMatches,ageOf,switchPlan,cleanupReasons,ticketPrefix,gitlabNews,openBranchCleanup,checkGitLab};
 })();
