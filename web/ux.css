@@ -152,3 +152,18 @@ html.ui-modern body .plan-table th { position: sticky; top: 0; background: var(-
 html.ui-modern body .plan-table tr.plan-skip { opacity: .6; }
 html.ui-modern body .plan-result.tone-ok { color: var(--gd-ok); }
 html.ui-modern body .plan-result.tone-bad { color: var(--gd-bad); }
+
+/* Ticket lanes. */
+html.ui-modern body .lanes-board { display: flex; gap: 12px; align-items: flex-start; overflow-x: auto; padding-bottom: 8px; }
+html.ui-modern body .lane { flex: 0 0 300px; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 12px; background: color-mix(in srgb, currentColor 5%, transparent); }
+html.ui-modern body .lane-head { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+html.ui-modern body .lane-remove { border: 0; background: transparent; color: inherit; opacity: .55; font-size: 16px; cursor: pointer; }
+html.ui-modern body .lane-steps, html.ui-modern body .lane-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+html.ui-modern body .lane-cards { display: grid; gap: 8px; }
+html.ui-modern body .lane-card { display: grid; gap: 4px; padding: 9px 10px; border-radius: 10px; background: var(--surface, #fff); border: 1px solid var(--border-default, #dfe4ea); }
+html.ui-modern body .lane-card-top { display: flex; justify-content: space-between; gap: 8px; }
+html.ui-modern body .lane-card-top .tone-warn { color: var(--gd-warn); } html.ui-modern body .lane-card-top .tone-ok { color: var(--gd-ok); }
+html.ui-modern body .lane-branch { font-size: 12px; opacity: .7; overflow-wrap: anywhere; }
+html.ui-modern body .lane-actions { display: flex; gap: 6px; margin-top: 2px; }
+html.ui-modern body .lane-next { padding: 8px 10px; border-radius: 9px; background: color-mix(in srgb, var(--tone) 12%, transparent); color: var(--tone); font-weight: 600; }
+html.ui-modern body .lane.lane-done { opacity: .6; }
