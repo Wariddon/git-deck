@@ -782,9 +782,10 @@ html.ui-modern body :is(small, time, p) { font-weight: 400; }
 
 /* ---- Light: soft white and near-black, not #fff on #000 ------------------------------------------------ */
 html.ui-modern body:not(.theme-dark):not([data-theme="paper"]) {
-  --canvas: #f4f4f5; --surface: #fdfdfc; --surface-subtle: #f4f4f5; --surface-muted: #e7e7ea; --surface-hover: #efeff1;
-  --text-primary: #27272a; --text-secondary: #52525b; --text-tertiary: #6b6b75;
-  --border-default: #e4e4e7; --border-muted: #efeff1; --code-bg: #fbfbfa;
+  /* Calm: cool grey ground, white panels, one green brand colour (Git Deck design tokens). */
+  --canvas: #f4f6f8; --surface: #fdfdfd; --surface-subtle: #f6f8fa; --surface-muted: #e7ebef; --surface-hover: #eef1f4;
+  --text-primary: #1f2328; --text-secondary: #5b6470; --text-tertiary: #67707b;
+  --border-default: #dfe4ea; --border-muted: #eaedf1; --code-bg: #fafbfc;
   --diff-add-bg: #e8f5ea; --diff-add-text: #1f5f2e; --diff-remove-bg: #fbeaea; --diff-remove-text: #8a2320; --diff-hunk-bg: #eef0fb; --diff-hunk-text: #4f53a8;
 }
 

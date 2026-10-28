@@ -4,6 +4,7 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- **Calm light theme**: the default Light look now uses the Git Deck design tokens: cool grey ground, white panels, softer borders and the green brand accent (#0B6E47) unless you picked your own accent colour.
 - **Mini mode** (▣ in the status bar): a 400×640 window to keep beside the editor with the next few things that need you (shared with the Inbox, ✓ marks done), Push/Pull in one click, the ticket you work on, a live list of repositories that just changed, and a command box that runs in the main window.
 - **Midnight Focus theme**: an editor-dark theme (near-black canvas, one green accent, red/amber/blue only for status) beside Dark and Midnight.
 - **Family checks** (Dashboard › Code): the same rules over every repository of a family (`depinq-`, `src-`, `crs-`…) in one table, so a sibling missed in a batch migration stands out. Default rules: Docker base image and Spring Boot version (odd values marked), `argo_yaml` in the SIT Jenkins build (db-migration excluded), `ci-lib-module` as `provided` (it still ends up in the fat jar), and the configuration file per environment in the deploy repository. Rules are JSON you can edit; they stay on this computer.

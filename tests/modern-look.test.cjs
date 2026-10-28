@@ -188,7 +188,7 @@ assert.match(appJs, /const defaults=\{subject:220,author:120,date:92\};/, 'Subje
 assert.match(modernCss, /#workspace-content \.recovery-row \.recovery-info \{ display: grid !important; grid-template-columns: 64px minmax\(0, 1fr\) minmax\(0, 320px\) !important;/);
 console.log('PASS: narrow-window toolbar and history, one-line reflog');
 // Dark themes: softer default accent unless the user picked one; muted status letters and chips.
-assert.match(modernJs, /const preset=custom&&custom!=='#0969da'\?null:body\.classList\.contains\('theme-midnight'\)\?'#5e81ac':body\.classList\.contains\('theme-focus'\)\?'#238636':body\.classList\.contains\('theme-dark'\)\?'#4184e4':null;/);
+assert.match(modernJs, /const preset=custom&&custom!=='#0969da'\?null:body\.classList\.contains\('theme-midnight'\)\?'#5e81ac':body\.classList\.contains\('theme-focus'\)\?'#238636':body\.classList\.contains\('theme-dark'\)\?'#4184e4':body\.dataset\.theme==='paper'\?null:'#0b6e47';/);
 assert.match(modernCss, /body\.theme-midnight :is\(\.commit-file-status\.status-m, \.file-status-m\) \{ color: #ebcb8b !important; \}/);
 assert.match(modernCss, /body\.theme-dark \.commit-refs i\[data-ref="stash"\] \{ color: color-mix\(in srgb, #b7a2f0 60%, var\(--text-primary\)\) !important; \}/);
 console.log('PASS: softer accents, status letters and chips on the dark themes');
