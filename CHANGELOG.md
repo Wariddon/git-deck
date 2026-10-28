@@ -4,6 +4,8 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- **Soft shape** (Appearance › Shape, default): the repository list and content float as rounded islands on a tinted ground, a radius scale (10/14/18 px, squircle corners where the browser supports them), frosted-glass command bar, dialogs and toasts, and a sliding highlight in the side rail, repository tabs and Dashboard menu. Square keeps the previous look.
+- **Openings** (Appearance › Opening): Logo (default; the splash logo flies into the corner as the app grows in), Stars (every repository flies in as a star coloured by its weather), Command (start at one box: "What will you do today?" with what you usually do now and the top Inbox items) or Off. A greeting for the time of day follows, with Close the day in the evening; reduced motion keeps it to a fade.
 - **Close the day** (Ctrl+K or Dashboard › Every day): one card with what moved today (ticket time, actions), what is still only on this computer, the time Git Deck saved and a plan for tomorrow ready to paste.
 - **Time saved**: features record what they spared you (conflicts seen early, recipe steps, quick undos, config checked per environment, lessons, resumed tickets) with modest estimates; shown daily and weekly in Close the day.
 - **Production celebration**: when every repository of a ticket lane reaches a production environment, a short confetti burst (none with reduced motion), a note and a Windows toast; tickets already in production on first use are skipped.

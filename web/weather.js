@@ -33,6 +33,7 @@
   }
   const helpers={weatherFor,familySky,familyOf,icons};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
+  window.GitDeckWeather=helpers;
 
   const F=window.GitDeckFleet;
   if(!F||typeof el!=='function'||!document.querySelector('.operations-tabs'))return;
