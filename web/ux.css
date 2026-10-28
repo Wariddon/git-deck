@@ -112,3 +112,33 @@ html.ui-modern body .semantic-file { margin: 8px 0 2px; }
 html.ui-modern body .semantic-list { margin: 2px 0 6px 18px; padding: 0; }
 html.ui-modern body .semantic-list li { margin: 2px 0; }
 html.ui-modern body .semantic-list li b { color: var(--tone); }
+
+/* Density: Compact (Appearance menu) fits more on one screen: 26 px rows, tighter tables and cards. */
+html.gd-compact.ui-modern body { --modern-row: 26px; }
+html.gd-compact.ui-modern body .multi-repo-table :is(th, td) { padding-top: 3px; padding-bottom: 3px; }
+html.gd-compact.ui-modern body .gd-card { padding: 5px 8px; margin-bottom: 4px; }
+html.gd-compact.ui-modern body .gd-tile { padding: 3px 6px; }
+html.gd-compact.ui-modern body .pending-chip { padding: 0 5px; font-size: 11px; }
+html.gd-compact.ui-modern body .family-edit-card { padding: 6px 8px; margin-bottom: 6px; }
+html.gd-compact.ui-modern body .incident-line { padding: 2px 0; }
+html.gd-compact.ui-modern body .modern-rail-item { height: 30px; }
+
+/* Inbox: filters, one list, the selected item. */
+html.ui-modern body .inbox-layout { display: flex; flex-wrap: wrap; align-items: stretch; border: 1px solid var(--border-default, #dfe4ea); border-radius: 10px; overflow: hidden; min-height: 420px; }
+html.ui-modern body .inbox-filters { flex: 1 1 180px; max-width: 220px; padding: 8px; border-right: 1px solid var(--border-default, #dfe4ea); }
+html.ui-modern body .inbox-filter { display: flex; justify-content: space-between; width: 100%; padding: 6px 9px; border: 0; border-radius: 7px; background: transparent; color: inherit; font: inherit; text-align: left; }
+html.ui-modern body .inbox-filter.on { background: color-mix(in srgb, var(--gd-ok) 14%, transparent); color: var(--gd-ok); font-weight: 600; }
+html.ui-modern body .inbox-filter-head { margin: 14px 9px 4px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .6; }
+html.ui-modern body .inbox-list { flex: 999 1 420px; min-width: 0; border-right: 1px solid var(--border-default, #dfe4ea); }
+html.ui-modern body .inbox-group { margin: 0; padding: 10px 12px 4px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .6; }
+html.ui-modern body .inbox-row { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; padding: 8px 12px; border: 0; border-bottom: 1px solid color-mix(in srgb, currentColor 8%, transparent); background: transparent; color: inherit; font: inherit; text-align: left; }
+html.ui-modern body .inbox-row.on { background: color-mix(in srgb, var(--gd-ok) 10%, transparent); box-shadow: inset 3px 0 0 var(--gd-ok); }
+html.ui-modern body .inbox-row:focus-visible { outline: 2px solid var(--gd-info); outline-offset: -2px; }
+html.ui-modern body .inbox-dot { width: 10px; height: 10px; border-radius: 3px; background: var(--tone); }
+html.ui-modern body .inbox-row-text small { display: block; opacity: .7; }
+html.ui-modern body .inbox-key { min-width: 18px; padding: 0 5px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-bottom-width: 2px; border-radius: 5px; font: 600 11px/16px var(--modern-mono, monospace); text-align: center; opacity: .75; }
+html.ui-modern body .inbox-detail { flex: 1 1 320px; min-width: 0; padding: 14px 16px; }
+html.ui-modern body .inbox-detail h3 { margin: 2px 0 6px; font-size: 16px; }
+html.ui-modern body .inbox-facts { margin: 8px 0 14px; padding-left: 18px; display: grid; gap: 3px; }
+html.ui-modern body .inbox-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+html.ui-modern body .inbox-empty { padding: 40px 16px; text-align: center; opacity: .7; }

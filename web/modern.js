@@ -409,7 +409,7 @@
     for(const button of document.querySelectorAll('.sync-more > div > button')){
       if(button.querySelector(':scope > .modern-made'))continue;
       // Items added by other scripts (Dashboard views, Work report, Custom actions) get icons too.
-      const extra={pending:'repos','switch-all':'branch','search-all':'search',cleanup:'merge','tag-all':'tag',ticket:'flow','compare-files':'compare',ci:'check',releases:'cloud','merge-requests':'merge',dependencies:'tools','effective-config':'settings','ticket-workspaces':'branch',timeline:'undo','family-checks':'check','family-edit':'tools','log-locate':'search','fleet-map':'repos','api-map':'compare','incident':'history','forgotten':'stash','known-traps':'check'};
+      const extra={pending:'repos','switch-all':'branch','search-all':'search',cleanup:'merge','tag-all':'tag',ticket:'flow','compare-files':'compare',ci:'check',releases:'cloud','merge-requests':'merge',dependencies:'tools','effective-config':'settings','ticket-workspaces':'branch',timeline:'undo','family-checks':'check','family-edit':'tools','log-locate':'search','fleet-map':'repos','api-map':'compare','incident':'history','forgotten':'stash','known-traps':'check','inbox':'alert'};
       const name=moreIcons[button.dataset.workbenchNav||button.id]||extra[button.dataset.multiRepo]||(button.dataset.workReport?'report':button.dataset.customActions?'sparkles':button.dataset.branchStack?'branch':'');if(!name)continue;
       const label=button.querySelector(':scope > strong');
       if(label&&label.dataset.modernText===undefined){const text=label.textContent;const words=text.replace(/^[^\p{L}\p{N}]+/u,'');if(words!==text){label.dataset.modernText=text;label.textContent=words;}}
