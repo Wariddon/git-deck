@@ -70,6 +70,7 @@
         {data:{opening:'stars'},label:t('Stars'),title:t('Every repository flies in as a star, coloured by its weather'),run:()=>setOpening('stars')},
         {data:{opening:'command'},label:t('Command'),title:t('Start at one box: what will you do today?'),run:()=>setOpening('command')},
         {data:{opening:'off'},label:t('Off'),title:t('No opening animation'),run:()=>setOpening('off')},
+        {data:{},label:t('Preview'),title:t('Play the chosen opening now'),run:()=>window.GitDeckEntrance?.preview?.()},
       ])
     );
     refresh();

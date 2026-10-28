@@ -28,6 +28,9 @@ const appearance = web('appearance.js');
 assert.match(appearance, /const shapes=\['soft','square'\];const defaultShape='soft';/);
 assert.match(appearance, /const openings=\['logo','stars','command','off'\];const defaultOpening='logo';/);
 assert.match(appearance, /root\.classList\.toggle\('gd-soft',shape==='soft'\)/);
+assert.match(appearance, /label:t\('Preview'\).*GitDeckEntrance\?\.preview\?\.\(\)/, 'Opening has a Preview');
+assert.match(web('entrance.js'), /function preview\(chosen=mode\(\)\)/);
+assert.match(web('mini.css'), /corner-shape: squircle/, 'Mini mode shares the soft corners');
 
 // Every Soft rule needs html.gd-soft (Square keeps the old look), and motion respects reduced motion.
 const css = web('soft.css');

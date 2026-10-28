@@ -2018,4 +2018,5 @@ GitDeckI18n.register('th',{
   "{count} thing(s) waiting for you":"มี {count} งานรอคุณอยู่",
   "What will you do today?":"วันนี้จะทำอะไร?",
   "Type a command, or press Esc to go straight to work.":"พิมพ์คำสั่ง หรือกด Esc เพื่อเข้าไปทำงานเลย",
+  "Play the chosen opening now":"เล่นหน้าเปิดที่เลือกตอนนี้",
 });

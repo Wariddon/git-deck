@@ -138,7 +138,18 @@
   }
 
   // For trying an opening again from the console or a future Preview button.
-  window.GitDeckEntrance={stars:()=>starsOpening(),command:commandOpening,greet:greetCard};
+  // Appearance › Opening › Preview: play the chosen opening again without reloading.
+  function preview(chosen=mode()){
+    document.querySelectorAll('.theme-picker[open]').forEach(menu=>menu.removeAttribute('open'));
+    if(chosen==='stars')return starsOpening();
+    if(chosen==='command')return commandOpening();
+    if(chosen==='off')return greetCard();
+    const splash=document.getElementById('startup-splash');if(!splash)return greetCard();
+    splash.getAnimations?.({subtree:true}).forEach(animation=>animation.cancel());
+    if(!splash.open)splash.showModal();
+    setTimeout(()=>logoOpening(()=>{if(splash.open)splash.close();}),900);
+  }
+  window.GitDeckEntrance={stars:()=>starsOpening(),command:commandOpening,greet:greetCard,preview};
   const original=startup.finish;
   startup.finish=function(){
     const chosen=mode();
