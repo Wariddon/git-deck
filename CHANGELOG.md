@@ -4,6 +4,13 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- **Close the day** (Ctrl+K or Dashboard › Every day): one card with what moved today (ticket time, actions), what is still only on this computer, the time Git Deck saved and a plan for tomorrow ready to paste.
+- **Time saved**: features record what they spared you (conflicts seen early, recipe steps, quick undos, config checked per environment, lessons, resumed tickets) with modest estimates; shown daily and weekly in Close the day.
+- **Production celebration**: when every repository of a ticket lane reaches a production environment, a short confetti burst (none with reduced motion), a note and a Windows toast; tickets already in production on first use are skipped.
+- **Ctrl+K predicts**: what you usually do around this time of day (on two or more of the last 30 days) comes first; Enter runs it.
+- **Resume a ticket**: Git Deck remembers the repository and view per ticket; leave yourself a note (the ⏱ button) and see it when you come back; recent tickets can be resumed in one click.
+- **History replay** (Find and investigate): a repository's history played back as an animation, branches forking and merging, with speed and a time slider.
+- **Repository weather** (The whole family): ☀ ⛅ 🌧 ⛈ per repository and one sky per family, from the last Pending check and Conflict forecast.
 - **Conflict forecast** (Dashboard › Every day): every repository on a work branch is merged in memory (git merge-tree, nothing checked out) into its main line, develop and teammates' branches of the last 14 days that touch the same files; shows the files that would conflict and who last changed them.
 - **Push: what each environment really gets**: for configuration changes, the Push dialog computes the effective configuration of every profile before and after the push (ConfigMaps from the deploy repository included) and lists the values that really change per environment.
 - **Time machine** (Find and investigate): the whole family at two moments: main-line commit and newest tag per repository, commits, authors and files in between; the deploy repository first.

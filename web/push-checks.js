@@ -53,6 +53,7 @@
         for(const {env,changes} of envs){
           const real=changes.filter(change=>change.kind!=='moved');const line=el('div',`push-env-row tone-${real.length?'warn':'ok'}`);
           line.append(el('strong','',String(env).toUpperCase()),el('span','',real.length?t('{count} effective value(s) change',{count:real.length}):t('No effective value changes')));
+          if(real.length)window.GitDeckSavings?.once('env-impact',`${repo.path}|${first.local}|${env}|${real.map(change=>change.key).join(',')}`);
           if(real.length){const list=el('ul','');for(const change of real.slice(0,8))list.append(el('li','',`${change.key}: ${change.before??'—'} → ${change.after??'—'}${change.fromAfter?` (${change.fromAfter})`:''}`));line.append(list);}
           impact.append(line);
         }
@@ -65,7 +66,7 @@
       void window.GitDeckLessons.lessonsFor(terms).then(answer=>{
         if(current!==version||!answer?.lessons?.length)return;
         const box=el('details','push-lessons');box.append(el('summary','',t('💡 {count} note(s) from your lessons about this work',{count:answer.lessons.length})));
-        window.GitDeckLessons.render(answer.lessons,box);node.append(box);
+        window.GitDeckLessons.render(answer.lessons,box);node.append(box);box.addEventListener('toggle',()=>{if(box.open)window.GitDeckSavings?.once('lesson',`${repo.path}|${answer.lessons.map(item=>item.file).join(',')}|${new Date().toDateString()}`);},{once:true});
       });
     }
     riskChecks=nextRiskChecks;

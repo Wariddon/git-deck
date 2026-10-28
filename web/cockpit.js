@@ -6,10 +6,10 @@
   // The Dashboard menu by what you want to do; the first group is always on top. Tools you pin go
   // above it; tools not opened for 30 days (after 30 days of use) move under More.
   const intentGroups=[
-    ['Every day',['briefing','inbox','pending','fleet','my-work','focus-inbox','lanes','forecast','ticket-workspaces','forgotten']],
-    ['The whole family',['fleet-map','catalog','family-checks','family-edit','tag-all','update-all','switch-all']],
+    ['Every day',['briefing','inbox','pending','fleet','my-work','focus-inbox','lanes','forecast','ticket-workspaces','forgotten','day-close']],
+    ['The whole family',['fleet-map','weather','catalog','family-checks','family-edit','tag-all','update-all','switch-all']],
     ['Release and deploy',['releases','ticket','merge-requests','ci','release-proof']],
-    ['Find and investigate',['search-all','ask-history','api-map','service-map','incident','time-machine','log-locate','effective-config','compare-files','failure-lens','impact','known-traps','lessons']],
+    ['Find and investigate',['search-all','ask-history','api-map','service-map','incident','time-machine','replay','log-locate','effective-config','compare-files','failure-lens','impact','known-traps','lessons']],
   ];
   const moreViews=['dependencies','recipes','capsules','timeline','jobs','automation'];
   const primaryViews=intentGroups[0][1];

@@ -45,7 +45,9 @@
     for(const env of envs)stages.push({id:'env:'+env,label:String(env).toUpperCase(),count:count(c=>(c.journey?.environments||[]).some(item=>item.env===env&&item.contains))});
     return stages.map(stage=>({...stage,total,state:!total?'todo':stage.count===total?'done':stage.count?'part':'todo'}));
   }
-  const helpers={keyOf,detectLanes,nextStep,laneStages};
+  // A production-like environment stage that every repository of the lane has reached.
+  const reachedProd=(stages)=>(stages||[]).some(stage=>/^env:.*(prod|prd|production)/i.test(stage.id)&&stage.state==='done');
+  const helpers={keyOf,detectLanes,nextStep,laneStages,reachedProd};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
 
   const F=window.GitDeckFleet;
@@ -55,6 +57,20 @@
   const readJson=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback;}catch{return fallback;}};
   const writeJson=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));}catch{}};
 
+  // Once per ticket: a short burst of confetti (none with reduced motion), a note and a Windows toast.
+  // The first time lanes are seen, tickets already in production are recorded quietly (no old parties).
+  let quiet=false;try{quiet=localStorage.getItem('gitdeck.celebrated')===null;}catch{}
+  function celebrate(key){
+    const done=readJson('gitdeck.celebrated',[]);if(done.includes(key))return;writeJson('gitdeck.celebrated',[...done,key].slice(-200));
+    if(quiet)return;
+    const text=t('{key} reached production 🎉',{key});
+    if(typeof showActionFeedback==='function')showActionFeedback(text);
+    void api('/api/action',{method:'POST',body:JSON.stringify({action:'notify-toast',title:'Git Deck',text})}).catch(()=>{});
+    if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
+    const burst=el('div','gd-confetti');burst.setAttribute('aria-hidden','true');
+    for(let i=0;i<48;i++){const bit=el('i');bit.style.setProperty('--x',`${Math.round(Math.random()*100)}vw`);bit.style.setProperty('--d',`${(Math.random()*0.6).toFixed(2)}s`);bit.style.setProperty('--r',`${Math.round(Math.random()*720-360)}deg`);bit.className=`c${i%5}`;burst.append(bit);}
+    document.body.append(burst);setTimeout(()=>burst.remove(),3200);
+  }
   function build(panel){
     const bar=el('div','operations-toolbar');
     const input=el('input','workflow-input');input.type='search';input.placeholder=t('Ticket key, for example AP2365-3320');input.setAttribute('aria-label',t('Add a lane'));
@@ -97,6 +113,7 @@
           box.append(actions);cardsBox.append(box);
         }
         if(!cards.length){const find=button(t('Find its repositories'));find.onclick=()=>{try{localStorage.setItem('gitdeck.ticketKey',lane.key);}catch{}window.GitDeckTicketMode?.enter?.(lane.key);if(typeof showOperationsCenter==='function')showOperationsCenter('ticket');};cardsBox.append(find);}
+        if(cards.length&&reachedProd(laneStages(cards)))celebrate(lane.key);
         if(cards.length){steps.className='lane-stages';for(const stage of laneStages(cards)){const node=el('span',`lane-stage stage-${stage.state}`);node.append(el('i'),el('span','',stage.label));node.title=t('{count} of {total} repositories',{count:stage.count,total:stage.total});steps.append(node);}}
         const minutes=window.GitDeckTicketTime?.since?.('0000-00-00')?.find(item=>item.key===lane.key)?.minutes;if(minutes)head.insertBefore(el('small','lane-time',`⏱ ${window.GitDeckTicketTime.duration(minutes)}`),remove);
         const step=nextStep(cards);next.className=`lane-next tone-${step.tone}`;next.textContent=t('Next: {step}',{step:step.text});

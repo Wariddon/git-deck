@@ -48,9 +48,13 @@
       });
       const order={bad:0,warn:1,info:2,ok:3};
       const scored=rows.map(row=>({...row,v:row.error?{tone:'warn',text:row.error}:row.forecast?.supported===false?{tone:'muted',text:t('Needs Git 2.38 or newer')}:verdict(row.forecast)})).sort((a,b)=>(order[a.v.tone]??4)-(order[b.v.tone]??4)||a.repo.name.localeCompare(b.repo.name));
+      // Kept for Repository weather (web/weather.js).
+      try{const cache=JSON.parse(localStorage.getItem('gitdeck.forecastCache')||'{}')||{};for(const row of scored)cache[row.item.path.toLowerCase()]={tone:row.v.tone,text:row.v.text,at:Date.now()};localStorage.setItem('gitdeck.forecastCache',JSON.stringify(cache));}catch{}
       const bad=scored.filter(row=>row.v.tone==='bad'||row.v.tone==='warn').length;
       status.textContent=t('{count} branch(es) · {bad} need attention · checked {time}',{count:scored.length,bad,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
       for(const row of scored){
+        for(const result of row.forecast?.results||[])if(result.found&&!result.clean)window.GitDeckSavings?.once('conflict-forecast',`${row.item.path}|${row.item.branch}|${result.base}|${result.files.map(file=>file.file).join(',')}`);
+        for(const mate of row.forecast?.others||[])if(!mate.clean)window.GitDeckSavings?.once('teammate-conflict',`${row.item.path}|${row.item.branch}|${mate.branch}`);
         const card=el('article',`forecast-card tone-${row.v.tone}`);
         const head=el('div','forecast-head');head.append(repoLink(row.repo),el('code','mono',row.item.branch),el('strong','',row.v.text));card.append(head);
         for(const result of row.forecast?.results||[])if(result.found&&!result.clean){card.append(el('p','',t('Into {base}:',{base:result.base})),fileList(result.files));}

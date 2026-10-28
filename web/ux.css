@@ -270,3 +270,45 @@ html.ui-modern body .push-env-row { padding: 4px 0; display: grid; grid-template
 html.ui-modern body .push-env-row ul { grid-column: 2; margin: 0; padding-left: 16px; font: 11.5px var(--modern-mono, monospace); }
 html.ui-modern body .push-env-row.tone-warn strong { color: var(--gd-warn); } html.ui-modern body .push-env-row.tone-ok strong { color: var(--gd-ok); }
 html.ui-modern body :is(.gd-lessons, .gd-ticket-time)[hidden] { display: none !important; }
+/* Ticket lanes: confetti when a ticket reaches production (skipped with reduced motion). */
+.gd-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden; }
+.gd-confetti i { position: absolute; top: -12px; left: var(--x); width: 8px; height: 12px; border-radius: 2px; animation: gd-confetti-fall 2.6s cubic-bezier(.2,.6,.4,1) var(--d) forwards; }
+.gd-confetti i.c0 { background: #0b6e47; } .gd-confetti i.c1 { background: #3fb950; } .gd-confetti i.c2 { background: #d29922; } .gd-confetti i.c3 { background: #58a6ff; } .gd-confetti i.c4 { background: #f85149; }
+@keyframes gd-confetti-fall { to { transform: translateY(105vh) rotate(var(--r)); opacity: .2; } }
+html.ui-modern body button.gd-ticket-time { border: 0; background: none; padding: 0 4px; cursor: pointer; }
+html.ui-modern body .resume-row { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-muted); }
+html.ui-modern body .resume-row small { grid-column: 1 / 3; }
+html.ui-modern body .resume-row button { grid-row: 1 / 3; grid-column: 3; }
+/* Close the day. */
+html.ui-modern body .day-close { width: min(860px, 94vw); }
+html.ui-modern body .day-close-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+html.ui-modern body .day-close-card { padding: 12px 14px; border: 1px solid var(--border-default); border-radius: 12px; background: var(--surface-subtle); display: grid; gap: 4px; align-content: start; }
+html.ui-modern body .day-close-card h3 { margin: 0 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); }
+html.ui-modern body .day-close-row { display: flex; justify-content: space-between; gap: 10px; }
+html.ui-modern body .day-close-row.tone-warn strong { color: var(--gd-warn); }
+html.ui-modern body .day-close-big { margin: 0; font-size: 20px; font-weight: 700; color: var(--gd-ok); }
+html.ui-modern body .day-close-plan { width: 100%; box-sizing: border-box; font: 12px var(--modern-mono, monospace); }
+/* History replay. */
+html.ui-modern body .replay-scrub { width: 100%; accent-color: var(--green); }
+html.ui-modern body .replay-now { min-height: 1.5em; margin: 4px 0 8px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.ui-modern body .replay-stage { overflow: auto; border: 1px solid var(--border-default); border-radius: 12px; background: var(--surface); max-height: 60vh; }
+html.ui-modern body .replay-svg { display: block; }
+html.ui-modern body .replay-node, html.ui-modern body .replay-link { opacity: 0; transition: opacity .25s; }
+html.ui-modern body .replay-node.on, html.ui-modern body .replay-link.on { opacity: 1; }
+html.ui-modern body .replay-link { fill: none; stroke-width: 2; }
+html.ui-modern body .replay-node circle { stroke: var(--surface); stroke-width: 1.5; }
+html.ui-modern body .replay-node text { fill: var(--text-primary); font: 600 10.5px var(--modern-font, sans-serif); }
+html.ui-modern body .lane-0 { --lane: var(--green); } html.ui-modern body .lane-1 { --lane: var(--gd-info); } html.ui-modern body .lane-2 { --lane: var(--gd-warn); }
+html.ui-modern body .lane-3 { --lane: #a371f7; } html.ui-modern body .lane-4 { --lane: #db61a2; } html.ui-modern body .lane-5 { --lane: var(--gd-muted); }
+html.ui-modern body .replay-node circle { fill: var(--lane); } html.ui-modern body .replay-link { stroke: var(--lane); }
+@media (prefers-reduced-motion: reduce) { html.ui-modern body :is(.replay-node, .replay-link) { transition: none; } }
+/* Repository weather. */
+html.ui-modern body .weather-board { display: grid; gap: 10px; }
+html.ui-modern body .weather-family { padding: 10px 12px; border: 1px solid var(--border-default); border-radius: 12px; background: var(--surface); }
+html.ui-modern body .weather-family.sky-storm { border-color: color-mix(in srgb, var(--gd-bad) 45%, var(--border-default)); }
+html.ui-modern body .weather-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+html.ui-modern body .weather-head .weather-icon { font-size: 20px; }
+html.ui-modern body .weather-tiles { display: flex; flex-wrap: wrap; gap: 6px; }
+html.ui-modern body .weather-tile { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border: 1px solid var(--border-default); border-radius: 999px; background: var(--surface-subtle); cursor: pointer; font-size: 12px; }
+html.ui-modern body .weather-tile.w-storm { border-color: var(--gd-bad); color: var(--gd-bad); } html.ui-modern body .weather-tile.w-rain { border-color: var(--gd-warn); }
+html.ui-modern body .weather-tile.w-unknown { opacity: .55; }

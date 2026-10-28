@@ -29,6 +29,7 @@
       undo.disabled=true;
       try{
         await baseApi('/api/action',{method:'POST',body:JSON.stringify({action:'timeline-restore',path:item.path,id:item.id})});
+        window.GitDeckSavings?.add('quick-undo');
         close();if(typeof showActionFeedback==='function')showActionFeedback(t('Undid {action} in {repo}',{action:item.action,repo:item.repository}));
         if(typeof loadWorkspace==='function'&&state?.workspaceRepo&&String(state.workspaceRepo.path).toLowerCase()===String(item.path).toLowerCase())void loadWorkspace();
       }catch(error){undo.disabled=false;if(typeof showActionFeedback==='function')showActionFeedback(error.message,{error:true});}

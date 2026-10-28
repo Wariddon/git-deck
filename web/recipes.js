@@ -40,7 +40,22 @@
     const habits=[...seen.values()].filter(item=>item.days.size>=minDays).sort((a,b)=>b.steps.length-a.steps.length||b.days.size-a.days.size);
     return habits[0]?{key:habits[0].key,steps:habits[0].steps,days:habits[0].days.size}:null;
   }
-  const helpers={recordable,captureStep,describeStep,addRecipe,findHabit,signature};
+  // What you usually do around this time of day: single steps done within `windowMin` minutes of now on
+  // at least `minDays` of the last 30 days, not already done in the last two hours. Most days first.
+  function predictNext(log,now=Date.now(),{windowMin=60,minDays=2,limit=3}={}){
+    const minuteOf=(at)=>{const d=new Date(at);return d.getHours()*60+d.getMinutes();};const current=minuteOf(now);
+    const recent=new Set((log||[]).filter(item=>now-item.at<2*3600e3).map(item=>signature([item])));
+    const groups=new Map();
+    for(const item of log||[]){
+      if(now-item.at>30*864e5||now-item.at<2*3600e3)continue;
+      const gap=Math.abs(minuteOf(item.at)-current);if(Math.min(gap,1440-gap)>windowMin)continue;
+      const key=signature([item]);if(recent.has(key))continue;
+      if(!groups.has(key))groups.set(key,{key,step:{action:item.action,path:item.path,payload:item.payload||{}},days:new Set()});
+      groups.get(key).days.add(new Date(item.at).toDateString());
+    }
+    return [...groups.values()].filter(item=>item.days.size>=minDays).map(item=>({key:item.key,step:item.step,days:item.days.size})).sort((a,b)=>b.days-a.days||a.key.localeCompare(b.key)).slice(0,limit);
+  }
+  const helpers={recordable,captureStep,describeStep,addRecipe,findHabit,signature,predictNext};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
   if(typeof api!=='function'||typeof el!=='function'||typeof commandPaletteEntries!=='function')return;
 
@@ -116,18 +131,28 @@
           try{
             const repo=(state.repos||[]).find(item=>String(item.path).toLowerCase()===step.path.toLowerCase())||{path:step.path,name:nameOf(step.path)};
             if(quiet)await quiet(step.action,repo,step.payload);else await baseApi('/api/action',{method:'POST',body:JSON.stringify({action:step.action,path:step.path,...step.payload})});
-            rows[i].textContent='✓';rows[i].className='recipe-result tone-ok';
+            rows[i].textContent='✓';rows[i].className='recipe-result tone-ok';window.GitDeckSavings?.add('recipe-step');
           }catch(error){rows[i].textContent='✗ '+String(error.message||'').split('\n')[0];rows[i].className='recipe-result tone-bad';for(let j=i+1;j<rows.length;j++)rows[j].textContent=t('Not run');break;}
         }
       }finally{replaying=false;if(typeof loadWorkspace==='function'&&state?.workspaceRepo)void loadWorkspace();}
     };
     ui.body.append(list);ui.actions.prepend(remove,run);
   }
+  async function runPredicted(step){
+    if(typeof hideCommandPalette==='function')hideCommandPalette();
+    const repo=(state.repos||[]).find(item=>String(item.path).toLowerCase()===step.path.toLowerCase())||{path:step.path,name:nameOf(step.path)};
+    try{const quiet=window.GitDeckFleet?.runQuiet;if(quiet)await quiet(step.action,repo,step.payload);else await baseApi('/api/action',{method:'POST',body:JSON.stringify({action:step.action,path:step.path,...step.payload})});
+      window.GitDeckSavings?.add('predicted');if(typeof showActionFeedback==='function')showActionFeedback(t('{step}: done',{step:describeStep(step)}));
+      if(typeof loadWorkspace==='function'&&state?.workspaceRepo)void loadWorkspace();
+    }catch(error){if(typeof showActionFeedback==='function')showActionFeedback(error.message,{error:true});}
+  }
   const base=commandPaletteEntries;
   commandPaletteEntries=function(){
+    // What you usually do now comes first, so Ctrl+K then Enter repeats it.
+    const suggested=predictNext(readList(logKey)).map(item=>{const label=t('Usually now: {step}',{step:describeStep(item.step)}),group=t('Suggested');return {label,group,shortcut:t('{count} days',{count:item.days}),run:()=>runPredicted(item.step),search:`${label} ${group}`};});
     const group=t('Recipes');
     const entries=recording?[{label:t('Stop recording and save the recipe'),group,shortcut:'',run:()=>{if(typeof hideCommandPalette==='function')hideCommandPalette();stop();}}]:[{label:t('Record a recipe'),group,shortcut:'',run:start}];
     for(const recipe of load())entries.push({label:t('Recipe: {name}',{name:recipe.name}),group,shortcut:t('{count} step(s)',{count:recipe.steps.length}),run:()=>replay(recipe)});
-    return [...base(),...entries.map(item=>({...item,search:`${item.label} ${group}`}))];
+    return [...suggested,...base(),...entries.map(item=>({...item,search:`${item.label} ${group}`}))];
   };
 })();
