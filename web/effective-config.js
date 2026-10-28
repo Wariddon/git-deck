@@ -158,6 +158,35 @@
   const flatten=(kind,text)=>kind==='properties'?flattenProperties(text):F.flattenYaml(text);
   const kindOf=(file)=>/\.properties$/i.test(file)?'properties':'yaml';
 
+  // One environment: the service's files, then the deploy files for it, merged in Spring Boot order.
+  const computeEffective=(answer,envName,warn)=>{
+    const layers=[];
+    const base=new Map(),profile=new Map();const baseFiles=[],profileFiles=[];
+    for(const source of answer.service){const target=source.role==='base'?base:profile;try{for(const [key,value] of flatten(kindOf(source.file),source.content))target.set(key,value);(source.role==='base'?baseFiles:profileFiles).push(source.file);}catch(error){warn(`${source.file}: ${error.message}`);}}
+    layers.push({label:baseFiles.join(', ')||'application.yml',map:base});layers.push({label:profileFiles.join(', ')||`application-${envName}.yml`,map:profile});
+    const mounted=[],variables=[];
+    for(const file of answer.deploy?.files||[]){const inputs=deployInputs(file.content,file.file,file.nameMatch);for(const item of inputs.files)mounted.push(item);for(const item of inputs.env)variables.push(item);}
+    for(const item of mounted){try{layers.push({label:t('ConfigMap file {name} ({via})',{name:item.name,via:item.via}),map:flatten(item.kind,item.content)});}catch(error){warn(`${item.via}: ${error.message}`);}}
+    if(variables.length){const map=new Map();for(const item of variables)map.set(item.name,item.value);layers.push({label:t('Environment variable ({via})',{via:[...new Set(variables.map(item=>item.via))].slice(0,3).join(', ')}),map});}
+    const merged=mergeLayers(layers).map(item=>({...item,kind:classify(item,2),fromDeploy:item.winner>=2}));
+    return {rows:merged,labels:layers.map(layer=>layer.label)};
+  };
+
+  // What a range of commits does to each environment: the effective configuration of every profile at
+  // `from` and at `to` (the same deploy repository files at both), as changes. Used by the Push dialog.
+  async function envImpact(repoPath,from,to,{deployPath='',name='',limit=6}={}){
+    const ask=(env,ref)=>api('/api/repo/effective-config?'+query({path:repoPath,env,ref,deploy:deployPath,deployRef:'',name})).then(answer=>answer.config);
+    const profiles=((await ask('',to)).profiles||[]).slice(0,limit);
+    const out=[];
+    for(const env of profiles){
+      const [before,after]=await Promise.all([ask(env,from),ask(env,to)]);
+      const a=computeEffective(before,env,()=>{}),b=computeEffective(after,env,()=>{});
+      out.push({env,changes:diffEffective(a.rows,b.rows,a.labels,b.labels)});
+    }
+    return out;
+  }
+  window.GitDeckEffectiveConfig={...helpers,envImpact};
+
   function build(panel){
     const bar=el('div','operations-toolbar');
     const service=select(t('Service repository'));const env=input(t('Environment, for example uat'));const envList=document.createElement('datalist');envList.id='effective-config-envs';env.setAttribute('list',envList.id);env.value=recall('gitdeck.configEnv','');
@@ -207,19 +236,7 @@
       if(shown.length>500)out.append(el('p','multi-repo-note',t('Showing the first 500. Filter to narrow the list.')));
     };
     find.addEventListener('input',draw);
-    // One environment: the service's files, then the deploy files for it, merged in Spring Boot order.
-    const compute=(answer,envName,warn)=>{
-      const layers=[];
-      const base=new Map(),profile=new Map();const baseFiles=[],profileFiles=[];
-      for(const source of answer.service){const target=source.role==='base'?base:profile;try{for(const [key,value] of flatten(kindOf(source.file),source.content))target.set(key,value);(source.role==='base'?baseFiles:profileFiles).push(source.file);}catch(error){warn(`${source.file}: ${error.message}`);}}
-      layers.push({label:baseFiles.join(', ')||'application.yml',map:base});layers.push({label:profileFiles.join(', ')||`application-${envName}.yml`,map:profile});
-      const mounted=[],variables=[];
-      for(const file of answer.deploy?.files||[]){const inputs=deployInputs(file.content,file.file,file.nameMatch);for(const item of inputs.files)mounted.push(item);for(const item of inputs.env)variables.push(item);}
-      for(const item of mounted){try{layers.push({label:t('ConfigMap file {name} ({via})',{name:item.name,via:item.via}),map:flatten(item.kind,item.content)});}catch(error){warn(`${item.via}: ${error.message}`);}}
-      if(variables.length){const map=new Map();for(const item of variables)map.set(item.name,item.value);layers.push({label:t('Environment variable ({via})',{via:[...new Set(variables.map(item=>item.via))].slice(0,3).join(', ')}),map});}
-      const merged=mergeLayers(layers).map(item=>({...item,kind:classify(item,2),fromDeploy:item.winner>=2}));
-      return {rows:merged,labels:layers.map(layer=>layer.label)};
-    };
+    const compute=computeEffective;
     const request=(repo,envName,refs={})=>api('/api/repo/effective-config?'+query({path:repo.path,env:envName,ref:refs.ref??ref.value.trim(),deploy:deploy.value,deployRef:refs.deployRef||'',name:name.value.trim()})).then(answer=>answer.config);
     const warnNote=(text)=>notes.append(el('div','repo-alert tone-warn',text));
     const partialNotes=(list)=>{for(const group of list.slice(0,8))warnNote(t('{group}: the deployment sets {deploy} but the service files still set {files}. A partial override is more dangerous than none: check that they belong together.',{group:group.group,deploy:group.deploy.join(', '),files:group.files.join(', ')}));};

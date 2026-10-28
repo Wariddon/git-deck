@@ -40,6 +40,34 @@
       meaning.addEventListener('toggle',()=>{if(!meaning.open||meaning.dataset.loaded)return;meaning.dataset.loaded='1';for(const hash of outgoing){const part=el('section','semantic-box');meaning.append(part);void window.GitDeckSemanticDiff.explain(repo.path,hash,part,el('button'));}});
       node.append(meaning);
     }
+    // Pre-flight: what the push does to each environment's effective configuration (ConfigMaps included).
+    const configRisk=rows.some(row=>(row.result?.risk?.reasons||[]).some(reason=>reason.id==='config'||reason.id==='prod-config'));
+    if(configRisk&&window.GitDeckEffectiveConfig?.envImpact){
+      const first=rows.find(row=>row.result)?.item;const impact=el('details','push-env-impact');impact.append(el('summary','',t('What each environment really gets after this push')));
+      impact.addEventListener('toggle',async()=>{
+        if(!impact.open||impact.dataset.loaded)return;impact.dataset.loaded='1';const note=el('p','fleet-muted',t('Reading every environment…'));impact.append(note);
+        let deployPath='';try{deployPath=localStorage.getItem('gitdeck.deployRepo')||'';}catch{}
+        const run=(from)=>window.GitDeckEffectiveConfig.envImpact(repo.path,from,first.local,{deployPath});
+        let envs;try{envs=await run(`${remote}/${first.target}`);}catch{try{envs=await run(`${remote}/HEAD`);}catch(error){note.textContent=error.message;return;}}
+        note.textContent=deployPath?t('Service files before and after the push, with the deploy repository as it is now.'):t('Service files only: choose a deploy repository in Effective configuration to include ConfigMaps.');
+        for(const {env,changes} of envs){
+          const real=changes.filter(change=>change.kind!=='moved');const line=el('div',`push-env-row tone-${real.length?'warn':'ok'}`);
+          line.append(el('strong','',String(env).toUpperCase()),el('span','',real.length?t('{count} effective value(s) change',{count:real.length}):t('No effective value changes')));
+          if(real.length){const list=el('ul','');for(const change of real.slice(0,8))list.append(el('li','',`${change.key}: ${change.before??'—'} → ${change.after??'—'}${change.fromAfter?` (${change.fromAfter})`:''}`));line.append(list);}
+          impact.append(line);
+        }
+      });
+      node.append(impact);
+    }
+    // Lessons from your notes about this repository, its family, ticket and kind of files.
+    if(window.GitDeckLessons){
+      const terms=window.GitDeckLessons.currentTerms();
+      void window.GitDeckLessons.lessonsFor(terms).then(answer=>{
+        if(current!==version||!answer?.lessons?.length)return;
+        const box=el('details','push-lessons');box.append(el('summary','',t('💡 {count} note(s) from your lessons about this work',{count:answer.lessons.length})));
+        window.GitDeckLessons.render(answer.lessons,box);node.append(box);
+      });
+    }
     riskChecks=nextRiskChecks;
   }
   // Blast radius of the push: why it is risky, and for high risk a checklist to tick before pushing.

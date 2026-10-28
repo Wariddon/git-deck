@@ -4,6 +4,13 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- **Conflict forecast** (Dashboard › Every day): every repository on a work branch is merged in memory (git merge-tree, nothing checked out) into its main line, develop and teammates' branches of the last 14 days that touch the same files; shows the files that would conflict and who last changed them.
+- **Push: what each environment really gets**: for configuration changes, the Push dialog computes the effective configuration of every profile before and after the push (ConfigMaps from the deploy repository included) and lists the values that really change per environment.
+- **Time machine** (Find and investigate): the whole family at two moments: main-line commit and newest tag per repository, commits, authors and files in between; the deploy repository first.
+- **Ask history** (Find and investigate): ask in Thai or English ("who changed redis.host in crs- this month"); Git Deck runs git log -S/-G over the matching repositories and all branches.
+- **Service map** (Find and investigate): the API map as a live graph of who calls whom (HTTP and Kafka); services pulse when they change and arrows turn red when a change removes an endpoint others still call.
+- **Habits become recipes**: a run of steps you repeat on three days is offered once as a recipe.
+- **Lessons** (Find and investigate): choose a folder of Markdown notes (for example a shared AI brain); 💡 in the status bar and the Push dialog show notes that mention the repository, family, ticket or kind of files you changed. Read-only; secret-looking lines are never shown.
 - **Quick undo**: after a local commit, pull, merge, switch, reset or cherry-pick, a toast offers Undo for 10 seconds (same entry as the Undo timeline; pushes and tags are never offered).
 - **Review mode** (History › commit › ✔ Review): the commit's files ordered by risk (configuration, deployment, migrations, build first; tests and docs last) with a reason and a read tick per file; clicking a file opens its diff.
 - **Recipes** (Ctrl+K › Record a recipe): record fetch, pull, push, switch, branch, tag, stash and merge steps, save them by name and replay them from Ctrl+K after checking the steps; stops at the first failure. Commits, resets and discards are never recorded.

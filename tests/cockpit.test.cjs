@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const C=require('../web/cockpit.js');
-assert.deepEqual(C.primaryViews,['briefing','inbox','pending','fleet','my-work','focus-inbox','lanes','ticket-workspaces','forgotten']);
+assert.deepEqual(C.primaryViews,['briefing','inbox','pending','fleet','my-work','focus-inbox','lanes','forecast','ticket-workspaces','forgotten']);
 assert.deepEqual(C.intentGroups.map(([title])=>title),['Every day','The whole family','Release and deploy','Find and investigate']);
 // Rarely used: only after 30 days of recorded use, tools not opened for 30 days.
 {const day=864e5,now=100*day;

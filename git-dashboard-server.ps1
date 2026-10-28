@@ -24,6 +24,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Stack.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Traps.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.ApiMap.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Insight.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Catalog.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Cockpit.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
@@ -45,7 +46,7 @@ $script:UiState = Join-Path $PSScriptRoot 'git-deck-ui-state.json'
 # Small per-computer preferences (onboarding done, pinned Dashboard tools, docked Dashboard).
 $script:PrefsFile = Join-Path $PSScriptRoot 'git-deck-prefs.json'
 $script:TrapRulesFile = Join-Path $PSScriptRoot 'git-deck-traps.json'
-$script:PrefKeys = @('onboarding','pinnedTools','dashboardDock')
+$script:PrefKeys = @('onboarding','pinnedTools','dashboardDock','brainFolder')
 $script:ExportsRoot = Join-Path $PSScriptRoot 'exports'
 $script:SelectedPatch = ''
 $script:Running = $true
@@ -1773,6 +1774,10 @@ function Invoke-GitDeckRequest($context) {
         '/api/mcp' { Write-Json $context @{mcp=(Get-GitDeckMcpSetup)} }
         '/api/ticket-workspaces' { Write-Json $context @{workspaces=@(Get-GitDeckTicketWorkspaces)} }
         '/api/repo/api-surface' { Write-Json $context @{surface=(Get-GitDeckApiSurface $query['path'] $query['ref'] ($query['fresh'] -eq '1'))} }
+        '/api/repo/merge-forecast' { Write-Json $context @{forecast=(Get-GitDeckMergeForecast $query['path'] $query['branch'] $query['bases'] ($query['others'] -eq '1'))} }
+        '/api/repo/history-find' { $limit=30;[void][int]::TryParse([string]$query['limit'],[ref]$limit);Write-Json $context @{history=(Search-GitDeckHistory $query['path'] $query['term'] $query['mode'] $query['since'] $limit)} }
+        '/api/repo/moments' { Write-Json $context @{moments=(Get-GitDeckMoments $query['path'] $query['from'] $query['to'] $query['ref'])} }
+        '/api/lessons' { Write-Json $context @{lessons=(Get-GitDeckLessons $query['terms'])} }
         '/api/repo/commit-pairs' { Write-Json $context @{pairs=(Get-GitDeckCommitPairs $query['path'] $query['commit'])} }
         '/api/repo/family-edit-source' { Write-Json $context @{source=(Get-GitDeckFamilyEditSource $query['path'] $query['key'] $query['file'] $query['start'])} }
         '/api/repo/ref-at' { Write-Json $context @{ref=(Get-GitDeckRefAt $query['path'] $query['at'] $query['ref'])} }
