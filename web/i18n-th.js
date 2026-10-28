@@ -1804,4 +1804,8 @@ GitDeckI18n.register('th',{
   "pushed":"push แล้ว",
   "tagged":"ติด tag แล้ว",
   "Ticket lanes":"Ticket lanes",
+  "{env} {from} → {to} · {name}":"{env} {from} → {to} · {name}",
+  "{count} commit(s) waiting for {env} (tags as configured in the deploy repository)":"{count} commit รอขึ้น {env} (ตาม tag ที่ตั้งไว้ใน deploy repo)",
+  "Copy release notes":"คัดลอก release notes",
+  "{env} waits for {count}":"{env} รออยู่ {count} commit",
 });

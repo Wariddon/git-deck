@@ -93,6 +93,17 @@
   }
 
   // ---- Releases -----------------------------------------------------------------------------
+  // What an environment is waiting for: the commits between its tag and the newest tag, as release notes.
+  async function showWaiting(repo,lagging,newest){
+    if(typeof releaseDialog!=='function')return;
+    const ui=releaseDialog(t('{env} {from} → {to} · {name}',{env:lagging.env.toUpperCase(),from:lagging.tag,to:newest,name:repo.name}));
+    const note=el('p','fleet-muted',t('Reading…'));ui.body.append(note);
+    let commits=[];try{commits=(await api('/api/repo/commits-since?'+query({path:repo.path,tag:lagging.tag,to:newest}))).commits||[];}catch(error){note.textContent=error.message;return;}
+    note.textContent=t('{count} commit(s) waiting for {env} (tags as configured in the deploy repository)',{count:commits.length,env:lagging.env.toUpperCase()});
+    const list=el('ol','release-waiting-list');for(const commit of commits)list.append(el('li','',`${commit.subject}`));ui.body.append(list);
+    const text=[`${repo.name} ${lagging.tag} → ${newest}`,'',...commits.map(commit=>`- ${commit.subject}`)].join('\n');
+    const copyNotes=button(t('Copy release notes'),'primary');copyNotes.onclick=()=>copyText(text);ui.actions.prepend(copyNotes);
+  }
   function buildReleases(panel){
     const bar=el('div','operations-toolbar');
     const repo=document.createElement('select');repo.className='workflow-input';repo.setAttribute('aria-label',t('Deploy repository'));
@@ -127,6 +138,9 @@
           return box;
         });
         const name=el('div','fleet-release-service');name.append(el('b','',item.service));if(item.repo)name.append(repoLink(item.repo));
+        // Release radar: the environment furthest behind the newest tag, and what it is waiting for.
+        const lagging=item.repo&&newest?envs.flatMap(env=>(item.envs[env]||[]).map(entry=>({env,tag:entry.tag,gap:distances.get(item.repo.path)?.get(entry.tag)}))).filter(entry=>entry.gap?.found&&entry.gap.behind>0).sort((a,b)=>b.gap.behind-a.gap.behind)[0]:null;
+        if(lagging){const waiting=button(t('{env} waits for {count}',{env:lagging.env.toUpperCase(),count:lagging.gap.behind}));waiting.classList.add('release-waiting');waiting.onclick=()=>showWaiting(item.repo,lagging,newest);name.append(waiting);}
         grid.append(row([name,...cells,newest?el('span','pending-tag-badge','🏷 '+newest):el('span','fleet-muted',item.repo?t('No tag yet'):t('No repository'))]));
       }
       out.append(grid);

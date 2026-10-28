@@ -167,3 +167,5 @@ html.ui-modern body .lane-branch { font-size: 12px; opacity: .7; overflow-wrap: 
 html.ui-modern body .lane-actions { display: flex; gap: 6px; margin-top: 2px; }
 html.ui-modern body .lane-next { padding: 8px 10px; border-radius: 9px; background: color-mix(in srgb, var(--tone) 12%, transparent); color: var(--tone); font-weight: 600; }
 html.ui-modern body .lane.lane-done { opacity: .6; }
+html.ui-modern body .release-waiting { display: block; margin-top: 4px; padding: 1px 8px; border: 1px solid color-mix(in srgb, var(--gd-warn) 45%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--gd-warn) 10%, transparent); color: var(--gd-warn); font: 600 11.5px var(--modern-font, inherit); cursor: pointer; }
+html.ui-modern body .release-waiting-list { margin: 6px 0; padding-left: 20px; max-height: 50vh; overflow: auto; display: grid; gap: 4px; }

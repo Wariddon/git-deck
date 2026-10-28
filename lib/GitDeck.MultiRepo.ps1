@@ -293,11 +293,13 @@ function Get-GitDeckForgottenWork([string]$Path, [int]$Days = 14) {
 
 # Commit subjects on HEAD after a tag (or the last 30 without one), newest first: a tag message
 # that says what the tag contains.
-function Get-GitDeckCommitsSince([string]$Path, [string]$Ref) {
+# $To: another tag (what one environment lacks compared with another: "PROD 1.5.1 -> 1.5.4").
+function Get-GitDeckCommitsSince([string]$Path, [string]$Ref, [string]$To) {
     Assert-Registered $Path
-    $Ref = ([string]$Ref).Trim()
-    if ($Ref -and ($Ref.Length -gt 200 -or $Ref.StartsWith('-') -or $Ref -notmatch '^[A-Za-z0-9._/@-]+$')) { throw 'Tag name is not valid.' }
-    $range = if ($Ref) { "refs/tags/$Ref..HEAD" } else { 'HEAD' }
+    $Ref = ([string]$Ref).Trim(); $To = ([string]$To).Trim()
+    foreach ($value in @($Ref, $To)) { if ($value -and ($value.Length -gt 200 -or $value.StartsWith('-') -or $value -notmatch '^[A-Za-z0-9._/@-]+$')) { throw 'Tag name is not valid.' } }
+    $head = if ($To) { "refs/tags/$To" } else { 'HEAD' }
+    $range = if ($Ref) { "refs/tags/$Ref..$head" } else { $head }
     $items = New-Object 'System.Collections.Generic.List[object]'
     foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('log', '--no-merges', '--max-count=30', '--format=%h%x09%s', $range))) {
         $f = $line -split "`t", 2

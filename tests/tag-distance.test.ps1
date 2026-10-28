@@ -20,6 +20,8 @@ try{
     if($byTag.ContainsKey('--bad')){throw 'Unsafe tag accepted'}
     $t=Get-GitDeckTagDistance $base '1.0.0' 'v1.1.0'
     if(@($t.tags)[0].behind -ne 1 -or $t.mainline -ne 'refs/tags/v1.1.0'){throw "Against newest tag: $($t|ConvertTo-Json -Compress)"}
+    $between=@(Get-GitDeckCommitsSince $base '1.0.0' 'v1.1.0')
+    if($between.Count -ne 1 -or $between[0].subject -ne 'two'){throw "Between tags: $($between|ConvertTo-Json -Compress)"}
     $p=Get-GitDeckPendingWork $base
     if(@($p.activity).Count -ne 14 -or @($p.activity)[13] -ne 3){throw "Activity: $(@($p.activity) -join ',')"}
     Write-Host 'PASS: tag distance to the main line (v prefix, unknown and unsafe tags) and 14-day activity'
