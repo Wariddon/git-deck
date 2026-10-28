@@ -37,6 +37,13 @@ const css = web('soft.css');
 const rules = css.split('\n').filter((line) => /^html\.[^{]*\{/.test(line));
 for (const line of rules) assert(/gd-soft|data-daypart/.test(line), `scoped: ${line.slice(0, 70)}`);
 assert.match(css, /@supports \(corner-shape: squircle\)/);
+// Consistency pass: the highlight is anchored at the container origin; no stripe borders on rounded tone
+// cards (an inner shadow follows the corner); flat Dashboard menu; one floating shadow.
+assert.match(css, /\.gd-liquid \{ position: absolute; top: 0; left: 0;/);
+assert.match(css, /:is\(\.gd-card, \.forecast-card[^)]*\) \{\s*border-left-width: 0 !important; box-shadow: inset 3px 0 0 var\(--tone/);
+assert.match(css, /\.operations-tabs button \{ border: 0 !important; background: transparent !important;/);
+assert.match(css, /\.modern-rail-item::before \{ display: none !important; \}/);
+assert.doesNotMatch(web('soft.js'), /repo-tabs/, 'tabs keep their own marker');
 assert.match(css, /prefers-reduced-motion: reduce\) \{ \.gd-liquid/);
 assert.match(web('entrance.js'), /still\(\)/);
 

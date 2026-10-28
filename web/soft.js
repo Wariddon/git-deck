@@ -1,6 +1,6 @@
 'use strict';
-// Sliding highlight for the Soft shape (web/soft.css): in the side rail, the repository tabs and the
-// Dashboard menu one rounded highlight moves to the item you pick. It first stretches over the old
+// Sliding highlight for the Soft shape (web/soft.css): in the side rail and the Dashboard menu one
+// rounded highlight moves to the item you pick. It first stretches over the old
 // and new item, then settles on the new one, like a drop of liquid. Off with the Square shape and
 // with reduced motion (it jumps instead).
 (function(){
@@ -18,7 +18,6 @@
   const still=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const targets=[
     {container:'.modern-rail',active:'.modern-rail-item.active'},
-    {container:'.repo-tabs',active:'.repo-tab.active'},
     {container:'.operations-tabs',active:'button.active'},
   ];
   const state_=new WeakMap();
@@ -32,7 +31,7 @@
       let info=state_.get(container);
       if(!soft()){if(info){info.blob.remove();container.classList.remove('gd-liquid-on');state_.delete(container);}continue;}
       const item=container.querySelector(spec.active);
-      if(!info){if(getComputedStyle(container).position==='static')container.style.position='relative';const blob=document.createElement('span');blob.className='gd-liquid';blob.setAttribute('aria-hidden','true');container.prepend(blob);info={blob,box:null,item:null};state_.set(container,info);container.classList.add('gd-liquid-on');}
+      if(!info){if(getComputedStyle(container).position==='static')container.style.position='relative';resizes?.observe(container);const blob=document.createElement('span');blob.className='gd-liquid';blob.setAttribute('aria-hidden','true');container.prepend(blob);info={blob,box:null,item:null};state_.set(container,info);container.classList.add('gd-liquid-on');}
       if(!item||!item.offsetParent){info.blob.style.opacity='0';info.item=null;continue;}
       const box=boxOf(container,item);
       const same=info.box&&Math.abs(info.box.left-box.left)<1&&Math.abs(info.box.top-box.top)<1&&Math.abs(info.box.width-box.width)<1&&Math.abs(info.box.height-box.height)<1;
@@ -45,6 +44,10 @@
   }
   let queued=false;
   const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;for(const spec of targets)update(spec);});};
+  // Items move without a class change (counts load, fonts settle, the menu scrolls into place): re-measure
+  // when a menu changes size, and once a second as a cheap safety net (nothing moves when nothing changed).
+  const resizes=typeof ResizeObserver==='function'?new ResizeObserver(schedule):null;
+  setInterval(()=>{if(!document.hidden)schedule();},1000);
   new MutationObserver(schedule).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class','aria-current'],childList:true});
   window.addEventListener('resize',schedule);document.addEventListener('gitdeck:appearance',schedule);
   schedule();

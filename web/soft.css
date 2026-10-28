@@ -50,7 +50,7 @@ html.gd-soft.ui-modern body :is(.command-palette-box, dialog.release-dialog) { b
 html.gd-soft.ui-modern body dialog::backdrop { background: rgb(9 9 11 / 22%); backdrop-filter: blur(3px); }
 
 /* ---- sliding highlight (web/soft.js) -------------------------------------------------------------- */
-.gd-liquid { position: absolute; z-index: 0; pointer-events: none; border-radius: 12px; background: color-mix(in srgb, var(--green) 13%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--green) 22%, transparent);
+.gd-liquid { position: absolute; top: 0; left: 0; z-index: 0; pointer-events: none; border-radius: 12px; background: color-mix(in srgb, var(--green) 13%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--green) 22%, transparent);
   transition: transform .34s cubic-bezier(.3,1.35,.5,1), width .34s cubic-bezier(.3,1.35,.5,1), height .34s cubic-bezier(.3,1.35,.5,1), opacity .2s; }
 .gd-liquid.stretch { transition-duration: .14s; transition-timing-function: ease-out; }
 html.gd-soft.ui-modern body .gd-liquid-on > :not(.gd-liquid) { position: relative; z-index: 1; }
@@ -87,3 +87,45 @@ html[data-daypart="night"] .gd-command-open { background: linear-gradient(180deg
 .gd-command-row:hover, .gd-command-row:focus-visible { border-color: var(--green, #0b6e47); outline: none; }
 .gd-command-row small, .gd-command-empty { color: var(--text-secondary, #5b6470); }
 @media (prefers-reduced-motion: reduce) { .gd-greeting, .gd-command-box, .gd-stars-caption { animation: none; } }
+
+/* ---- consistency pass: one way to draw each thing ------------------------------------------------
+   Lines only where they separate content; no partial borders; tone shown by one inner stripe that
+   follows the rounded corner; flat menus; quiet secondary buttons; thin scrollbars. */
+/* Dashboard frame: no stray left edge; the menu is a flat list on the island, not a stack of boxes. */
+html.gd-soft.ui-modern body .operations-modal { border: 0 !important; }
+html.gd-soft.ui-modern body .operations-tabs { background: transparent !important; border: 0 !important; padding-inline: 8px !important; }
+html.gd-soft.ui-modern body .operations-tabs button { border: 0 !important; background: transparent !important; box-shadow: none !important; color: var(--text-secondary) !important; font-weight: 500; }
+html.gd-soft.ui-modern body .operations-tabs button:hover:not(.active) { background: var(--surface-hover) !important; color: var(--text-primary) !important; }
+html.gd-soft.ui-modern body .operations-tabs button.active { color: var(--text-primary) !important; font-weight: 650; }
+/* Side rail: the sliding highlight replaces the old bar beside the active item. */
+html.gd-soft.ui-modern body .modern-rail-item::before { display: none !important; }
+/* Tone cards: an inner stripe that follows the corner, on a neutral surface (tinted fills read brown on dark). */
+html.gd-soft.ui-modern body :is(.gd-card, .forecast-card, .lesson-card, .workflow-ok, .cockpit-attention, .multi-repo-explain, .push-risk) {
+  border-left-width: 0 !important; box-shadow: inset 3px 0 0 var(--tone, var(--green)) !important; border-radius: var(--gd-r-md) !important; padding-left: 14px !important;
+}
+html.gd-soft.ui-modern body .gd-card { background: var(--surface-subtle) !important; border: 1px solid var(--border-muted) !important; border-left-width: 1px !important; transition: background .15s, border-color .15s; }
+html.gd-soft.ui-modern body .gd-card:hover { background: var(--surface-hover) !important; border-color: var(--border-default) !important; }
+html.gd-soft.ui-modern body .lesson-card { --tone: var(--gd-warn); } html.gd-soft.ui-modern body .cockpit-attention { --tone: var(--gd-bad); } html.gd-soft.ui-modern body .workflow-ok { --tone: var(--gd-ok); }
+html.gd-soft.ui-modern body .multi-repo-explain { --tone: color-mix(in srgb, var(--green) 70%, transparent); background: var(--surface-subtle) !important; }
+/* Today columns: soft panels instead of thin outlines. */
+html.gd-soft.ui-modern body .gd-today-col { border: 0 !important; background: color-mix(in srgb, var(--surface-subtle) 70%, transparent); border-radius: var(--gd-r-lg) !important; padding: 12px !important; }
+/* Secondary buttons inside cards: quiet until hovered. */
+html.gd-soft.ui-modern body :is(.gd-card-action, .lane-actions button, .mini-actions button, .forecast-card button) { border: 1px solid var(--border-default) !important; background: transparent !important; color: var(--text-primary) !important; font-weight: 600; }
+html.gd-soft.ui-modern body :is(.gd-card-action, .lane-actions button, .forecast-card button):hover { background: var(--surface-hover) !important; border-color: var(--text-tertiary) !important; }
+/* Thin scrollbars that match the surface. */
+html.gd-soft.ui-modern body * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-tertiary) 45%, transparent) transparent; }
+/* One-sided lines on rounded shapes read as broken edges: use full outlines or none. */
+html.gd-soft.ui-modern body :is(.modern-tb-repo, .modern-tb-branch) { border-right: 0 !important; }
+html.gd-soft.ui-modern body :is(.change-group, .working-diff) { border: 0 !important; }
+html.gd-soft.ui-modern body .working-diff { box-shadow: -1px 0 0 var(--border-muted); border-radius: 0 !important; }
+html.gd-soft.ui-modern body .patch-hunk { border: 1px solid var(--border-muted) !important; }
+html.gd-soft.ui-modern body .patch-hunk-actions { border-bottom: 0 !important; border-radius: 0 !important; }
+/* Menus: items are rounded rows without separator lines. */
+html.gd-soft.ui-modern body :is(.commit-action-menu, .context-menu, [role="menu"]) button { border: 0 !important; border-radius: 8px !important; }
+html.gd-soft.ui-modern body .inbox-list { border-right: 0 !important; }
+/* Light and depth: three levels only. Flat (islands, rows), raised (primary buttons, 1px), floating
+   (menus, popovers, dialogs: one shared soft shadow). The old outer glow of the workspace and the ring
+   on the active rail item are dropped; the sliding highlight shows the selection instead. */
+html.gd-soft.ui-modern body :is(.panel.workspace-surface, #workspace-backdrop) { box-shadow: none !important; }
+html.gd-soft.ui-modern body .modern-rail-item.active { box-shadow: none !important; }
+html.gd-soft.ui-modern body :is(.history-options-body, .clean-diff-more-panel, .sync-more > div, .modern-popover, .context-menu, .commit-action-menu, .theme-menu, .modern-menu) { box-shadow: var(--gd-soft-shadow) !important; border: 1px solid var(--border-default) !important; border-radius: var(--gd-r-md) !important; }
