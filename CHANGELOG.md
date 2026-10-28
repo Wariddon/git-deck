@@ -5,6 +5,7 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 ## Unreleased
 
 - **Family checks** (Dashboard › Code): the same rules over every repository of a family (`depinq-`, `src-`, `crs-`…) in one table, so a sibling missed in a batch migration stands out. Default rules: Docker base image and Spring Boot version (odd values marked), `argo_yaml` in the SIT Jenkins build (db-migration excluded), `ci-lib-module` as `provided` (it still ends up in the fat jar), and the configuration file per environment in the deploy repository. Rules are JSON you can edit; they stay on this computer.
+- **Pre-flight in the Push dialog**: besides secrets, sizes, known traps and push risk, a section says in words what the outgoing commits change in pom.xml, configuration and Dockerfile.
 - **Release radar** (Releases): each service shows the environment furthest behind the newest tag ("PROD waits for 9"); click it for the commits waiting and copy them as release notes.
 - **Ticket lanes** (Dashboard › Every day): one lane per ticket you work on (from current branches, local-only branches and ticket worktrees, plus keys you add): each repository with its state and journey, a summary and the next step. Finished tickets step aside.
 - **Command bar that acts** (Ctrl+K): type `tag crs- next`, `push aml-`, `pull lns-`, `ticket AP2365-3320` or a ticket key alone. Git Deck shows a plan for every matching repository (what will happen, what is skipped and why, word tags instead of version tags on feature branches) and runs nothing until you press Run.

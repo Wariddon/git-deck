@@ -1808,4 +1808,5 @@ GitDeckI18n.register('th',{
   "{count} commit(s) waiting for {env} (tags as configured in the deploy repository)":"{count} commit รอขึ้น {env} (ตาม tag ที่ตั้งไว้ใน deploy repo)",
   "Copy release notes":"คัดลอก release notes",
   "{env} waits for {count}":"{env} รออยู่ {count} commit",
+  "What these {count} commit(s) change (pom.xml, configuration, Dockerfile)":"{count} commit นี้เปลี่ยนอะไร (pom.xml, config, Dockerfile)",
 });

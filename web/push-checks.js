@@ -33,6 +33,13 @@
     });
     const risk=rows.map(item=>item.result?.risk).filter(Boolean).sort((a,b)=>b.score-a.score)[0];
     node.replaceChildren(el('span','push-checks-title',t(blockers.length?'Pre-push checks · blocked':'Pre-push checks')),...(risk?[riskCard(risk)]:[]),list);
+    // Pre-flight: what the outgoing commits change in pom.xml, configuration and Dockerfile, in words.
+    const outgoing=[...new Set(rows.flatMap(row=>row.result?.commits||[]))].slice(0,5);
+    if(outgoing.length&&window.GitDeckSemanticDiff?.explain){
+      const meaning=el('details','push-meaning');meaning.append(el('summary','',t('What these {count} commit(s) change (pom.xml, configuration, Dockerfile)',{count:outgoing.length})));
+      meaning.addEventListener('toggle',()=>{if(!meaning.open||meaning.dataset.loaded)return;meaning.dataset.loaded='1';for(const hash of outgoing){const part=el('section','semantic-box');meaning.append(part);void window.GitDeckSemanticDiff.explain(repo.path,hash,part,el('button'));}});
+      node.append(meaning);
+    }
     riskChecks=nextRiskChecks;
   }
   // Blast radius of the push: why it is risky, and for high risk a checklist to tick before pushing.

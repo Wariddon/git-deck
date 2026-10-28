@@ -169,3 +169,4 @@ html.ui-modern body .lane-next { padding: 8px 10px; border-radius: 9px; backgrou
 html.ui-modern body .lane.lane-done { opacity: .6; }
 html.ui-modern body .release-waiting { display: block; margin-top: 4px; padding: 1px 8px; border: 1px solid color-mix(in srgb, var(--gd-warn) 45%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--gd-warn) 10%, transparent); color: var(--gd-warn); font: 600 11.5px var(--modern-font, inherit); cursor: pointer; }
 html.ui-modern body .release-waiting-list { margin: 6px 0; padding-left: 20px; max-height: 50vh; overflow: auto; display: grid; gap: 4px; }
+html.ui-modern body .push-meaning { margin-top: 8px; } html.ui-modern body .push-meaning summary { cursor: pointer; font-weight: 600; }

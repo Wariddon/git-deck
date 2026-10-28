@@ -113,7 +113,9 @@ function Get-PushChecks([string]$Path, [string]$Remote, [string]$Local, [string]
     }
     # Blast radius of the outgoing commits (lib/GitDeck.Risk.ps1); never blocks the checks themselves.
     $risk = $null; try { $risk = Get-GitDeckPushRisk $Path $range } catch { $risk = $null }
-    return [ordered]@{local=$Local; target=$Target; remote=$Remote; knownTarget=$known; checks=$checks.ToArray(); findings=$findings; risk=$risk; blocked=[bool](@($checks | Where-Object { $_.level -eq 'block' }).Count)}
+    # The outgoing commits (newest first, at most 10), for the pre-flight "what this changes" view.
+    $outgoing = @(Get-GitDeckLines (Invoke-GitCapture $Path (@('rev-list', '--max-count=10', '--no-merges') + $range)))
+    return [ordered]@{local=$Local; target=$Target; remote=$Remote; knownTarget=$known; checks=$checks.ToArray(); findings=$findings; risk=$risk; commits=$outgoing; blocked=[bool](@($checks | Where-Object { $_.level -eq 'block' }).Count)}
 }
 
 # ---------------------------------------------------------------------------
