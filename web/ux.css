@@ -142,3 +142,13 @@ html.ui-modern body .inbox-detail h3 { margin: 2px 0 6px; font-size: 16px; }
 html.ui-modern body .inbox-facts { margin: 8px 0 14px; padding-left: 18px; display: grid; gap: 3px; }
 html.ui-modern body .inbox-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 html.ui-modern body .inbox-empty { padding: 40px 16px; text-align: center; opacity: .7; }
+
+/* Command bar plans (web/command-actions.js). */
+html.ui-modern body .plan-dialog { width: min(860px, 94vw); }
+html.ui-modern body .plan-wrap { max-height: 50vh; overflow: auto; border: 1px solid var(--border-default, #dfe4ea); border-radius: 8px; margin: 8px 0; }
+html.ui-modern body .plan-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+html.ui-modern body .plan-table :is(th, td) { padding: 6px 10px; text-align: left; border-bottom: 1px solid color-mix(in srgb, currentColor 8%, transparent); vertical-align: top; }
+html.ui-modern body .plan-table th { position: sticky; top: 0; background: var(--surface, #fff); font-weight: 600; }
+html.ui-modern body .plan-table tr.plan-skip { opacity: .6; }
+html.ui-modern body .plan-result.tone-ok { color: var(--gd-ok); }
+html.ui-modern body .plan-result.tone-bad { color: var(--gd-bad); }
