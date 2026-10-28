@@ -170,3 +170,17 @@ html.ui-modern body .lane.lane-done { opacity: .6; }
 html.ui-modern body .release-waiting { display: block; margin-top: 4px; padding: 1px 8px; border: 1px solid color-mix(in srgb, var(--gd-warn) 45%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--gd-warn) 10%, transparent); color: var(--gd-warn); font: 600 11.5px var(--modern-font, inherit); cursor: pointer; }
 html.ui-modern body .release-waiting-list { margin: 6px 0; padding-left: 20px; max-height: 50vh; overflow: auto; display: grid; gap: 4px; }
 html.ui-modern body .push-meaning { margin-top: 8px; } html.ui-modern body .push-meaning summary { cursor: pointer; font-weight: 600; }
+/* Midnight Focus: editor-dark canvas, one green accent, status colours that carry meaning. */
+html.ui-modern body.theme-dark.theme-focus {
+  --canvas: #0d1117; --surface: #161b22; --surface-subtle: #1b2129; --surface-muted: #262c36; --surface-hover: #1f2630;
+  --text-primary: #e6edf3; --text-secondary: #9da7b3; --text-tertiary: #7d8590;
+  --border-default: #262c36; --border-muted: #1f252e; --code-bg: #0f141a; --code-text: #e6edf3;
+  --diff-add-bg: rgb(63 185 80 / 14%); --diff-add-text: #aff5b4; --diff-remove-bg: rgb(248 81 73 / 14%); --diff-remove-text: #ffc1bc;
+  --diff-hunk-bg: rgb(88 166 255 / 12%); --diff-hunk-text: #a5d0ff;
+  --selection-bg: #1b2a21; --selection-ink: #e6edf3; --selection-edge: #3fb950;
+  --gd-ok: #3fb950; --gd-warn: #d29922; --gd-bad: #f85149; --gd-info: #58a6ff; --gd-muted: #7d8590;
+  --modern-shadow-pop: 0 0 0 1px rgb(255 255 255 / 5%), 0 12px 32px rgb(0 0 0 / 45%);
+  --ink: var(--text-primary); --muted: var(--text-secondary); --line: var(--border-default); --paper: var(--canvas);
+  background: var(--canvas); color: var(--text-primary);
+}
+html.ui-modern body .swatch-focus { background: linear-gradient(135deg, #161b22 58%, #3fb950 58%) !important; }

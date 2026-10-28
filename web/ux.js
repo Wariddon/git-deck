@@ -60,6 +60,17 @@
   if(window.gitDeckLive)window.dispatchEvent(new CustomEvent('gitdeck:live',{detail:{on:true}}));
   if(bar){const spacer=bar.querySelector('.status-spacer');if(spacer)spacer.after(live,bell);else bar.append(live,bell);}
 
+  // ---- Mini mode (web/mini.html) ------------------------------------------------------------
+  // The small window calls back here to open a repository or run a command in this window.
+  const tabFor={branches:'branches',cleanup:'branches',tags:'tags',resolve:'conflicts',commit:'changes'};
+  window.GitDeckMiniBridge={
+    open(path,action){const repo=(state.repos||[]).find(item=>String(item.path).toLowerCase()===String(path).toLowerCase());if(!repo)return;document.getElementById('operations-close')?.click();void openWorkspace(repo,tabFor[action]||'changes');},
+    command(text){if(typeof showCommandPalette!=='function')return;showCommandPalette();const box=document.getElementById('command-search');if(box&&text){box.value=text;box.dispatchEvent(new Event('input',{bubbles:true}));}},
+  };
+  const mini=el('button','gd-mini-open','▣');mini.type='button';mini.title=t('Mini mode: a small window with what needs you next');mini.setAttribute('aria-label',t('Mini mode: a small window with what needs you next'));
+  mini.onclick=()=>window.open('/mini.html','gitdeck-mini','width=400,height=640');
+  if(bar)bell.after(mini);
+
   // ---- docked Dashboard ---------------------------------------------------------------------
   const head=document.querySelector('.operations-head');
   if(head){

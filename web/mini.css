@@ -1,0 +1,37 @@
+/* Mini mode window (web/mini.html). Calm tokens by default; the dark themes follow the main window. */
+:root { color-scheme: light; }
+body {
+  --bg: #f4f6f8; --panel: #ffffff; --line: #e1e5ea; --text: #1f2328; --muted: #5b6470; --accent: #0b6e47; --accent-ink: #ffffff;
+  --ok: #15803d; --warn: #b45309; --bad: #b42318; --info: #1d4ed8; --faint: #7b848e;
+  margin: 0; padding: 12px; min-height: 100vh; box-sizing: border-box; background: var(--bg); color: var(--text);
+  font: 13px/1.45 "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; gap: 12px;
+}
+body.theme-dark { --bg: #1c2128; --panel: #22272e; --line: #373e47; --text: #cdd5de; --muted: #a2adb9; --accent: #4184e4; --ok: #57ab5a; --warn: #daaa3f; --bad: #e5736c; --info: #6ea8e8; --faint: #8f9aa6; color-scheme: dark; }
+body.theme-midnight { --bg: #242a35; --panel: #2a313d; --line: #3e4756; --text: #d8dee9; --muted: #aab4c4; --accent: #5e81ac; --ok: #a3be8c; --warn: #ebcb8b; --bad: #e0898f; --info: #88c0d0; --faint: #98a3b5; }
+body.theme-focus { --bg: #0d1117; --panel: #161b22; --line: #262c36; --text: #e6edf3; --muted: #9da7b3; --accent: #238636; --ok: #3fb950; --warn: #d29922; --bad: #f85149; --info: #58a6ff; --faint: #7d8590; }
+button, input { font: inherit; color: inherit; }
+button { padding: 3px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+button:disabled { opacity: .5; cursor: default; }
+.mini-head { display: flex; align-items: center; gap: 8px; }
+.mini-head button { margin-left: auto; }
+.mini-live { width: 9px; height: 9px; border-radius: 50%; background: var(--faint); flex: none; }
+.mini-live.on { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
+.mini-ticket { padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--info) 14%, transparent); color: var(--info); font-weight: 600; font-size: 12px; }
+.mini-command input { width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.mini-command input:focus { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); border-color: var(--accent); }
+.mini-section h2 { margin: 0 0 6px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.mini-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.mini-item { --tone: var(--muted); display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-left: 3px solid var(--tone); border-radius: 9px; background: var(--panel); }
+.mini-item.tone-bad { --tone: var(--bad); } .mini-item.tone-warn { --tone: var(--warn); } .mini-item.tone-info { --tone: var(--info); }
+.mini-text { min-width: 0; flex: 1; display: grid; }
+.mini-text strong, .mini-text span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini-text span { color: var(--muted); font-size: 12px; }
+.mini-actions { display: flex; gap: 4px; flex: none; }
+.mini-done { padding: 3px 7px; color: var(--muted); }
+.mini-change { display: flex; justify-content: space-between; gap: 8px; padding: 4px 2px; border-bottom: 1px solid var(--line); }
+.mini-change small { color: var(--faint); }
+.mini-empty { color: var(--muted); padding: 6px 2px; }
+.mini-status { margin: auto 0 0; min-height: 1.4em; color: var(--muted); font-size: 12px; }
+.mini-status.bad { color: var(--bad); }

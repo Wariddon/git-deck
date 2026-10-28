@@ -3,9 +3,11 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const root = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
-// Every local asset in index.html must exist, be servable by the generic static
-// route and be copied by Build-Release.ps1; every web/*.js|css must be loaded.
-const html = read('web/index.html');
+// Every local asset in web/*.html (index.html, mini.html) must exist, be servable by the generic static
+// route and be copied by Build-Release.ps1; every web/*.js|css must be loaded by one of them.
+const pages = fs.readdirSync(path.join(root, 'web')).filter((name) => name.endsWith('.html'));
+assert(pages.includes('index.html'));
+const html = pages.map((name) => read('web/' + name)).join('\n');
 const runtime = read('lib/GitDeck.Runtime.ps1');
 const release = read('Build-Release.ps1');
 assert.match(release, /'CHANGELOG\.md'/, 'Portable package includes release notes');
@@ -26,7 +28,7 @@ for (const [, url] of html.matchAll(/\s(?:href|src)="(\/[^"]*)"/g)) {
   referenced.add(name);
 }
 for (const name of fs.readdirSync(path.join(root, 'web'))) {
-  if (/\.(js|css)$/.test(name)) assert(referenced.has(name), `web/${name} is never loaded by index.html`);
+  if (/\.(js|css)$/.test(name)) assert(referenced.has(name), `web/${name} is never loaded by a web/*.html page`);
 }
 assert(referenced.size >= 10, 'Asset scan found suspiciously few references');
-console.log(`PASS: ${referenced.size} index.html assets exist, are served and packaged; no orphan web/*.js|css`);
+console.log(`PASS: ${referenced.size} assets of ${pages.length} page(s) exist, are served and packaged; no orphan web/*.js|css`);

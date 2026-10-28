@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Git Deck Mini</title>
+  <link rel="icon" href="/favicon.svg?v=deck-2" type="image/svg+xml">
+  <link rel="stylesheet" href="/mini.css">
+</head>
+<body>
+  <!-- Mini mode: a small always-at-hand window with the next few things that need you and what just
+       changed. Filled by /mini.js; the main Git Deck window does the heavy work. -->
+  <header class="mini-head"><span class="mini-live" id="mini-live"></span><strong>Git Deck</strong><span class="mini-ticket" id="mini-ticket" hidden></span><button type="button" id="mini-main">Main window</button></header>
+  <form class="mini-command" id="mini-command"><input id="mini-command-input" autocomplete="off" spellcheck="false"></form>
+  <section class="mini-section"><h2 id="mini-next-title">Next</h2><ol class="mini-list" id="mini-next"></ol></section>
+  <section class="mini-section"><h2 id="mini-recent-title">Just changed</h2><ol class="mini-list mini-recent" id="mini-recent"></ol></section>
+  <p class="mini-status" id="mini-status" role="status" aria-live="polite"></p>
+  <script src="/i18n.js"></script>
+  <script src="/i18n-th.js"></script>
+  <script src="/inbox.js"></script>
+  <script src="/mini.js"></script>
+</body>
+</html>

@@ -31,6 +31,7 @@
   const tomorrowMorning=(now=new Date())=>{const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,9,0,0);return d.getTime();};
   const helpers={itemsFor,visibleItems,sortItems,tomorrowMorning};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
+  window.GitDeckInboxHelpers=helpers;
 
   const F=window.GitDeckFleet;
   if(!F||typeof el!=='function'||typeof api!=='function'||!document.querySelector('.operations-tabs'))return;
