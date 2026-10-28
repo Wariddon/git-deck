@@ -17,7 +17,7 @@
 
   // done:  [{repo:{name}, branch, commits:[{subject, ref}]}]  (your commits since the last working day)
   // state: [{repo:{name}, pending}]                          (repositories worked on this week)
-  function buildStandup({done=[],state=[],since,today=new Date()}){
+  function buildStandup({done=[],state=[],since,today=new Date(),time=[]}){
     const lines=[t('Standup {date}',{date:day(today)}),'',t('Since {date}:',{date:since})];
     const doneRows=done.filter(row=>row.commits?.length);
     if(!doneRows.length)lines.push('- '+t('No commits of mine.'));
@@ -43,6 +43,8 @@
     }
     lines.push('',t('Today:'),...(plan.length?plan:['- '+t('(write the plan)')]));
     lines.push('',t('Blocked:'),...(blocked.length?blocked:['- '+t('Nothing')]));
+    // Rough time per ticket from web/ticket-time.js, when there is any.
+    if(time.length)lines.push('',t('Time on tickets:'),...time.map(item=>`- ${item.key}: ${Math.floor(item.minutes/60)?`${Math.floor(item.minutes/60)}h ${String(item.minutes%60).padStart(2,'0')}m`:`${item.minutes}m`}`));
     return lines.join('\n');
   }
   const helpers={previousWorkday,buildStandup,day};
@@ -66,7 +68,7 @@
     }));
     done.sort((a,b)=>String(b.last).localeCompare(String(a.last)));
     const text=el('textarea','workflow-input standup-text');text.rows=18;text.spellcheck=false;
-    text.value=buildStandup({done,state:items,since,today});
+    text.value=buildStandup({done,state:items,since,today,time:window.GitDeckTicketTime?.since?.(since)||[]});
     note.textContent=author?t('Your commits ({author}) since {date}, and the state of this week\'s repositories. Edit before sending.',{author,date:since}):t('Commits by everyone since {date} (no Git identity found). Edit before sending.',{date:since});
     ui.body.append(text);
     const copy=el('button','primary',t('Copy'));copy.type='button';

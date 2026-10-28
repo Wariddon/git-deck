@@ -4,6 +4,11 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- **Quick undo**: after a local commit, pull, merge, switch, reset or cherry-pick, a toast offers Undo for 10 seconds (same entry as the Undo timeline; pushes and tags are never offered).
+- **Review mode** (History › commit › ✔ Review): the commit's files ordered by risk (configuration, deployment, migrations, build first; tests and docs last) with a reason and a read tick per file; clicking a file opens its diff.
+- **Recipes** (Ctrl+K › Record a recipe): record fetch, pull, push, switch, branch, tag, stash and merge steps, save them by name and replay them from Ctrl+K after checking the steps; stops at the first failure. Commits, resets and discards are never recorded.
+- **Ticket time**: minutes spent per ticket are counted while Git Deck is in front and in use (ticket mode or the branch's ticket key); shown in the status bar, on Ticket lanes and in the Standup draft.
+- **Ticket lanes** show the ticket's path as a line of stages: branch, pushed, merged, tagged, then each environment.
 - **Calm light theme**: the default Light look now uses the Git Deck design tokens: cool grey ground, white panels, softer borders and the green brand accent (#0B6E47) unless you picked your own accent colour.
 - **Mini mode** (▣ in the status bar): a 400×640 window to keep beside the editor with the next few things that need you (shared with the Inbox, ✓ marks done), Push/Pull in one click, the ticket you work on, a live list of repositories that just changed, and a command box that runs in the main window.
 - **Midnight Focus theme**: an editor-dark theme (near-black canvas, one green accent, red/amber/blue only for status) beside Dark and Midnight.

@@ -184,3 +184,33 @@ html.ui-modern body.theme-dark.theme-focus {
   background: var(--canvas); color: var(--text-primary);
 }
 html.ui-modern body .swatch-focus { background: linear-gradient(135deg, #161b22 58%, #3fb950 58%) !important; }
+/* Ticket lanes: the path as a line of stages (done, part of the repositories, not yet). */
+html.ui-modern body .lane-stages { display: flex; flex-wrap: wrap; gap: 0; margin: 4px 0 8px; }
+html.ui-modern body .lane-stage { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1 1 0; min-width: 44px; position: relative; font-size: 11px; color: var(--text-secondary); }
+html.ui-modern body .lane-stage i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border-default); background: var(--surface); z-index: 1; }
+html.ui-modern body .lane-stage + .lane-stage::before { content: ""; position: absolute; top: 6px; right: 50%; width: 100%; height: 2px; background: var(--border-default); }
+html.ui-modern body .lane-stage.stage-done i { border-color: var(--gd-ok); background: var(--gd-ok); }
+html.ui-modern body .lane-stage.stage-done { color: var(--text-primary); }
+html.ui-modern body .lane-stage.stage-done + .lane-stage::before { background: var(--gd-ok); }
+html.ui-modern body .lane-stage.stage-part i { border-color: var(--gd-info); background: color-mix(in srgb, var(--gd-info) 35%, var(--surface)); }
+html.ui-modern body .lane-time { margin-left: auto; margin-right: 6px; color: var(--text-secondary); }
+/* Quick undo toast. */
+html.ui-modern body .gd-undo-toast { position: fixed; left: 50%; bottom: 44px; transform: translateX(-50%); z-index: 9000; display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--surface); color: var(--text-primary); box-shadow: var(--modern-shadow-pop, 0 8px 24px rgb(0 0 0 / 18%)); }
+/* Review mode. */
+html.ui-modern body .review-box { margin-top: 8px; padding: 10px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--surface-subtle); }
+html.ui-modern body .review-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+html.ui-modern body .review-progress { flex: 1; height: 6px; accent-color: var(--gd-ok); }
+html.ui-modern body .review-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 320px; overflow: auto; }
+html.ui-modern body .review-file { display: grid; grid-template-columns: auto 62px minmax(0, 1fr); align-items: center; gap: 2px 8px; padding: 3px 4px; border-radius: 6px; }
+html.ui-modern body .review-file small { grid-column: 3; color: var(--text-secondary); }
+html.ui-modern body .review-file.review-read { opacity: .55; }
+html.ui-modern body .review-name { justify-self: start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0; border: 0; background: none; color: var(--text-primary); font: 12px var(--modern-mono, monospace); text-align: left; cursor: pointer; }
+html.ui-modern body .review-name:hover { text-decoration: underline; }
+html.ui-modern body .review-level { font-size: 11px; font-weight: 600; }
+html.ui-modern body .review-file.level-3 .review-level { color: var(--gd-bad); } html.ui-modern body .review-file.level-2 .review-level { color: var(--gd-warn); }
+html.ui-modern body .review-file.level-1 .review-level { color: var(--gd-info); } html.ui-modern body .review-file.level-0 .review-level { color: var(--gd-muted); }
+/* Recipes and ticket time. */
+html.ui-modern body .gd-recording { border: 1px solid var(--gd-bad); border-radius: 999px; padding: 0 10px; background: color-mix(in srgb, var(--gd-bad) 10%, transparent); color: var(--gd-bad); font-weight: 600; }
+html.ui-modern body .recipe-steps { margin: 6px 0 10px; padding-left: 20px; display: grid; gap: 3px; }
+html.ui-modern body .recipe-result.tone-ok { color: var(--gd-ok); } html.ui-modern body .recipe-result.tone-bad { color: var(--gd-bad); }
+html.ui-modern body .gd-ticket-time { color: var(--text-secondary); font-variant-numeric: tabular-nums; }

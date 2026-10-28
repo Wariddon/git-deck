@@ -31,7 +31,21 @@
     if(cards.some(c=>(c.journey?.environments||[]).some(env=>env.contains===false)))return {tone:'info',text:t('Promote to the next environment')};
     return {tone:'ok',text:t('Nothing left that Git Deck can see')};
   }
-  const helpers={keyOf,detectLanes,nextStep};
+  // The ticket's path as one line of stages: branch, pushed, merged, tagged, then each environment in
+  // the order the deploy repository lists them. Each stage counts the repositories that reached it.
+  function laneStages(cards){
+    const total=cards.length;const count=(test)=>cards.filter(test).length;
+    const stages=[
+      {id:'branch',label:t('Branch'),count:total},
+      {id:'pushed',label:t('Pushed'),count:count(c=>c.journey?.pushed)},
+      {id:'merged',label:t('Merged'),count:count(c=>(c.journey?.merged||[]).length)},
+      {id:'tagged',label:t('Tagged'),count:count(c=>c.journey?.firstTag)},
+    ];
+    const envs=[];for(const c of cards)for(const env of c.journey?.environments||[])if(!envs.includes(env.env))envs.push(env.env);
+    for(const env of envs)stages.push({id:'env:'+env,label:String(env).toUpperCase(),count:count(c=>(c.journey?.environments||[]).some(item=>item.env===env&&item.contains))});
+    return stages.map(stage=>({...stage,total,state:!total?'todo':stage.count===total?'done':stage.count?'part':'todo'}));
+  }
+  const helpers={keyOf,detectLanes,nextStep,laneStages};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
 
   const F=window.GitDeckFleet;
@@ -83,8 +97,8 @@
           box.append(actions);cardsBox.append(box);
         }
         if(!cards.length){const find=button(t('Find its repositories'));find.onclick=()=>{try{localStorage.setItem('gitdeck.ticketKey',lane.key);}catch{}window.GitDeckTicketMode?.enter?.(lane.key);if(typeof showOperationsCenter==='function')showOperationsCenter('ticket');};cardsBox.append(find);}
-        const pushed=cards.filter(c=>c.journey?.pushed).length,merged=cards.filter(c=>(c.journey?.merged||[]).length).length,tagged=cards.filter(c=>c.journey?.firstTag).length;
-        if(cards.length)for(const [label,count] of [[t('pushed'),pushed],[t('merged'),merged],[t('tagged'),tagged]])steps.append(el('span',`fleet-journey-step tone-${count===cards.length?'ok':count?'info':'muted'}`,`${count===cards.length?'✓':count+'/'+cards.length} ${label}`));
+        if(cards.length){steps.className='lane-stages';for(const stage of laneStages(cards)){const node=el('span',`lane-stage stage-${stage.state}`);node.append(el('i'),el('span','',stage.label));node.title=t('{count} of {total} repositories',{count:stage.count,total:stage.total});steps.append(node);}}
+        const minutes=window.GitDeckTicketTime?.since?.('0000-00-00')?.find(item=>item.key===lane.key)?.minutes;if(minutes)head.insertBefore(el('small','lane-time',`⏱ ${window.GitDeckTicketTime.duration(minutes)}`),remove);
         const step=nextStep(cards);next.className=`lane-next tone-${step.tone}`;next.textContent=t('Next: {step}',{step:step.text});
         // Finished tickets step aside: last on the board, quieter.
         if(step.tone==='ok'){column.classList.add('lane-done');board.append(column);}
