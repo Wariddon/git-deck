@@ -6,6 +6,9 @@
 //             (web/weather.js), then the app; click or Esc skips.
 //   command - one box first: "What will you do today?", with what you usually do now, the top Inbox
 //             items and, in the evening, Close the day. Enter, Esc or a click opens the app.
+//   cube    - a scrambled Rubik's cube twists itself solved; stickers that stay red or amber are your
+//             repositories that need you (web/weather.js). The green face with the Git Deck mark turns to
+//             you and the app grows out of it. Click or Esc skips.
 //   off     - the splash just fades.
 // Reduced motion: every opening becomes a plain fade; the greeting still shows.
 (function(){
@@ -29,12 +32,25 @@
     });
     return {stars,labels};
   }
-  const helpers={daypart,greeting,constellation};
+  // Cube stickers: six faces of nine, each face its own colour, except that each repository that needs
+  // you (storm = red, rain = amber) keeps one sticker in its colour, spread over the faces; the centre
+  // of the front face holds the Git Deck mark. Returns {face: [9 colours]}.
+  const cubeColors={front:'#0b6e47',right:'#2f81f7',back:'#d29922',left:'#e5534b',top:'#eef1f4',bottom:'#6e7781'};
+  function cubeStickers(levels){
+    const faces=Object.fromEntries(Object.entries(cubeColors).map(([face,color])=>[face,Array(9).fill(color)]));
+    const marks=(levels||[]).filter(level=>level==='storm'||level==='rain').slice(0,16);
+    const order=['front','top','right','left','back','bottom'];const spots=[0,2,6,8,4,1,3,5,7];let i=0;
+    for(const level of marks){
+      for(let tries=0;tries<54;tries++,i++){const face=order[i%6],spot=spots[Math.floor(i/6)%9];if(face==='front'&&spot===4)continue;if(faces[face][spot]===cubeColors[face]){faces[face][spot]=level==='storm'?'#f85149':'#f2b84b';i++;break;}}
+    }
+    return faces;
+  }
+  const helpers={daypart,greeting,constellation,cubeStickers,cubeColors};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
 
   const root=document.documentElement;root.dataset.daypart=daypart(new Date().getHours());
   const startup=window.GitDeckStartup;if(!startup)return;
-  const mode=()=>window.GitDeckAppearance?.opening||'logo';
+  const mode=()=>window.GitDeckAppearance?.opening||'cube';
   const still=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const make=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node;};
   let name='';
@@ -76,6 +92,50 @@
     splash.querySelector('.startup-card')?.animate([{backgroundColor:getComputedStyle(splash.querySelector('.startup-card')).backgroundColor},{backgroundColor:'rgba(0,0,0,0)'}],{duration:420,delay:120,fill:'forwards'});
     growApp(620);
     setTimeout(()=>{if(splash.open)splash.close();void whoAmI.then(greetCard);},680);
+  }
+
+  // ---- cube: a Rubik's cube twists itself solved, then opens into the app -------------------------
+  function weatherLevels(){
+    const snap=readJson('gitdeck.pendingSnapshot',null);const weather=window.GitDeckWeather;if(!snap||!weather)return [];
+    const cache=readJson('gitdeck.forecastCache',{});
+    return (snap.items||[]).filter(item=>!/\.worktrees[\\/]/i.test(item.path)).map(item=>weather.weatherFor(item.pending,cache[String(item.path).toLowerCase()]).level);
+  }
+  function cubeOpening(){
+    if(still()){void whoAmI.then(greetCard);return;}
+    const S=Math.round(Math.min(220,Math.max(150,Math.min(window.innerWidth,window.innerHeight)*0.26))),third=S/3;
+    const levels=weatherLevels();const stickers=cubeStickers(levels);
+    const overlay=make('div','gd-cube-open');overlay.setAttribute('aria-hidden','true');
+    const stage=make('div','gd-cube-stage');const cube=make('div','gd-cube');cube.style.setProperty('--s',S+'px');stage.append(cube);
+    const caption=make('div','gd-cube-caption');
+    const sideTurn={front:0,right:90,back:180,left:-90};const scrambled=[-90,90,180];const slices=[];
+    for(let row=0;row<3;row++){
+      const slice=make('div','gd-cube-slice');slice.style.top=row*third+'px';slice.style.height=third+'px';slice.style.transform=`rotateY(${scrambled[row]}deg)`;
+      for(const [face,deg] of Object.entries(sideTurn)){
+        const side=make('div','gd-cube-face');side.style.height=third+'px';side.style.transform=`rotateY(${deg}deg) translateZ(${S/2}px)`;
+        for(let col=0;col<3;col++){const tile=make('i');tile.style.background=stickers[face][row*3+col];if(face==='front'&&row===1&&col===1)tile.className='gd-cube-logo';side.append(tile);}
+        slice.append(side);
+      }
+      if(row!==1){
+        const cap=make('div','gd-cube-face gd-cube-cap');cap.style.top=(third/2-S/2)+'px';cap.style.height=S+'px';cap.style.transform=row===0?`rotateX(90deg) translateZ(${third/2}px)`:`rotateX(-90deg) translateZ(${third/2}px)`;
+        for(const color of stickers[row===0?'top':'bottom']){const tile=make('i');tile.style.background=color;cap.append(tile);}
+        slice.append(cap);
+      }
+      cube.append(slice);slices.push(slice);
+    }
+    overlay.append(stage,caption);document.body.append(overlay);
+    const need=levels.filter(level=>level==='storm'||level==='rain').length;
+    let ended=false;const timers=[];
+    const end=()=>{if(ended)return;ended=true;timers.forEach(clearTimeout);overlay.classList.add('gone');growApp(520);setTimeout(()=>overlay.remove(),520);void whoAmI.then(greetCard);};
+    const at=(ms,run)=>timers.push(setTimeout(run,ms));
+    requestAnimationFrame(()=>overlay.classList.add('in'));
+    at(380,()=>{slices[0].style.transform='rotateY(0deg)';});
+    at(800,()=>{slices[1].style.transform='rotateY(0deg)';});
+    at(1220,()=>{slices[2].style.transform='rotateY(0deg)';});
+    at(1700,()=>{cube.classList.add('solved');caption.textContent=need?t('{count} repositories need you: the red and amber stickers',{count:need}):greeting(daypart(new Date().getHours()),name);});
+    at(2150,()=>{cube.classList.add('face');overlay.classList.add('opening');});
+    at(2700,end);
+    overlay.addEventListener('click',end);
+    document.addEventListener('keydown',function skip(event){if(event.key==='Escape'){document.removeEventListener('keydown',skip);end();}});
   }
 
   // ---- stars: every repository flies in, coloured by its weather ---------------------------------
@@ -141,6 +201,7 @@
   // Appearance › Opening › Preview: play the chosen opening again without reloading.
   function preview(chosen=mode()){
     document.querySelectorAll('.theme-picker[open]').forEach(menu=>menu.removeAttribute('open'));
+    if(chosen==='cube')return cubeOpening();
     if(chosen==='stars')return starsOpening();
     if(chosen==='command')return commandOpening();
     if(chosen==='off')return greetCard();
@@ -149,13 +210,14 @@
     if(!splash.open)splash.showModal();
     setTimeout(()=>logoOpening(()=>{if(splash.open)splash.close();}),900);
   }
-  window.GitDeckEntrance={stars:()=>starsOpening(),command:commandOpening,greet:greetCard,preview};
+  window.GitDeckEntrance={cube:cubeOpening,stars:()=>starsOpening(),command:commandOpening,greet:greetCard,preview};
   const original=startup.finish;
   startup.finish=function(){
     const chosen=mode();
     if(chosen==='logo')return logoOpening(original);
     original();
-    if(chosen==='stars')setTimeout(starsOpening,240);
+    if(chosen==='cube')setTimeout(cubeOpening,120);
+    else if(chosen==='stars')setTimeout(starsOpening,240);
     else if(chosen==='command')setTimeout(commandOpening,200);
   };
 })();

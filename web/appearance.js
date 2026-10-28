@@ -16,7 +16,7 @@
   // Shape: Soft (rounded islands, glass dialogs; web/soft.css) or Square (the previous boxes).
   const shapes=['soft','square'];const defaultShape='soft';
   // Opening: how Git Deck appears when it starts (web/entrance.js).
-  const openings=['logo','stars','command','off'];const defaultOpening='logo';
+  const openings=['cube','logo','stars','command','off'];const defaultOpening='cube';
   const keys={size:'gitdeck.textSize',look:'gitdeck.look',density:'gitdeck.density',shape:'gitdeck.shape',opening:'gitdeck.opening'};
   const read=(key)=>{try{return localStorage.getItem(key);}catch{return null;}};
   const write=(key,value,fallback)=>{try{if(value===fallback)localStorage.removeItem(key);else localStorage.setItem(key,String(value));}catch{}};
@@ -66,6 +66,7 @@
         {data:{shape:'square'},label:t('Square'),title:t('Boxes with straight edges, as before'),run:()=>setShape('square')},
       ]),
       group('look-choice opening-choice',t('Opening'),[
+        {data:{opening:'cube'},label:t('Cube'),title:t('A puzzle cube twists itself solved; red and amber stickers are repositories that need you'),run:()=>setOpening('cube')},
         {data:{opening:'logo'},label:t('Logo'),title:t('The logo grows into the app, then a greeting'),run:()=>setOpening('logo')},
         {data:{opening:'stars'},label:t('Stars'),title:t('Every repository flies in as a star, coloured by its weather'),run:()=>setOpening('stars')},
         {data:{opening:'command'},label:t('Command'),title:t('Start at one box: what will you do today?'),run:()=>setOpening('command')},

@@ -16,6 +16,15 @@ const entrance = require('../web/entrance.js');
 assert.deepEqual([4, 5, 11, 12, 16, 17, 21, 22].map(entrance.daypart), ['night', 'morning', 'morning', 'afternoon', 'afternoon', 'evening', 'evening', 'night']);
 assert.equal(entrance.greeting('morning', 'Wariddon Rattanamalee'), 'Good morning, Wariddon');
 assert.equal(entrance.greeting('night', ''), 'Working late');
+// Cube: each face one colour; one red or amber sticker per repository that needs you, never on the mark.
+const solved = entrance.cubeStickers([]);
+for (const [face, color] of Object.entries(entrance.cubeColors)) assert.deepEqual(solved[face], Array(9).fill(color), face);
+const marked = entrance.cubeStickers(['storm', 'rain', 'sun', 'cloud', 'storm']);
+const all = Object.values(marked).flat();
+assert.equal(all.filter((c) => c === '#f85149').length, 2, 'two storms');
+assert.equal(all.filter((c) => c === '#f2b84b').length, 1, 'one rain');
+assert.equal(marked.front[4], entrance.cubeColors.front, 'the Git Deck mark stays green');
+assert.equal(Object.values(entrance.cubeStickers(Array(40).fill('storm'))).flat().filter((c) => c === '#f85149').length, 16, 'at most 16 marks');
 const sky = entrance.constellation(['crs-a', 'crs-b', 'crs-c', 'lns-a', 'hiring'], 800, 600);
 assert.equal(sky.stars.length, 5);
 assert.deepEqual(sky.labels.map((l) => l.family), ['crs-', 'lns-', '·']);
@@ -26,7 +35,7 @@ assert(Math.hypot(crs[0].x - crs[1].x, crs[0].y - crs[1].y) < Math.hypot(crs[0].
 // Settings: Shape (Soft default) and Opening (Logo default) in the Appearance menu.
 const appearance = web('appearance.js');
 assert.match(appearance, /const shapes=\['soft','square'\];const defaultShape='soft';/);
-assert.match(appearance, /const openings=\['logo','stars','command','off'\];const defaultOpening='logo';/);
+assert.match(appearance, /const openings=\['cube','logo','stars','command','off'\];const defaultOpening='cube';/);
 assert.match(appearance, /root\.classList\.toggle\('gd-soft',shape==='soft'\)/);
 assert.match(appearance, /label:t\('Preview'\).*GitDeckEntrance\?\.preview\?\.\(\)/, 'Opening has a Preview');
 assert.match(web('entrance.js'), /function preview\(chosen=mode\(\)\)/);

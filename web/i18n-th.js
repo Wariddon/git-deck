@@ -2019,4 +2019,7 @@ GitDeckI18n.register('th',{
   "What will you do today?":"วันนี้จะทำอะไร?",
   "Type a command, or press Esc to go straight to work.":"พิมพ์คำสั่ง หรือกด Esc เพื่อเข้าไปทำงานเลย",
   "Play the chosen opening now":"เล่นหน้าเปิดที่เลือกตอนนี้",
+  "Cube":"ลูกบาศก์",
+  "A puzzle cube twists itself solved; red and amber stickers are repositories that need you":"ลูกบาศก์รูบิคบิดตัวเองจนเสร็จ สติกเกอร์สีแดงและเหลืองคือ repo ที่รอคุณอยู่",
+  "{count} repositories need you: the red and amber stickers":"มี {count} repo รอคุณอยู่: สติกเกอร์สีแดงและเหลือง",
 });

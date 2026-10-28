@@ -4,6 +4,7 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- **Cube opening** (Appearance › Opening › Cube, now the default): a scrambled Rubik's-style cube twists itself solved layer by layer; each repository that needs you keeps a red or amber sticker; the green face with the Git Deck mark turns to you and the app grows out of it (about 2.7 s; click or Esc skips; reduced motion skips it).
 - **Soft shape** (Appearance › Shape, default): the repository list and content float as rounded islands on a tinted ground, a radius scale (10/14/18 px, squircle corners where the browser supports them), frosted-glass command bar, dialogs and toasts, and a sliding highlight in the side rail, repository tabs and Dashboard menu. Square keeps the previous look.
 - **Openings** (Appearance › Opening): Logo (default; the splash logo flies into the corner as the app grows in), Stars (every repository flies in as a star coloured by its weather), Command (start at one box: "What will you do today?" with what you usually do now and the top Inbox items) or Off. A greeting for the time of day follows, with Close the day in the evening; reduced motion keeps it to a fade.
 - **Close the day** (Ctrl+K or Dashboard › Every day): one card with what moved today (ticket time, actions), what is still only on this computer, the time Git Deck saved and a plan for tomorrow ready to paste.

@@ -129,3 +129,21 @@ html.gd-soft.ui-modern body .inbox-list { border-right: 0 !important; }
 html.gd-soft.ui-modern body :is(.panel.workspace-surface, #workspace-backdrop) { box-shadow: none !important; }
 html.gd-soft.ui-modern body .modern-rail-item.active { box-shadow: none !important; }
 html.gd-soft.ui-modern body :is(.history-options-body, .clean-diff-more-panel, .sync-more > div, .modern-popover, .context-menu, .commit-action-menu, .theme-menu, .modern-menu) { box-shadow: var(--gd-soft-shadow) !important; border: 1px solid var(--border-default) !important; border-radius: var(--gd-r-md) !important; }
+
+/* ---- cube opening (web/entrance.js) ------------------------------------------------------------- */
+.gd-cube-open { position: fixed; inset: 0; z-index: 14000; display: grid; place-items: center; align-content: center; gap: 28px; background: radial-gradient(ellipse at 50% 42%, #18222f 0%, #0b0f15 72%); cursor: pointer; opacity: 1; transition: opacity .5s ease, backdrop-filter .5s; }
+.gd-cube-open.opening { background: radial-gradient(ellipse at 50% 42%, rgb(24 34 47 / 60%) 0%, rgb(11 15 21 / 35%) 72%); }
+.gd-cube-open.gone { opacity: 0; }
+.gd-cube-stage { perspective: 1000px; }
+.gd-cube { --s: 180px; width: var(--s); height: var(--s); position: relative; transform-style: preserve-3d; transform: rotateX(-24deg) rotateY(-34deg) scale(.55); opacity: 0; transition: transform .62s cubic-bezier(.65,0,.25,1), opacity .4s ease; }
+.gd-cube-open.in .gd-cube { transform: rotateX(-24deg) rotateY(-34deg) scale(1); opacity: 1; }
+.gd-cube-open.in .gd-cube.face { transform: rotateX(0deg) rotateY(0deg) scale(2.8); opacity: 0; transition: transform .6s cubic-bezier(.6,0,.2,1), opacity .45s ease .2s; }
+.gd-cube-slice { position: absolute; left: 0; width: var(--s); transform-style: preserve-3d; transition: transform .44s cubic-bezier(.7,0,.3,1); }
+.gd-cube-face { position: absolute; left: 0; top: 0; width: var(--s); box-sizing: border-box; padding: 3px; gap: 3px; display: flex; background: #0a0c10; backface-visibility: hidden; }
+.gd-cube-cap { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.gd-cube-face i { flex: 1; border-radius: 7px; box-shadow: inset 0 -3px 0 rgb(0 0 0 / 18%), inset 0 2px 0 rgb(255 255 255 / 22%); }
+@supports (corner-shape: squircle) { .gd-cube-face i { corner-shape: squircle; border-radius: 11px; } }
+.gd-cube-logo { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Cg fill='none' stroke='%23fff' stroke-width='7' stroke-linecap='round'%3E%3Cpath d='M22 18C22 37 36 35 36 54'/%3E%3Cpath d='M50 18C50 37 36 35 36 54'/%3E%3C/g%3E%3Ccircle cx='22' cy='18' r='7' fill='%23fff'/%3E%3Ccircle cx='50' cy='18' r='7' fill='%23fff'/%3E%3Ccircle cx='36' cy='54' r='8' fill='%23fff'/%3E%3C/svg%3E") !important; background-size: 62% !important; background-position: center !important; background-repeat: no-repeat !important; }
+.gd-cube.solved .gd-cube-logo { animation: gd-cube-glow .7s ease-out; }
+@keyframes gd-cube-glow { 50% { filter: brightness(1.35) drop-shadow(0 0 10px #3fb950); } }
+.gd-cube-caption { margin-top: 64px; max-width: 80vw; min-height: 1.6em; color: #e6edf3; font: 600 18px "Segoe UI", system-ui, sans-serif; text-align: center; animation: gd-greet-in .5s ease-out; }
