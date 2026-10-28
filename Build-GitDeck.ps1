@@ -56,7 +56,14 @@ if ($Artwork -or -not (Test-Path -LiteralPath $icon)) {
     [System.IO.File]::WriteAllText((Join-Path $root 'web\favicon.svg'),$svg)
 }
 # The splash card draws the same artwork (resource GitDeck.logo.png).
-& $compiler /nologo /target:winexe /optimize+ /win32icon:$icon /reference:System.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll "/resource:$logo,GitDeck.logo.png" /out:$output $source
+# The frameless window uses WebView2 (launcher\webview2, Microsoft's signed SDK files); they sit next to
+# GitDeck.exe. Without them, or without the WebView2 runtime, GitDeck.exe opens an Edge app window instead.
+$webview = Join-Path $root 'launcher\webview2'
+foreach ($file in @('Microsoft.Web.WebView2.Core.dll', 'Microsoft.Web.WebView2.WinForms.dll', 'WebView2Loader.dll')) {
+    $target = Join-Path $root $file
+    try { Copy-Item -LiteralPath (Join-Path $webview $file) -Destination $target -Force } catch { if (-not (Test-Path -LiteralPath $target)) { throw } }
+}
+& $compiler /nologo /target:winexe /optimize+ /win32icon:$icon /reference:System.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll "/reference:$(Join-Path $webview 'Microsoft.Web.WebView2.Core.dll')" "/reference:$(Join-Path $webview 'Microsoft.Web.WebView2.WinForms.dll')" "/resource:$logo,GitDeck.logo.png" /out:$output $source
 if ($LASTEXITCODE -ne 0) { throw 'GitDeck.exe build failed.' }
 Write-Host "Built $output with shared Git Deck artwork (16-256px)."
 if ($Shortcut) {

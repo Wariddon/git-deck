@@ -5,6 +5,8 @@ $root = Split-Path $PSScriptRoot -Parent
 $exe = Join-Path $root 'GitDeck.exe'
 $source = Join-Path $root 'launcher\GitDeckLauncher.cs'
 $fresh = (Test-Path -LiteralPath $exe) -and (Get-Item -LiteralPath $exe).LastWriteTimeUtc -ge (Get-Item -LiteralPath $source).LastWriteTimeUtc
+# The frameless window's WebView2 files are copied next to GitDeck.exe by the build.
+if ($fresh -and -not (Test-Path -LiteralPath (Join-Path $root 'WebView2Loader.dll'))) { $fresh = $false }
 if ($fresh) { return }
 Write-Host 'Building GitDeck.exe (first start, or the launcher changed)...'
 try { & (Join-Path $root 'Build-GitDeck.ps1') | Out-Null }

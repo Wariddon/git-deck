@@ -59,8 +59,13 @@ internal static class GitDeckLauncher
             };
             Application.Run(splash);
         }
-        if (error != null) MessageBox.Show(error, "Git Deck", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        if (error != null) { MessageBox.Show(error, "Git Deck", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
+        // Frameless window (WebView2): this process keeps running and hosts it until it is closed.
+        if (hostedUrl != null) Hosted.Run(hostedUrl, FindEdge());
     }
+
+    // Set by StartAndOpen when Git Deck opens in its own frameless window instead of Edge.
+    private static string hostedUrl;
 
     // Starts the server when needed, opens the window and waits for it; returns an error message or null.
     private static string StartAndOpen(string root, string server, string[] args)
@@ -75,6 +80,15 @@ internal static class GitDeckLauncher
                     if (ownsMutex) StartServer(root, server);
                     if (!WaitUntilReady(TimeSpan.FromSeconds(20)))
                         return "Git Deck local service did not start within 20 seconds\n\nRun git-dashboard.bat --console to inspect the error";
+                }
+                // Frameless window when the WebView2 files are next to GitDeck.exe and the runtime is
+                // installed (Windows 11 has it); otherwise an Edge app window as before.
+                if (FindAppWindow() == IntPtr.Zero || FolderArgument(args) != null)
+                {
+                    string url = AppUrl;
+                    string folder = FolderArgument(args);
+                    if (folder != null) url += "?path=" + Uri.EscapeDataString(folder);
+                    if (Hosted.Available(AppDomain.CurrentDomain.BaseDirectory)) { hostedUrl = url; return null; }
                 }
                 bool appWindow = OpenAppWindow(args);
                 // Keep the splash until the Git Deck window shows (a browser tab cannot be detected).
@@ -290,5 +304,140 @@ internal sealed class SplashForm : Form
     {
         if (disposing && logo != null) logo.Dispose();
         base.Dispose(disposing);
+    }
+}
+
+// The frameless Git Deck window (WebView2). Kept in its own classes so that GitDeck.exe still starts
+// (and falls back to an Edge app window) when the WebView2 files or runtime are missing: these types
+// are only loaded when Available() is called.
+internal static class Hosted
+{
+    private static readonly string[] Files = { "Microsoft.Web.WebView2.Core.dll", "Microsoft.Web.WebView2.WinForms.dll", "WebView2Loader.dll" };
+
+    public static bool Available(string folder)
+    {
+        foreach (string file in Files) if (!File.Exists(Path.Combine(folder, file))) return false;
+        try { return !string.IsNullOrEmpty(RuntimeVersion()); }
+        catch { return false; }
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static string RuntimeVersion() { return Microsoft.Web.WebView2.Core.CoreWebView2Environment.GetAvailableBrowserVersionString(null); }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    public static void Run(string url, string edge)
+    {
+        using (var window = new AppWindow(url, edge)) Application.Run(window);
+    }
+}
+
+// A normal resizable window whose title bar is removed (WM_NCCALCSIZE): Windows still gives it the
+// resize borders, the shadow, rounded corners, snap and the maximize animation. The page draws its own
+// top bar: areas marked `app-region: drag` move the window (WebView2 non-client regions) and its window
+// buttons send "window:minimize|maximize|close" (web/window-frame.js).
+internal sealed class AppWindow : Form
+{
+    private const int WM_NCCALCSIZE = 0x0083;
+    private readonly Microsoft.Web.WebView2.WinForms.WebView2 view;
+    private readonly string url;
+    private readonly string edge;
+    private readonly string origin;
+
+    [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left, Top, Right, Bottom; }
+    [StructLayout(LayoutKind.Sequential)] private struct NCCALCSIZE_PARAMS { public RECT Rect0, Rect1, Rect2; public IntPtr Position; }
+    [DllImport("user32.dll")] private static extern bool IsZoomed(IntPtr window);
+    [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);
+    [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
+
+    public AppWindow(string url, string edge)
+    {
+        this.url = url;
+        this.edge = edge;
+        origin = new Uri(url).GetLeftPart(UriPartial.Authority);
+        Text = "Git Deck — Local Repository Manager";
+        try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+        BackColor = Color.FromArgb(0x0B, 0x6E, 0x47);
+        StartPosition = FormStartPosition.CenterScreen;
+        Size = new Size(1440, 900);
+        MinimumSize = new Size(760, 520);
+        WindowState = FormWindowState.Maximized;
+        view = new Microsoft.Web.WebView2.WinForms.WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = BackColor };
+        Controls.Add(view);
+        Load += async (sender, e) =>
+        {
+            try
+            {
+                string data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GitDeck", "WebView2");
+                var environment = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, data, null);
+                await view.EnsureCoreWebView2Async(environment);
+                var core = view.CoreWebView2;
+                core.Settings.IsNonClientRegionSupportEnabled = true;
+                core.Settings.IsStatusBarEnabled = false;
+                core.DocumentTitleChanged += (s, a) => { Text = core.DocumentTitle; };
+                core.WebMessageReceived += (s, a) => OnMessage(a.TryGetWebMessageAsString());
+                // Git Deck pages stay here; links to GitLab, GitHub and other sites open in the browser.
+                core.NavigationStarting += (s, a) => { if (!Local(a.Uri)) { a.Cancel = true; OpenOutside(a.Uri); } };
+                core.NewWindowRequested += (s, a) => { if (!Local(a.Uri)) { a.Handled = true; OpenOutside(a.Uri); } };
+                core.NavigationCompleted += (s, a) => SendState();
+                core.Navigate(url);
+            }
+            catch (Exception ex)
+            {
+                // The runtime could not start: fall back to the Edge app window and leave.
+                try { if (edge != null) Process.Start(new ProcessStartInfo(edge, "--app=\"" + url + "\" --start-maximized") { UseShellExecute = true }); else Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+                catch { MessageBox.Show(ex.Message, "Git Deck", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+                Close();
+            }
+        };
+        Resize += (sender, e) => SendState();
+    }
+
+    private bool Local(string address)
+    {
+        return address != null && (address.StartsWith(origin + "/", StringComparison.OrdinalIgnoreCase) || address == origin || address.StartsWith("about:", StringComparison.OrdinalIgnoreCase) || address.StartsWith("data:", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static void OpenOutside(string address)
+    {
+        Uri parsed;
+        if (!Uri.TryCreate(address, UriKind.Absolute, out parsed) || (parsed.Scheme != Uri.UriSchemeHttp && parsed.Scheme != Uri.UriSchemeHttps && parsed.Scheme != Uri.UriSchemeMailto)) return;
+        try { Process.Start(new ProcessStartInfo(parsed.AbsoluteUri) { UseShellExecute = true }); } catch { }
+    }
+
+    private void OnMessage(string message)
+    {
+        if (message == "window:minimize") WindowState = FormWindowState.Minimized;
+        else if (message == "window:maximize") WindowState = WindowState == FormWindowState.Maximized ? FormWindowState.Normal : FormWindowState.Maximized;
+        else if (message == "window:close") Close();
+        else if (message == "window:state") SendState();
+    }
+
+    private void SendState()
+    {
+        try { if (view.CoreWebView2 != null) view.CoreWebView2.PostWebMessageAsString(WindowState == FormWindowState.Maximized ? "window:maximized" : "window:restored"); } catch { }
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        // Recalculate the frame now that WM_NCCALCSIZE removes the title bar.
+        SetWindowPos(Handle, IntPtr.Zero, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0004 | 0x0020); // NOSIZE NOMOVE NOZORDER FRAMECHANGED
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == WM_NCCALCSIZE && m.WParam != IntPtr.Zero)
+        {
+            // Let Windows size the borders, then give the title bar back to the client area. Maximized
+            // windows hang over the screen edge by the frame width, so keep that much off the top.
+            var before = (NCCALCSIZE_PARAMS)Marshal.PtrToStructure(m.LParam, typeof(NCCALCSIZE_PARAMS));
+            base.WndProc(ref m);
+            var after = (NCCALCSIZE_PARAMS)Marshal.PtrToStructure(m.LParam, typeof(NCCALCSIZE_PARAMS));
+            after.Rect0.Top = before.Rect0.Top + (IsZoomed(m.HWnd) ? GetSystemMetrics(33) + GetSystemMetrics(92) : 0); // SM_CYFRAME + SM_CXPADDEDBORDER
+            Marshal.StructureToPtr(after, m.LParam, false);
+            m.Result = IntPtr.Zero;
+            return;
+        }
+        base.WndProc(ref m);
     }
 }

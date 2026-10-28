@@ -147,3 +147,17 @@ html.gd-soft.ui-modern body :is(.history-options-body, .clean-diff-more-panel, .
 .gd-cube.solved .gd-cube-logo { animation: gd-cube-glow .7s ease-out; }
 @keyframes gd-cube-glow { 50% { filter: brightness(1.35) drop-shadow(0 0 10px #3fb950); } }
 .gd-cube-caption { margin-top: 64px; max-width: 80vw; min-height: 1.6em; color: #e6edf3; font: 600 18px "Segoe UI", system-ui, sans-serif; text-align: center; animation: gd-greet-in .5s ease-out; }
+
+/* ---- frameless window (GitDeck.exe + WebView2; web/window-frame.js sets html.gd-hosted) ----------
+   The tab row and the toolbars move the window where nothing is clickable; window buttons sit at the
+   top right over the tab row, which keeps room for them. Applies with either shape. */
+html.gd-hosted :is(.repo-tabs, .workspace-modal-head, .modern-toolbar, .shell > header, .shell > section > header:first-child) { -webkit-app-region: drag; app-region: drag; }
+html.gd-hosted :is(.repo-tabs, .workspace-modal-head, .modern-toolbar, .shell > header, .shell > section > header:first-child) :is(button, a, input, select, textarea, summary, details, label, [role="button"], [tabindex], .repo-tab) { -webkit-app-region: no-drag; app-region: no-drag; }
+.gd-window-controls { display: flex; flex: none; align-self: stretch; align-items: center; margin-left: auto; -webkit-app-region: no-drag; app-region: no-drag; }
+.gd-window-controls.gd-window-floating { position: fixed; top: 0; right: 0; z-index: 12000; height: 36px; }
+.gd-window-controls button { width: 44px; height: 100%; min-height: 30px; padding: 0 !important; display: grid; place-items: center; border: 0 !important; border-radius: 0 !important; background: transparent !important; color: var(--text-secondary, #5b6470); cursor: default; }
+.gd-window-controls button:hover { background: color-mix(in srgb, var(--text-primary, #1f2328) 9%, transparent) !important; color: var(--text-primary, #1f2328); }
+.gd-window-controls .gd-win-close:hover { background: #c42b1c !important; color: #ffffff; }
+html.gd-hosted:not(.gd-maximized) .gd-window-controls .gd-win-close { border-top-right-radius: 8px !important; }
+/* The tab row only scrolls sideways; a 1 px overflow used to show vertical scroll arrows. */
+html.gd-soft.ui-modern body .repo-tabs, html.gd-hosted body .repo-tabs { overflow-y: hidden !important; scrollbar-width: none; }

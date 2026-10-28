@@ -2022,4 +2022,7 @@ GitDeckI18n.register('th',{
   "Cube":"ลูกบาศก์",
   "A puzzle cube twists itself solved; red and amber stickers are repositories that need you":"ลูกบาศก์รูบิคบิดตัวเองจนเสร็จ สติกเกอร์สีแดงและเหลืองคือ repo ที่รอคุณอยู่",
   "{count} repositories need you: the red and amber stickers":"มี {count} repo รอคุณอยู่: สติกเกอร์สีแดงและเหลือง",
+  "Minimize":"ย่อ",
+  "Maximize":"ขยายเต็มจอ",
+  "Restore":"คืนขนาด",
 });

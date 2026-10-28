@@ -12,7 +12,7 @@ $stage=Join-Path $dist ('stage-'+[guid]::NewGuid().ToString('N'))
 [void](New-Item -ItemType Directory -Path $stage)
 try {
 # Explicit allowlist: never package local inventories, logs, jobs or credentials.
-$files=@('GitDeck.exe','GitDeck.ico','git-dashboard.bat','git-dashboard-server.ps1','git-workflow-tools.ps1','git-diff-content.ps1','git-job-worker.ps1','git-repo-manager.bat','git-repo-manager.ps1','README.md','CHANGELOG.md','LICENSE')
+$files=@('GitDeck.exe','Microsoft.Web.WebView2.Core.dll','Microsoft.Web.WebView2.WinForms.dll','WebView2Loader.dll','GitDeck.ico','git-dashboard.bat','git-dashboard-server.ps1','git-workflow-tools.ps1','git-diff-content.ps1','git-job-worker.ps1','git-repo-manager.bat','git-repo-manager.ps1','README.md','CHANGELOG.md','LICENSE')
 foreach($file in $files){Copy-Item -LiteralPath (Join-Path $root $file) -Destination $stage}
 [void](New-Item -ItemType Directory -Path (Join-Path $stage 'web'))
 # Every web asset the server can serve (flat .html/.js/.css/.svg files).

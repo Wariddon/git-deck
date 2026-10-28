@@ -44,7 +44,7 @@ assert.match(web('mini.css'), /corner-shape: squircle/, 'Mini mode shares the so
 // Every Soft rule needs html.gd-soft (Square keeps the old look), and motion respects reduced motion.
 const css = web('soft.css');
 const rules = css.split('\n').filter((line) => /^html\.[^{]*\{/.test(line));
-for (const line of rules) assert(/gd-soft|data-daypart/.test(line), `scoped: ${line.slice(0, 70)}`);
+for (const line of rules) assert(/gd-soft|data-daypart|gd-hosted/.test(line), `scoped: ${line.slice(0, 70)}`);
 assert.match(css, /@supports \(corner-shape: squircle\)/);
 // Consistency pass: the highlight is anchored at the container origin; no stripe borders on rounded tone
 // cards (an inner shadow follows the corner); flat Dashboard menu; one floating shadow.
