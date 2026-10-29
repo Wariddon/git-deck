@@ -4,6 +4,20 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+## 1.7.0 — 2026-10-29
+
+The screen follows what you are doing, and power tools that work across repositories.
+
+- **Power tools** (Ctrl+K):
+  - **Copy this change to sibling repositories**: one commit (a merge too) checked against every sibling (src-svc-x / txi-svc-x, then the family) and applied where it fits, cleanly or by three-way merge; nothing is committed.
+  - **Save points**: save the open tabs (or the ticket's repositories) with branch, commit and uncommitted changes to tracked files; load later to put them all back. Loading saves the current state first.
+  - **Where does a setting come from?**: one key in every environment with the value it really gets and the layer that wins (ConfigMap over application-{env}.yml).
+  - **Blast radius of my push**: services next to this one that call an endpoint or listen to a Kafka topic in the files you are pushing.
+  - **Panic** (Ctrl+Alt+Backspace): everything Git Deck changed in any repository lately, each with Undo or a recovery branch.
+  - **Morning diff**: on the first start of the day, what came in for your open tabs and which of it touches files you are editing.
+- **Clipboard ticket radar** (GitDeck.exe): copy a ticket key anywhere (Jira, LINE, mail) and Git Deck offers to follow it in every repository.
+- **Branch graveyard** (Dashboard): merged, gone or 90-day idle local branches in every repository; bury the ticked ones and revive any for 7 days. Long-lived branches (development, release/*, test/*…) are never offered.
+- Fixed: the Push dialog's "what each environment really gets" check never ran (its helper was overwritten at load).
 - **Flow UI**: the screen follows what you are doing (theme menu › Flow switches each part):
   - **Next step first**: the action bar puts the sensible next step forward (Commit when files changed, Pull when behind, Push when ahead, Fetch when clean); the rest become small icons.
   - **Status as a sentence**: "main · 29 commits to pull"; click a part to act on it (pull and push still ask).

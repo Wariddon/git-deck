@@ -28,6 +28,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Catalog.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Cockpit.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.Power.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.SelfUpdate.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
@@ -440,7 +441,7 @@ function Get-SetupReadiness {
         $name=[bool]([string](& git config --global --get user.name 2>$null)).Trim()
         $email=[bool]([string](& git config --global --get user.email 2>$null)).Trim()
     }
-    return @{appVersion='1.6.1';gitAvailable=[bool]$git;gitVersion=$version;powerShellVersion=$PSVersionTable.PSVersion.ToString();globalIdentityReady=($name -and $email);gitlabCliAvailable=(Test-Path -LiteralPath $script:Glab -PathType Leaf);serviceReady=$true;port=$Port}
+    return @{appVersion='1.7.0';gitAvailable=[bool]$git;gitVersion=$version;powerShellVersion=$PSVersionTable.PSVersion.ToString();globalIdentityReady=($name -and $email);gitlabCliAvailable=(Test-Path -LiteralPath $script:Glab -PathType Leaf);serviceReady=$true;port=$Port}
 }
 
 function Get-PushPreview([string]$Path,[string]$Remote,[string]$Local,[string]$Target) {
@@ -1295,6 +1296,11 @@ function Invoke-Action($Body) {
         'recipe-preview' { return New-GitDeckFleetRecipe $Body }
         'recipe-run' { return Invoke-GitDeckFleetRecipe $Body }
         'recipe-remove' { return Remove-GitDeckFleetRecipe $Body }
+        'savepoint-create' { $point=New-GitDeckSavePoint $path ([string]$Body.id);return @{message='Save point created.';point=$point} }
+        'savepoint-load' { return Restore-GitDeckSavePoint $path ([string]$Body.id) ([string]$Body.head) ([string]$Body.branch) ([string]$Body.stash) }
+        'savepoint-drop' { return Remove-GitDeckSavePoint $path ([string]$Body.id) }
+        'sibling-patch-check' { return @{message='Checked.';check=(Test-GitDeckPatch $path ([string]$Body.patch))} }
+        'sibling-patch-apply' { return Invoke-GitDeckSiblingPatch $path ([string]$Body.patch) ([bool]$Body.stage) }
         default { Assert-Registered $path }
     }
     switch ($action) {
@@ -1830,6 +1836,8 @@ function Invoke-GitDeckRequest($context) {
         '/api/gitlab/pipelines' { $project=$query['project']; Write-Json $context @{pipelines=@(Get-GitLabPipelines $project)} }
         '/api/gitlab/inbox' { $repoPath=$query['path'];Write-Json $context @{inbox=(Get-GitLabInbox $repoPath)} }
         '/api/repo/push-checks' { Write-Json $context @{pushChecks=(Get-PushChecks $query['path'] $query['remote'] $query['local'] $query['target'] ($query['force'] -eq 'true'))} }
+        '/api/journal/recent' { $minutes=30;[void][int]::TryParse([string]$query['minutes'],[ref]$minutes);Write-Json $context @{journal=@(Get-GitDeckRecentJournal $minutes)} }
+        '/api/repo/commit-patch' { Write-Json $context @{patch=(Get-GitDeckCommitPatch $query['path'] $query['commit'])} }
         '/api/repo/pull-preview' { Write-Json $context @{pull=(Get-GitDeckPullPreview $query['path'] ([string]$query['remote']) ([string]$query['branch']))} }
         '/api/repo/undo-preview' { Write-Json $context @{undo=(Get-UndoPreview $query['path'])} }
         '/api/ai/status' { $repoPath=[string]$query['path'];if($repoPath){Assert-Registered $repoPath;$aiStatus=Get-GitDeckAiRepoStatus $repoPath}else{$aiStatus=Get-AiStatus};Write-Json $context @{ai=$aiStatus} }

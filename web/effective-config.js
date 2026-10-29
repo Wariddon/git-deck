@@ -185,7 +185,20 @@
     }
     return out;
   }
-  window.GitDeckEffectiveConfig={...helpers,envImpact};
+  // Where one setting comes from in every environment (Config lineage, web/power.js): the value each
+  // environment really gets and the layer that wins, with every layer that sets it.
+  async function lineage(repoPath,key,{deployPath=recall('gitdeck.deployRepo'),limit=8}={}){
+    const ask=(env)=>api('/api/repo/effective-config?'+query({path:repoPath,env,ref:'',deploy:deployPath||'',deployRef:'',name:''})).then(answer=>answer.config);
+    const profiles=((await ask('')).profiles||[]).slice(0,limit);const want=canon(key);const out=[];
+    // No application-{env} files: the base application.yml alone.
+    for(const env of profiles.length?profiles:['']){
+      const {rows,labels}=computeEffective(await ask(env),env||'default',()=>{});
+      const row=rows.find(item=>canon(item.key)===want);
+      out.push({env:env||'default',value:row?row.effective:undefined,from:row?labels[row.winner]:'',kind:row?row.kind:'missing',layers:row?row.values.map((value,index)=>({label:labels[index],value})).filter(item=>item.value!==undefined):[]});
+    }
+    return out;
+  }
+  window.GitDeckEffectiveConfig={...helpers,envImpact,lineage};
 
   function build(panel){
     const bar=el('div','operations-toolbar');
@@ -331,5 +344,5 @@
     item.onclick=()=>{more.parentElement?.removeAttribute('open');if(typeof showOperationsCenter==='function')showOperationsCenter('effective-config');};
     const anchor=more.querySelector('[data-multi-repo="compare-files"]');if(anchor)anchor.after(item);else more.append(item);
   }
-  window.GitDeckEffectiveConfig=helpers;
+  window.GitDeckEffectiveConfig={...helpers,envImpact,lineage};
 })();

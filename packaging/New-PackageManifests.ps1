@@ -5,9 +5,9 @@ param(
     [string]$OutputDir = ''
 )
 # Generates Scoop and winget manifests for a published GitHub release.
-# 1. .\Build-Release.ps1 -Version 1.6.1
-# 2. Create GitHub release v1.6.1 and upload dist\GitDeck-1.6.1-windows.zip
-# 3. .\packaging\New-PackageManifests.ps1 -Version 1.6.1
+# 1. .\Build-Release.ps1 -Version 1.7.0
+# 2. Create GitHub release v1.7.0 and upload dist\GitDeck-1.7.0-windows.zip
+# 3. .\packaging\New-PackageManifests.ps1 -Version 1.7.0
 # The SHA256 is read from dist\GitDeck-<version>-windows.zip.sha256 so the
 # manifests always match the uploaded file.
 $ErrorActionPreference = 'Stop'
@@ -45,8 +45,8 @@ $id = 'Wariddon.GitDeck'
 $wingetDir = Join-Path $OutputDir "winget\$Version"
 [void](New-Item -ItemType Directory -Path $wingetDir -Force)
 $common = "PackageIdentifier: $id`nPackageVersion: $Version`n"
-[IO.File]::WriteAllText((Join-Path $wingetDir "$id.yaml"), ("# yaml-language-server: `$schema=https://aka.ms/winget-manifest.version.1.6.1.schema.json`n" + $common + "DefaultLocale: en-US`nManifestType: version`nManifestVersion: 1.6.1`n"), $utf8)
-[IO.File]::WriteAllText((Join-Path $wingetDir "$id.installer.yaml"), ("# yaml-language-server: `$schema=https://aka.ms/winget-manifest.installer.1.6.1.schema.json`n" + $common + @"
+[IO.File]::WriteAllText((Join-Path $wingetDir "$id.yaml"), ("# yaml-language-server: `$schema=https://aka.ms/winget-manifest.version.1.7.0.schema.json`n" + $common + "DefaultLocale: en-US`nManifestType: version`nManifestVersion: 1.7.0`n"), $utf8)
+[IO.File]::WriteAllText((Join-Path $wingetDir "$id.installer.yaml"), ("# yaml-language-server: `$schema=https://aka.ms/winget-manifest.installer.1.7.0.schema.json`n" + $common + @"
 InstallerType: zip
 NestedInstallerType: portable
 NestedInstallerFiles:
@@ -60,10 +60,10 @@ Installers:
   InstallerUrl: $url
   InstallerSha256: $($sha.ToUpperInvariant())
 ManifestType: installer
-ManifestVersion: 1.6.1
+ManifestVersion: 1.7.0
 
 "@), $utf8)
-[IO.File]::WriteAllText((Join-Path $wingetDir "$id.locale.en-US.yaml"), ("# yaml-language-server: `$schema=https://aka.ms/winget-manifest.defaultLocale.1.6.1.schema.json`n" + $common + @"
+[IO.File]::WriteAllText((Join-Path $wingetDir "$id.locale.en-US.yaml"), ("# yaml-language-server: `$schema=https://aka.ms/winget-manifest.defaultLocale.1.7.0.schema.json`n" + $common + @"
 PackageLocale: en-US
 Publisher: Wariddon Rattanamalee
 PackageName: Git Deck
@@ -77,7 +77,7 @@ Tags:
 - gitlab
 - github
 ManifestType: defaultLocale
-ManifestVersion: 1.6.1
+ManifestVersion: 1.7.0
 
 "@), $utf8)
 Write-Host "Scoop manifest:  $(Join-Path $OutputDir 'git-deck.json')"

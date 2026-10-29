@@ -15,8 +15,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyCompany("Wariddon Rattanamalee")]
 [assembly: System.Reflection.AssemblyCopyright("Created by Wariddon Rattanamalee with OpenAI Codex")]
 [assembly: System.Reflection.AssemblyDescription("A compact local Git desktop workspace for Windows")]
-[assembly: System.Reflection.AssemblyVersion("1.6.1.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.6.1.0")]
+[assembly: System.Reflection.AssemblyVersion("1.7.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.7.0.0")]
 
 internal static class GitDeckLauncher
 {
@@ -544,16 +544,39 @@ internal sealed class AppWindow : Form
         SetWindowPos(Handle, IntPtr.Zero, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0004 | 0x0020); // NOSIZE NOMOVE NOZORDER FRAMECHANGED
         // Win+Shift+G from anywhere shows Git Deck with the command box (Ctrl+Alt+G if Windows has it taken).
         if (!RegisterHotKey(Handle, 1, 0x0008 | 0x0004 | 0x4000, 0x47)) RegisterHotKey(Handle, 1, 0x0002 | 0x0001 | 0x4000, 0x47); // WIN SHIFT / CTRL ALT, NOREPEAT, G
+        // Clipboard ticket radar: a copied ticket key (AP2365-3320) is offered to the page.
+        AddClipboardFormatListener(Handle);
     }
 
     protected override void OnHandleDestroyed(EventArgs e)
     {
         UnregisterHotKey(Handle, 1);
+        RemoveClipboardFormatListener(Handle);
         base.OnHandleDestroyed(e);
     }
 
     [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr window, int id, uint modifiers, uint key);
     [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr window, int id);
+    [DllImport("user32.dll")] private static extern bool AddClipboardFormatListener(IntPtr window);
+    [DllImport("user32.dll")] private static extern bool RemoveClipboardFormatListener(IntPtr window);
+    private static readonly System.Text.RegularExpressions.Regex TicketKey = new System.Text.RegularExpressions.Regex(@"^[A-Z][A-Z0-9]{1,9}-\d{1,12}$");
+    private string lastClip = "";
+
+    // Only short text that is exactly a ticket key leaves the clipboard; anything else is ignored.
+    private void OnClipboard()
+    {
+        try
+        {
+            if (!Clipboard.ContainsText()) return;
+            var text = Clipboard.GetText().Trim();
+            if (text.Length > 24) return;
+            text = text.ToUpperInvariant();
+            if (!TicketKey.IsMatch(text) || text == lastClip) return;
+            lastClip = text;
+            Post("ticket:" + text);
+        }
+        catch { }
+    }
 
     protected override void WndProc(ref Message m)
     {
@@ -563,6 +586,7 @@ internal sealed class AppWindow : Form
             else { ShowApp(); Post("palette:open"); }
             return;
         }
+        if (m.Msg == 0x031D) { OnClipboard(); return; } // WM_CLIPBOARDUPDATE
         if (m.Msg == 0x004A) // WM_COPYDATA from another GitDeck.exe
         {
             var data = (GitDeckLauncher.COPYDATASTRUCT)Marshal.PtrToStructure(m.LParam, typeof(GitDeckLauncher.COPYDATASTRUCT));

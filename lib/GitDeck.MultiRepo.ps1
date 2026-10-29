@@ -175,16 +175,16 @@ function Get-GitDeckBranchCleanup([string]$Path) {
         foreach ($name in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', '--format=%(refname:short)', '--merged', $mainline, 'refs/remotes'))) { $mergedRemote[$name] = $true }
     }
     $items = New-Object 'System.Collections.Generic.List[object]'
-    $format = '--format=%(refname)%09%(refname:short)%09%(committerdate:iso-strict)%09%(upstream:short)%09%(upstream:track)%09%(subject)'
+    $format = '--format=%(refname)%09%(refname:short)%09%(committerdate:iso-strict)%09%(upstream:short)%09%(upstream:track)%09%(objectname)%09%(subject)'
     foreach ($line in Get-GitDeckLines (Invoke-GitCapture $Path @('for-each-ref', $format, 'refs/heads', 'refs/remotes'))) {
-        $f = $line -split "`t", 6
-        if ($f.Count -lt 6 -or $f[0] -match '/HEAD$') { continue }
+        $f = $line -split "`t", 7
+        if ($f.Count -lt 7 -or $f[0] -match '/HEAD$') { continue }
         $remote = $f[0].StartsWith('refs/remotes/')
         $short = $f[1]
         $base = if ($remote) { $short.Substring($short.IndexOf('/') + 1) } else { $short }
         $protected = $script:ProtectedBranches -contains $base -or $short -eq $mainline -or (-not $remote -and $short -eq $current)
         $items.Add([ordered]@{
-            name = $short; remote = $remote; date = $f[2]; upstream = $f[3]; gone = ($f[4] -eq '[gone]'); subject = $f[5]
+            name = $short; remote = $remote; date = $f[2]; upstream = $f[3]; gone = ($f[4] -eq '[gone]'); hash = $f[5]; subject = $f[6]
             merged = $(if ($remote) { [bool]$mergedRemote[$short] } else { [bool]$mergedLocal[$short] }); protected = $protected; current = (-not $remote -and $short -eq $current)
         })
     }
