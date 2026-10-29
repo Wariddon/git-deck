@@ -51,8 +51,7 @@
   const waiting=()=>turning&&!updating;
   function turn(way,update){
     const old=face();
-    // The living cube (web/cube-shell.js) turns its own stickers instead.
-    if(!rubik()||still()||!canTurn()||turning||!old||!old.offsetParent||document.body.classList.contains('gd-living'))return update();
+    if(!rubik()||still()||!canTurn()||turning||!old||!old.offsetParent)return update();
     turning=true;
     const box=old.getBoundingClientRect();
     root.style.setProperty('--gd-depth',`${Math.round((way==='up'||way==='down'?box.height:box.width)/2)}px`);

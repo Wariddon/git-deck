@@ -4,11 +4,10 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
-- **The whole program is a Rubik's cube** (Rubik shape, theme menu › Layout › Cube, on by default; Classic keeps a flat window):
-  - The window is the cube's front face, printed on nine stickers with plastic grooves; it stays flat, so text is sharp and everything works as before.
-  - The cube's top and right faces recede in real 3D beyond the window's edges, each a Rubik face of colour stickers with a live view on its centre sticker (today on top, the next view on the right).
-  - Changing view twists the cube: the three rows of stickers turn away one after the other and the new view is underneath. Git moves twist too: a commit turns the middle row, a pull turns the top row down, a push turns it up, a stash turns the middle column, a merge both side columns.
-  - Zoom out (⧉ in the status bar, or Esc when nothing else is open): the whole cube to turn by hand; click a face to fly into it.
+- **Git Deck opens as a Rubik's cube** (Rubik shape, theme menu › Layout › Cube, on by default; Classic opens straight into the window):
+  - A real 3x3x3 cube and nothing else: drag the empty space to turn it, drag across a sticker to twist that layer, Scramble and Solve (plays the twists back), keys U D L R F B (Shift for the other way). It keeps its twists between visits.
+  - Each face's centre is a door with a live count: Changes, History, Branches, Stashes, Dashboard, Repos. Click it to fly into that view; the program is then the normal window.
+  - **Expand** on the cube goes back to the window where you left it; **⧉ Shrink to the cube** beside the window buttons (or Esc) brings the cube back. No opening animation plays on top of it.
 
 - Every button was checked for contrast in all five themes, overlaps and clipped text. The status sentence no longer gets cut short (it keeps its width; less important status items shorten with an ellipsis), and the pinned buttons of the repository tab row (Worksets, Repos, +) have a solid face so scrolled tabs slide under them instead of showing through.
 

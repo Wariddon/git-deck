@@ -1,35 +1,49 @@
 'use strict';
-// The living cube: the window is the cube's front face (grooves), the top and right faces recede in 3D,
-// views change by twisting slices, Git moves twist, zoom-out cube, wiring.
+// Cube home: a real 3x3x3 cube (quarter turns, moves, solving back), drag-to-twist choice, doors, wiring.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 
 const cube = require('../web/cube-shell.js');
-assert.equal(cube.nextView('changes'), 'history');
-assert.equal(cube.nextView('compare'), 'changes', 'round the cube');
-assert.equal(cube.nextView('settings'), 'history', 'a view that is not a face counts as the first');
-assert.deepEqual(cube.movesFor('commit'), [['row', 1, 'y', -1]], 'a commit turns the middle row');
-assert.deepEqual(cube.movesFor('pull-ref'), [['row', 0, 'x', 1]], 'a pull turns the top row down');
-assert.deepEqual(cube.movesFor('push'), [['row', 0, 'x', -1]]);
-assert.equal(cube.movesFor('merge').length, 2, 'a merge turns both side columns');
-assert.deepEqual(cube.movesFor('fetch'), [], 'not every action is a twist');
-assert.equal(cube.slice('row', 0), 'inset(0.000% 0 66.667% 0)');
-assert.equal(cube.slice('col', 2), 'inset(0 0.000% 0 66.667%)');
+assert.deepEqual(cube.rotate('x', 1, [0, 1, 0]), [0, 0, 1], 'CSS rotateX(+90deg): down turns towards you');
+assert.deepEqual(cube.rotate('y', 1, [1, 0, 0]), [0, 0, -1]);
+assert.deepEqual(cube.rotate('z', 1, [1, 0, 0]), [0, 1, 0]);
+let pieces = cube.solved();
+assert.equal(pieces.length, 26, 'every visible piece of a 3x3x3 cube');
+assert(cube.isSolved(pieces));
+const sequence = ['R', "U'", 'F', 'L', "D'", 'B'];
+for (const move of sequence) pieces = cube.apply(pieces, move);
+assert(!cube.isSolved(pieces), 'six twists scramble it');
+assert.equal(new Set(pieces.map((p) => p.pos.join())).size, 26, 'no two pieces in one place');
+for (const move of [...sequence].reverse()) pieces = cube.apply(pieces, cube.inverse(move));
+assert(cube.isSolved(pieces), 'the inverse moves solve it again');
+let four = cube.solved();
+for (let i = 0; i < 4; i++) four = cube.apply(four, 'U');
+assert(cube.isSolved(four), 'four quarter turns come back home');
+const centres = cube.apply(cube.solved(), 'F').filter((p) => p.home.filter((v) => v).length === 1);
+assert(centres.every((p) => p.pos.join() === p.home.join()), 'outer twists never move a centre: every door stays on its face');
+assert.equal(cube.inverse("R'"), 'R');
+
+// Drag across the front face's top-right sticker, looking straight on: a sideways drag turns the top row (y).
+const flat = (v) => [v[0], v[1]];
+const sideways = cube.pickTwist([1, -1, 1], [0, 0, 1], [1, 0], flat);
+assert.equal(sideways.axis, 'y'); assert.equal(sideways.layer, -1);
+const downwards = cube.pickTwist([1, -1, 1], [0, 0, 1], [0, 1], flat);
+assert.equal(downwards.axis, 'x'); assert.equal(downwards.layer, 1);
+assert.equal(cube.pickTwist([0, 0, 1], [0, 0, 1], [1, 0], flat), null, 'a drag on a door does not twist the middle layers');
 
 const js = read('web/cube-shell.js');
 assert.doesNotMatch(js, /[฀-๿]/);
 assert.match(js, /const on=\(\)=>layout==='cube'&&root\.classList\.contains\('gd-rubik'\)/, 'only with the Rubik shape');
-assert.match(js, /if\(result&&on\(\)\)twistSlices\(movesFor\(action\),'round'\)/, 'a move plays only after the action succeeded');
-assert.match(js, /copy\.querySelectorAll\('\[id\]'\)\.forEach\(node=>node\.removeAttribute\('id'\)\)/, 'slice copies carry no duplicate ids');
-assert.match(read('web/rubik.js'), /document\.body\.classList\.contains\('gd-living'\)\)return update\(\);/, 'the flat Rubik turn steps aside for the living cube');
+assert.match(js, /if\(on\(\)\)show\(\);/, 'Git Deck opens as the cube');
+assert.match(js, /const expand=button\(t\('Expand'\)/, 'Expand goes back to the full window');
+assert.match(js, /backButton\.title=t\('Shrink to the cube \(Esc\)'\)/);
+assert.match(read('web/entrance.js'), /const mode=\(\)=>cubeHome\(\)\?'off'/, 'no opening animation on top of the cube');
 const css = read('web/cube-shell.css');
-assert.doesNotMatch(css, /\.grid \{[^}]*perspective:/, 'no perspective on the page grid (it would trap fixed popups)');
-assert.match(css, /\.gd-lc-top \{[^}]*perspective\(1600px\)[^}]*rotateX\(90deg\)/, 'the top face carries its own perspective');
-assert.match(css, /\.gd-lc-right \{[^}]*perspective\(1600px\)[^}]*rotateY\(90deg\)/);
-assert.match(css, /body\.gd-living \.gd-cube-edge \{ display: none !important; \}/);
+assert.match(css, /\.gd-piece \{[^}]*transform-style: preserve-3d;/);
+assert.match(read('web/rubik.css'), /:not\(\.gd-home \*\) \{/, 'the cube home keeps its own buttons');
 const html = read('web/index.html');
 assert(html.includes('<script src="/cube-shell.js" defer></script>'));
 assert(html.includes('<link rel="stylesheet" href="/cube-shell.css">'));
-console.log('PASS: living cube (front face grooves, 3D side faces, slice twists, git moves, zoom-out, wiring)');
+console.log('PASS: cube home (real 3x3x3 turns, solve back, drag-to-twist, doors, expand/shrink, wiring)');
