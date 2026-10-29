@@ -119,7 +119,9 @@
     const base=applyAppearance;
     applyAppearance=function(...args){
       const result=base.apply(this,args);
-      if(rubik()){document.body.classList.add('theme-dark','theme-focus');root.style.colorScheme='dark';}
+      // White plastic is the light cube: the light palette instead.
+      if(rubik()&&root.classList.contains('gd-plastic-white')){document.body.classList.remove('theme-dark','theme-focus','theme-midnight');root.style.colorScheme='light';}
+      else if(rubik()){document.body.classList.add('theme-dark','theme-focus');root.style.colorScheme='dark';}
       return result;
     };
     document.addEventListener('gitdeck:appearance',()=>applyAppearance());

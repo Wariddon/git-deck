@@ -4,6 +4,8 @@
 // done in the Inbox, its sticker turns green. Solve them all and the face is green: a short celebration.
 // A 3x3 face sits in the status bar; click it for the full face and what is left. It also keeps the
 // Pending snapshot fresh: a repository Git Deck sees change is checked again on its own.
+// Speedrun: the time from the first open sticker of the day to the solved face is today's solve time;
+// the dialog shows it with this week's best (PB) and the average of the last five (Ao5).
 (function(){
   // ---- pure helpers (tested) ----------------------------------------------------------------
   // Today's record: keys seen today; a new day starts from what is open now.
@@ -25,7 +27,19 @@
     for(let i=0;i<green;i++)out[order[i]]='#3fb950';
     return out;
   }
-  const helpers={track,progress,stickers};
+  // Solve times [{day, ms}] -> today's time, best of the last 7 days and average of the last five.
+  function solveStats(times,today,now=Date.now()){
+    const list=(times||[]).filter(item=>item&&Number(item.ms)>0);
+    const week=list.filter(item=>now-Date.parse(item.day)<=7*864e5);
+    const last5=list.slice(-5);
+    return {today:list.find(item=>item.day===today)?.ms||0,best:week.length?Math.min(...week.map(item=>item.ms)):0,ao5:last5.length===5?Math.round(last5.reduce((sum,item)=>sum+item.ms,0)/5):0};
+  }
+  // 3725000 -> "1:02:05"; 65000 -> "1:05".
+  function clock(ms){
+    const total=Math.round(Number(ms||0)/1000);const h=Math.floor(total/3600),m=Math.floor(total%3600/60),sec=total%60;
+    const pad=(n)=>String(n).padStart(2,'0');return h?`${h}:${pad(m)}:${pad(sec)}`:`${m}:${pad(sec)}`;
+  }
+  const helpers={track,progress,stickers,solveStats,clock};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
   if(typeof el!=='function'||typeof api!=='function')return;
 
@@ -45,7 +59,14 @@
     items=open;const keys=open.map(item=>item.key);const today=dayOf(Date.now());
     const record=track(readJson('gitdeck.dayCube',null),keys,today);
     last=progress(record,keys);
-    if(last.done&&!record.celebrated){record.celebrated=true;celebrate();}
+    if(last.total&&!record.start)record.start=Date.now();
+    if(last.done&&!record.celebrated){
+      record.celebrated=true;
+      // Speedrun: keep the day's solve time (one per day, the last 30 days).
+      if(record.start){const times=readJson('gitdeck.solveTimes',[]).filter(item=>item.day!==today);times.push({day:today,ms:Date.now()-record.start});writeJson('gitdeck.solveTimes',times.slice(-30));}
+      celebrate();
+    }
+    mini.classList.toggle('gd-solved',last.done);
     writeJson('gitdeck.dayCube',record);
     mini.hidden=false;mini.replaceChildren(...stickers(last.total,last.solved).map(color=>{const i=el('i');i.style.background=color;return i;}));
     const label=last.total?t('Today\'s cube: {solved} of {total} done',{solved:last.solved,total:last.total}):t('Today\'s cube: nothing open');
@@ -63,7 +84,11 @@
     update();const ui=releaseDialog(t('Today\'s cube'));
     const box=el('div','day-cube-dialog');const face=el('div','day-cube-face');
     for(const color of stickers(last.total,last.solved)){const i=el('i');i.style.background=color;face.append(i);}
-    box.append(face,el('strong','',last.total?t('{solved} of {total} done today',{solved:last.solved,total:last.total}):t('Nothing open today. Nice.')));
+    face.classList.toggle('gd-solved',last.done);
+    const stats=solveStats(readJson('gitdeck.solveTimes',[]),dayOf(Date.now()));
+    const times=el('div','day-cube-times');
+    for(const [name,value] of [[t('Today'),stats.today],[t('PB this week'),stats.best],[t('Ao5'),stats.ao5]]){const cell=el('span');cell.append(el('small','',name),el('b','',value?clock(value):'–'));times.append(cell);}
+    box.append(face,times,el('strong','',last.total?t('{solved} of {total} done today',{solved:last.solved,total:last.total}):t('Nothing open today. Nice.')));
     if(items.length){const list=el('ul');for(const item of items.slice(0,12))list.append(el('li','',`${item.repo.name} · ${item.title}`));if(items.length>12)list.append(el('li','fleet-muted',t('and {count} more',{count:items.length-12})));box.append(el('small','fleet-muted',t('Still scrambled:')),list);}
     else box.append(el('small','fleet-muted',t('Run a Pending check to scramble today\'s cube with your open work.')));
     ui.body.append(box);

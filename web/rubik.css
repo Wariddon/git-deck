@@ -110,8 +110,8 @@ html.gd-rubik.gd-cube-room.gd-soft.ui-modern body #workspace-content { border-to
 html.gd-rubik.gd-cube-room.gd-soft.ui-modern body .operations-view { margin-top: 10px; margin-right: 10px; }
 .gd-cube-edge { position: fixed; z-index: 40; min-width: 0 !important; min-height: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; cursor: pointer; transition: filter .15s ease, opacity .2s ease; }
 .gd-cube-edge[hidden] { display: none !important; }
-.gd-cube-edge-top { --edge: var(--st-green, #2f8f5b); background: linear-gradient(0deg, rgb(0 0 0 / 30%), transparent), linear-gradient(90deg, var(--edge) 0 33%, #0a0c10 33% calc(33% + 3px), var(--edge) calc(33% + 3px) 66.6%, #0a0c10 66.6% calc(66.6% + 3px), var(--edge) calc(66.6% + 3px)) !important; filter: saturate(.7) brightness(.72); }
-.gd-cube-edge-right { background: linear-gradient(90deg, rgb(0 0 0 / 15%), rgb(0 0 0 / 40%)), linear-gradient(180deg, var(--edge) 0 33%, #0a0c10 33% calc(33% + 3px), var(--edge) calc(33% + 3px) 66.6%, #0a0c10 66.6% calc(66.6% + 3px), var(--edge) calc(66.6% + 3px)) !important; filter: saturate(.7) brightness(.55); }
+.gd-cube-edge-top { --edge: var(--st-green, #2f8f5b); background: linear-gradient(0deg, rgb(0 0 0 / 30%), transparent), linear-gradient(90deg, var(--edge) 0 33%, var(--gd-groove, #0a0c10) 33% calc(33% + 3px), var(--edge) calc(33% + 3px) 66.6%, var(--gd-groove, #0a0c10) 66.6% calc(66.6% + 3px), var(--edge) calc(66.6% + 3px)) !important; filter: saturate(.7) brightness(.72); }
+.gd-cube-edge-right { background: linear-gradient(90deg, rgb(0 0 0 / 15%), rgb(0 0 0 / 40%)), linear-gradient(180deg, var(--edge) 0 33%, var(--gd-groove, #0a0c10) 33% calc(33% + 3px), var(--edge) calc(33% + 3px) 66.6%, var(--gd-groove, #0a0c10) 66.6% calc(66.6% + 3px), var(--edge) calc(66.6% + 3px)) !important; filter: saturate(.7) brightness(.55); }
 .gd-cube-edge:hover, .gd-cube-edge:focus-visible { filter: saturate(.9) brightness(.95); outline: none; }
 .sticker-editor { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .sticker-editor-row { display: flex; align-items: center; gap: 10px; }
@@ -159,3 +159,43 @@ html.gd-rubik.gd-soft.ui-modern body .workspace-statusbar > :is(.day-cube-mini, 
 html.gd-rubik .gd-window-controls { gap: 4px; padding-left: 6px; }
 html.gd-rubik .gd-window-controls button { border-radius: 8px !important; background: var(--surface-subtle) !important; box-shadow: var(--gd-sticker) !important; width: 40px; }
 html.gd-rubik .gd-window-controls .gd-win-close:hover { background: var(--st-red) !important; color: #ffffff !important; }
+
+/* ---- white plastic (Appearance › Plastic › White): the light cube for daytime ----------------------- */
+html.gd-rubik.gd-plastic-white { background: #e9ecf0; --gd-groove: #d3d8de; }
+html.gd-rubik.gd-plastic-white.gd-soft.ui-modern body:not(.gd-never) {
+  --canvas: #e4e8ed; --surface: #f7f8fa; --surface-subtle: #ffffff; --surface-muted: #eef1f4; --surface-hover: #f2f4f7;
+  --border-default: #d0d7de; --border-muted: #e1e5ea; --code-bg: #f3f5f8;
+  --text-primary: #1f2328; --text-secondary: #57606a; --text-tertiary: #6e7781;
+  --gd-sticker: inset 0 -3px 0 rgb(31 35 40 / 12%), inset 0 1px 0 rgb(255 255 255 / 90%);
+  --gd-sticker-lit: inset 0 -3px 0 rgb(0 0 0 / 18%), inset 0 2px 0 rgb(255 255 255 / 30%);
+}
+html.gd-rubik.gd-plastic-white .gd-cube-edge-top, html.gd-rubik.gd-plastic-white .gd-cube-edge-right { filter: saturate(.8) brightness(.95); }
+html.gd-rubik.gd-plastic-white .day-cube-face, html.gd-rubik.gd-plastic-white .day-cube-mini, html.gd-rubik.gd-plastic-white .fleet-cube-face { background: var(--gd-groove) !important; }
+
+/* ---- status stickers on repository tabs (web/speedcube.js) ------------------------------------------ */
+.gd-tab-sticker { display: none; }
+html.gd-rubik .repo-tab .gd-tab-sticker { display: inline-block; flex: none; align-self: center; width: 9px; height: 9px; margin-left: 8px; border-radius: 2px; background: var(--st-green); box-shadow: inset 0 -2px 0 rgb(0 0 0 / 25%); }
+html.gd-rubik .repo-tab[data-sticker="work"] .gd-tab-sticker { background: var(--st-yellow); }
+html.gd-rubik .repo-tab[data-sticker="pull"] .gd-tab-sticker { background: var(--st-blue); }
+html.gd-rubik .repo-tab[data-sticker="push"] .gd-tab-sticker { background: var(--st-white); }
+html.gd-rubik .repo-tab[data-sticker="conflict"] .gd-tab-sticker { background: var(--st-red); }
+/* Moves typed with Ctrl+Alt (F P U). */
+.gd-moves { position: fixed; left: 50%; bottom: 56px; z-index: 60; transform: translateX(-50%); padding: 10px 18px; border-radius: 12px; background: var(--surface-subtle, #1b222c); color: var(--text-primary, #e6edf3); box-shadow: var(--gd-sticker, none), 0 10px 30px rgb(0 0 0 / 35%); font: 700 22px/1 ui-monospace, Consolas, monospace; letter-spacing: .08em; pointer-events: none; }
+.gd-moves[hidden] { display: none; }
+
+/* ---- today's cube solved: one victory spin; speedrun times ----------------------------------------- */
+.day-cube-mini.gd-solved { animation: gd-solve-spin .9s cubic-bezier(.65,0,.3,1) 1; }
+.day-cube-face.gd-solved { box-shadow: 0 0 0 2px #3fb950, 0 0 24px rgb(63 185 80 / 35%); }
+@keyframes gd-solve-spin { from { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.25); } to { transform: rotate(360deg) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .day-cube-mini.gd-solved { animation: none; } }
+.day-cube-times { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; justify-self: stretch; }
+.day-cube-times span { display: grid; gap: 2px; padding: 8px; border-radius: 10px; background: var(--surface-subtle, #1b222c); box-shadow: var(--gd-sticker, none); }
+.day-cube-times small { color: var(--text-secondary, #a3adb9); font-size: 11px; }
+.day-cube-times b { font: 700 18px/1.1 ui-monospace, Consolas, monospace; }
+
+/* ---- narrow windows: the 48 px sticker row stays on one line ------------------------------------------ */
+@media (max-width: 1440px) {
+  html.gd-rubik.gd-soft.ui-modern body :is(.modern-tb-repo, .modern-tb-branch, .sync-more > summary, #dashboard-button, .workbench-secondary > summary) { padding-inline: 10px !important; }
+  html.gd-rubik.gd-soft.ui-modern body :is(.modern-tb-repo, .modern-tb-branch) { max-width: 170px; min-width: 0; }
+  html.gd-rubik.gd-soft.ui-modern body .modern-actions button { padding-inline: 3px !important; min-width: 44px !important; }
+}

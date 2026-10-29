@@ -2,7 +2,8 @@
 // Cube room (Rubik shape): the app always sits on a cube. Beside the face you work on, the cube's top
 // and right faces show as slanted strips of stickers: the right one in the colour of the next view (a
 // click turns to it), the top one green for the Dashboard (a click turns up to it). The face itself
-// stays flat so text stays sharp. Also "Your own…" sticker colours (Appearance › Stickers).
+// stays flat so text stays sharp. Drag an edge to turn by hand: the face follows the pointer and turns
+// once dragged far enough (or springs back). Also "Your own…" sticker colours (Appearance › Stickers).
 (function(){
   // ---- pure helpers (tested) ----------------------------------------------------------------
   // The two side faces of a box at (left, top, width, height) seen from the front-left-below, `depth` deep:
@@ -15,7 +16,9 @@
     };
   }
   const isColor=(value)=>/^#[0-9a-f]{6}$/i.test(String(value||''));
-  const helpers={edges,isColor};
+  // Dragging an edge: how far the face leans (degrees, up to 35) and whether letting go turns it.
+  function dragTurn(distance,threshold=90){const d=Math.max(0,Number(distance)||0);return {angle:Math.round(Math.min(35,d/4)*10)/10,turn:d>=threshold};}
+  const helpers={edges,isColor,dragTurn};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
   if(typeof document==='undefined'||typeof el!=='function')return;
 
@@ -23,8 +26,29 @@
   const on=()=>window.GitDeckRubik?.active?.();
   const top=el('button','gd-cube-edge gd-cube-edge-top');const right=el('button','gd-cube-edge gd-cube-edge-right');
   for(const edge of [top,right]){edge.type='button';edge.hidden=true;document.body.append(edge);}
-  top.onclick=()=>{const R=window.GitDeckRubik;if(R?.dashboardOpen())return;if(typeof showOperationsCenter==='function')showOperationsCenter('briefing');};
-  right.onclick=()=>window.GitDeckCubePlay?.twist?.(1);
+  const up=()=>{const R=window.GitDeckRubik;if(R?.dashboardOpen())return;if(typeof showOperationsCenter==='function')showOperationsCenter('briefing');};
+  const next=()=>window.GitDeckCubePlay?.twist?.(1);
+  // Click turns at once; a drag leans the face with the pointer and turns past the threshold.
+  function draggable(edge,axis,done){
+    let start=null,moved=false;
+    const face=()=>window.GitDeckRubik?.dashboardOpen()?document.querySelector('.operations-view:not([hidden])'):document.getElementById('workspace-content');
+    edge.addEventListener('pointerdown',(event)=>{start={x:event.clientX,y:event.clientY,id:event.pointerId,node:face()};moved=false;});
+    edge.addEventListener('pointermove',(event)=>{
+      if(!start||!start.node)return;
+      const distance=axis==='x'?start.x-event.clientX:event.clientY-start.y;
+      if(!moved&&Math.abs(distance)>5){moved=true;try{edge.setPointerCapture(start.id);}catch{}start.node.style.transition='none';start.node.style.transformOrigin=axis==='x'?'left center':'center bottom';}
+      if(!moved)return;
+      const lean=dragTurn(distance).angle;start.node.style.transform=axis==='x'?`perspective(2400px) rotateY(${-lean}deg)`:`perspective(2400px) rotateX(${-lean}deg)`;
+    });
+    const stop=(event)=>{
+      if(!start)return;const node=start.node;const distance=axis==='x'?start.x-event.clientX:event.clientY-start.y;const was=moved;start=null;
+      if(!was){done();return;}
+      if(node){node.style.transition='transform .25s cubic-bezier(.2,.8,.2,1)';node.style.transform='';setTimeout(()=>{node.style.transition='';node.style.transformOrigin='';},260);}
+      if(dragTurn(distance).turn)done();
+    };
+    edge.addEventListener('pointerup',stop);edge.addEventListener('pointercancel',()=>{if(start?.node){start.node.style.transform='';start.node.style.transition='';start.node.style.transformOrigin='';}start=null;});
+  }
+  draggable(top,'y',up);draggable(right,'x',next);
   const workspaceTabs=['changes','history','branches','stashes','tags','compare'];
   function place(){
     const R=window.GitDeckRubik;

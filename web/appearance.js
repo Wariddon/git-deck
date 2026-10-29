@@ -23,7 +23,9 @@
   // Sticker colours for the Rubik shape (web/rubik.css): ready-made sets, or your own (custom).
   const stickerSets=['classic','neon','pastel','mono','songkran','newyear','custom'];const defaultStickers='classic';
   const stickerVars=['red','blue','orange','white','yellow','green'];
-  const keys={size:'gitdeck.textSize',look:'gitdeck.look',density:'gitdeck.density',shape:'gitdeck.shape',opening:'gitdeck.opening',sound:'gitdeck.cubeSound',stickers:'gitdeck.stickers',stickerColors:'gitdeck.stickerColors'};
+  // Plastic for the Rubik shape: black (dark) or white (a light cube for daytime).
+  const plastics=['black','white'];const defaultPlastic='black';
+  const keys={size:'gitdeck.textSize',look:'gitdeck.look',density:'gitdeck.density',shape:'gitdeck.shape',opening:'gitdeck.opening',sound:'gitdeck.cubeSound',stickers:'gitdeck.stickers',stickerColors:'gitdeck.stickerColors',plastic:'gitdeck.plastic'};
   const read=(key)=>{try{return localStorage.getItem(key);}catch{return null;}};
   const write=(key,value,fallback)=>{try{if(value===fallback)localStorage.removeItem(key);else localStorage.setItem(key,String(value));}catch{}};
   let size=Number(read(keys.size));if(!sizes.includes(size))size=defaultSize;
@@ -33,10 +35,11 @@
   let opening=read(keys.opening);if(!openings.includes(opening))opening=defaultOpening;
   let sound=read(keys.sound);if(!sounds.includes(sound))sound=defaultSound;
   let stickers=read(keys.stickers);if(!stickerSets.includes(stickers))stickers=defaultStickers;
+  let plastic=read(keys.plastic);if(!plastics.includes(plastic))plastic=defaultPlastic;
   const root=document.documentElement;
-  const apply=()=>{root.style.setProperty('--ui-text-size',size+'px');root.classList.toggle('ui-clean',look==='modern');root.classList.toggle('ui-modern',look==='modern');root.classList.toggle('gd-compact',density==='compact');root.classList.toggle('gd-soft',shape==='soft'||shape==='rubik');root.classList.toggle('gd-rubik',shape==='rubik');for(const set of stickerSets)root.classList.toggle(`gd-st-${set}`,set===stickers);let own={};try{own=JSON.parse(read(keys.stickerColors)||'{}')||{};}catch{}for(const name of stickerVars)root.style.setProperty(`--st-${name}`,stickers==='custom'&&/^#[0-9a-f]{6}$/i.test(own[name]||'')?own[name]:'');};
-  const refresh=()=>document.querySelectorAll('[data-text-size],[data-look],[data-density],[data-shape],[data-opening],[data-sound],[data-stickers]').forEach(button=>{
-    const active=button.dataset.textSize?Number(button.dataset.textSize)===size:button.dataset.density?button.dataset.density===density:button.dataset.shape?button.dataset.shape===shape:button.dataset.opening?button.dataset.opening===opening:button.dataset.sound?button.dataset.sound===sound:button.dataset.stickers?button.dataset.stickers===stickers:button.dataset.look===look;
+  const apply=()=>{root.style.setProperty('--ui-text-size',size+'px');root.classList.toggle('ui-clean',look==='modern');root.classList.toggle('ui-modern',look==='modern');root.classList.toggle('gd-compact',density==='compact');root.classList.toggle('gd-soft',shape==='soft'||shape==='rubik');root.classList.toggle('gd-rubik',shape==='rubik');root.classList.toggle('gd-plastic-white',plastic==='white');for(const set of stickerSets)root.classList.toggle(`gd-st-${set}`,set===stickers);let own={};try{own=JSON.parse(read(keys.stickerColors)||'{}')||{};}catch{}for(const name of stickerVars)root.style.setProperty(`--st-${name}`,stickers==='custom'&&/^#[0-9a-f]{6}$/i.test(own[name]||'')?own[name]:'');};
+  const refresh=()=>document.querySelectorAll('[data-text-size],[data-look],[data-density],[data-shape],[data-opening],[data-sound],[data-stickers],[data-plastic]').forEach(button=>{
+    const active=button.dataset.textSize?Number(button.dataset.textSize)===size:button.dataset.density?button.dataset.density===density:button.dataset.shape?button.dataset.shape===shape:button.dataset.opening?button.dataset.opening===opening:button.dataset.sound?button.dataset.sound===sound:button.dataset.stickers?button.dataset.stickers===stickers:button.dataset.plastic?button.dataset.plastic===plastic:button.dataset.look===look;
     button.setAttribute('aria-pressed',String(active));
   });
   const announce=()=>document.dispatchEvent(new CustomEvent('gitdeck:appearance',{detail:{size,look,density}}));
@@ -45,6 +48,7 @@
   function setShape(value){if(!shapes.includes(value))return;shape=value;apply();write(keys.shape,value,defaultShape);refresh();announce();}
   function setSound(value){if(!sounds.includes(value))return;sound=value;write(keys.sound,value,defaultSound);refresh();announce();}
   function setStickers(value,colors){if(!stickerSets.includes(value))return;if(colors)write(keys.stickerColors,JSON.stringify(colors),'');stickers=value;apply();write(keys.stickers,value,defaultStickers);refresh();announce();}
+  function setPlastic(value){if(!plastics.includes(value))return;plastic=value;apply();write(keys.plastic,value,defaultPlastic);refresh();announce();}
   function setOpening(value){if(!openings.includes(value))return;opening=value;apply();write(keys.opening,value,defaultOpening);refresh();announce();}
   function setLook(value){if(!looks.includes(value))return;look=value;apply();write(keys.look,value,defaultLook);refresh();announce();}
   function group(className,title,items){
@@ -88,6 +92,10 @@
         {data:{sound:'off'},label:t('Off'),title:t('No sound'),run:()=>setSound('off')},
         {data:{sound:'on'},label:t('On'),title:t('A short plastic click on every cube turn'),run:()=>{setSound('on');window.GitDeckCubePlay?.click?.();}},
       ]),
+      group('look-choice plastic-choice',t('Plastic'),[
+        {data:{plastic:'black'},label:t('Black'),title:t('A black speedcube: dark plastic'),run:()=>setPlastic('black')},
+        {data:{plastic:'white'},label:t('White'),title:t('A white cube: light plastic for daytime'),run:()=>setPlastic('white')},
+      ]),
       group('look-choice sticker-choice',t('Stickers'),[
         {data:{stickers:'classic'},label:t('Classic'),title:t('The six cube colours'),run:()=>setStickers('classic')},
         {data:{stickers:'neon'},label:t('Neon'),title:t('Bright neon stickers'),run:()=>setStickers('neon')},
@@ -101,7 +109,7 @@
     refresh();
   }
   apply();
-  window.GitDeckAppearance={sizes,looks,get size(){return size;},get look(){return look;},get density(){return density;},get shape(){return shape;},get opening(){return opening;},get sound(){return sound;},setSound,get stickers(){return stickers;},stickerSets,stickerVars,setStickers,setTextSize,setLook,setDensity,setShape,setOpening};
+  window.GitDeckAppearance={sizes,looks,get size(){return size;},get look(){return look;},get density(){return density;},get shape(){return shape;},get opening(){return opening;},get sound(){return sound;},setSound,get stickers(){return stickers;},stickerSets,stickerVars,setStickers,get plastic(){return plastic;},plastics,setPlastic,setTextSize,setLook,setDensity,setShape,setOpening};
   const ready=()=>document.querySelectorAll('.theme-menu').forEach(addPickers);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready);else ready();
 })();
