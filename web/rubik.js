@@ -45,6 +45,7 @@
     const box=old.getBoundingClientRect();
     root.style.setProperty('--gd-depth',`${Math.round((way==='up'||way==='down'?box.height:box.width)/2)}px`);
     root.dataset.turn=way;
+    document.dispatchEvent(new CustomEvent('gitdeck:turn',{detail:{way}}));
     old.style.viewTransitionName='gd-face';
     let result,started=false,done=false;
     const run=()=>{if(done)return result;done=true;updating=true;try{result=update();}finally{updating=false;}return result;};
@@ -119,4 +120,5 @@
     applyAppearance();
   }
   setFace(typeof state!=='undefined'?state.workspaceTab:'');
+  window.GitDeckRubik={...helpers,railOrder,menuOrder,dashboardOpen,active:rubik};
 })();

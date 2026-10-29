@@ -18,7 +18,9 @@
   const shapes=['rubik','soft','square'];const defaultShape='rubik';
   // Opening: how Git Deck appears when it starts (web/entrance.js).
   const openings=['cube','logo','stars','command','off'];const defaultOpening='cube';
-  const keys={size:'gitdeck.textSize',look:'gitdeck.look',density:'gitdeck.density',shape:'gitdeck.shape',opening:'gitdeck.opening'};
+  // Cube sound: a short click on every Rubik turn (web/cube-play.js); off unless chosen.
+  const sounds=['off','on'];const defaultSound='off';
+  const keys={size:'gitdeck.textSize',look:'gitdeck.look',density:'gitdeck.density',shape:'gitdeck.shape',opening:'gitdeck.opening',sound:'gitdeck.cubeSound'};
   const read=(key)=>{try{return localStorage.getItem(key);}catch{return null;}};
   const write=(key,value,fallback)=>{try{if(value===fallback)localStorage.removeItem(key);else localStorage.setItem(key,String(value));}catch{}};
   let size=Number(read(keys.size));if(!sizes.includes(size))size=defaultSize;
@@ -26,16 +28,18 @@
   let density=read(keys.density);if(!densities.includes(density))density=defaultDensity;
   let shape=read(keys.shape);if(!shapes.includes(shape))shape=defaultShape;
   let opening=read(keys.opening);if(!openings.includes(opening))opening=defaultOpening;
+  let sound=read(keys.sound);if(!sounds.includes(sound))sound=defaultSound;
   const root=document.documentElement;
   const apply=()=>{root.style.setProperty('--ui-text-size',size+'px');root.classList.toggle('ui-clean',look==='modern');root.classList.toggle('ui-modern',look==='modern');root.classList.toggle('gd-compact',density==='compact');root.classList.toggle('gd-soft',shape==='soft'||shape==='rubik');root.classList.toggle('gd-rubik',shape==='rubik');};
-  const refresh=()=>document.querySelectorAll('[data-text-size],[data-look],[data-density],[data-shape],[data-opening]').forEach(button=>{
-    const active=button.dataset.textSize?Number(button.dataset.textSize)===size:button.dataset.density?button.dataset.density===density:button.dataset.shape?button.dataset.shape===shape:button.dataset.opening?button.dataset.opening===opening:button.dataset.look===look;
+  const refresh=()=>document.querySelectorAll('[data-text-size],[data-look],[data-density],[data-shape],[data-opening],[data-sound]').forEach(button=>{
+    const active=button.dataset.textSize?Number(button.dataset.textSize)===size:button.dataset.density?button.dataset.density===density:button.dataset.shape?button.dataset.shape===shape:button.dataset.opening?button.dataset.opening===opening:button.dataset.sound?button.dataset.sound===sound:button.dataset.look===look;
     button.setAttribute('aria-pressed',String(active));
   });
   const announce=()=>document.dispatchEvent(new CustomEvent('gitdeck:appearance',{detail:{size,look,density}}));
   function setTextSize(value){if(!sizes.includes(value))return;size=value;apply();write(keys.size,value,defaultSize);refresh();announce();}
   function setDensity(value){if(!densities.includes(value))return;density=value;apply();write(keys.density,value,defaultDensity);refresh();announce();}
   function setShape(value){if(!shapes.includes(value))return;shape=value;apply();write(keys.shape,value,defaultShape);refresh();announce();}
+  function setSound(value){if(!sounds.includes(value))return;sound=value;write(keys.sound,value,defaultSound);refresh();announce();}
   function setOpening(value){if(!openings.includes(value))return;opening=value;apply();write(keys.opening,value,defaultOpening);refresh();announce();}
   function setLook(value){if(!looks.includes(value))return;look=value;apply();write(keys.look,value,defaultLook);refresh();announce();}
   function group(className,title,items){
@@ -74,12 +78,16 @@
         {data:{opening:'command'},label:t('Command'),title:t('Start at one box: what will you do today?'),run:()=>setOpening('command')},
         {data:{opening:'off'},label:t('Off'),title:t('No opening animation'),run:()=>setOpening('off')},
         {data:{},label:t('Preview'),title:t('Play the chosen opening now'),run:()=>window.GitDeckEntrance?.preview?.()},
+      ]),
+      group('look-choice sound-choice',t('Cube sound'),[
+        {data:{sound:'off'},label:t('Off'),title:t('No sound'),run:()=>setSound('off')},
+        {data:{sound:'on'},label:t('On'),title:t('A short plastic click on every cube turn'),run:()=>{setSound('on');window.GitDeckCubePlay?.click?.();}},
       ])
     );
     refresh();
   }
   apply();
-  window.GitDeckAppearance={sizes,looks,get size(){return size;},get look(){return look;},get density(){return density;},get shape(){return shape;},get opening(){return opening;},setTextSize,setLook,setDensity,setShape,setOpening};
+  window.GitDeckAppearance={sizes,looks,get size(){return size;},get look(){return look;},get density(){return density;},get shape(){return shape;},get opening(){return opening;},get sound(){return sound;},setSound,setTextSize,setLook,setDensity,setShape,setOpening};
   const ready=()=>document.querySelectorAll('.theme-menu').forEach(addPickers);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready);else ready();
 })();

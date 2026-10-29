@@ -29,7 +29,7 @@ html.gd-rubik.gd-soft.ui-modern body :is(.gd-card, .gd-today-col, .forecast-card
 }
 html.gd-rubik.gd-soft.ui-modern body :is(.gd-card, .forecast-card, .lesson-card, .multi-repo-explain) { box-shadow: var(--gd-sticker), inset 4px 0 0 var(--tone, var(--gd-face-color)) !important; }
 /* Buttons: neutral stickers; the main action is a green sticker. */
-html.gd-rubik.gd-soft.ui-modern body :is(button, select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea):not(.modern-rail-item):not(.gd-window-controls button):not(.operations-tabs button):not(.workbench-tree *):not(.repo-tabs *):not(.change-file *):not(.commit-file-row *):not(.modern-tb):not(.review-name) { border-color: transparent !important; background-color: var(--surface-muted) !important; box-shadow: var(--gd-sticker) !important; }
+html.gd-rubik.gd-soft.ui-modern body :is(button, select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea):not(.modern-rail-item):not(.gd-window-controls button):not(.operations-tabs button):not(.workbench-tree *):not(.repo-tabs *):not(.change-file *):not(.commit-file-row *):not(.modern-tb):not(.review-name):not(.fleet-cube-face *):not(.day-cube-mini) { border-color: transparent !important; background-color: var(--surface-muted) !important; box-shadow: var(--gd-sticker) !important; }
 /* Rows in lists stay flat: only the selected row becomes a sticker. */
 html.gd-rubik.gd-soft.ui-modern body :is(.workbench-tree, .change-group, .commit-files) :is(.active, .selected, .current) { background: var(--surface-muted) !important; box-shadow: var(--gd-sticker), inset 3px 0 0 var(--gd-face-color) !important; border-radius: 10px; }
 html.gd-rubik.gd-soft.ui-modern body :is(button.primary, .primary, .modern-act-primary) { background-color: #0b6e47 !important; color: #ffffff !important; box-shadow: var(--gd-sticker-lit) !important; }
@@ -70,3 +70,30 @@ html.gd-rubik[data-turn="down"]::view-transition-new(gd-face) { animation-name: 
 @keyframes gd-face-out-down { from { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateX(0deg) translateZ(var(--gd-depth)); } to { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateX(-90deg) translateZ(var(--gd-depth)); filter: brightness(.45); } }
 @keyframes gd-face-in-down { from { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateX(90deg) translateZ(var(--gd-depth)); filter: brightness(.45); } to { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateX(0deg) translateZ(var(--gd-depth)); } }
 @media (prefers-reduced-motion: reduce) { html.gd-rubik::view-transition-old(gd-face), html.gd-rubik::view-transition-new(gd-face), html.gd-rubik::view-transition-group(gd-face) { animation: none; } }
+
+/* ---- play (web/cube-play.js): stickers sink when pressed, cards tilt toward the pointer ---------- */
+html.gd-rubik.gd-soft.ui-modern body :is(button, .gd-card-action):not(:disabled):not(.fleet-cube-face *):active { transform: translateY(2px); box-shadow: inset 0 -1px 0 rgb(0 0 0 / 40%), inset 0 1px 0 rgb(255 255 255 / 4%) !important; transition: transform .05s ease-out; }
+html.gd-rubik.gd-soft.ui-modern body :is(.gd-card, .forecast-card, .lane-card, .weather-family, .day-close-card, .lesson-card, .gd-today-col, .day-cube-face) { transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+html.gd-rubik.gd-soft.ui-modern body .gd-tilting { transform: perspective(900px) rotateX(var(--gd-rx, 0deg)) rotateY(var(--gd-ry, 0deg)); transition: transform .1s ease-out; }
+@media (prefers-reduced-motion: reduce) { html.gd-rubik.gd-soft.ui-modern body .gd-tilting { transform: none; } }
+
+/* ---- today's cube (web/day-cube.js) and the fleet cube (web/fleet-cube.js); any shape ------------- */
+.day-cube-mini { display: inline-grid; grid-template-columns: repeat(3, 5px); gap: 1px; padding: 2px; border: 0 !important; border-radius: 4px !important; background: #0a0c10 !important; box-shadow: none !important; cursor: pointer; vertical-align: middle; }
+.day-cube-mini[hidden] { display: none !important; }
+.day-cube-mini i { width: 5px; height: 5px; border-radius: 1px; }
+.day-cube-face { display: grid; grid-template-columns: repeat(3, 64px); gap: 6px; padding: 6px; border-radius: 18px; background: #0a0c10; justify-self: center; }
+.day-cube-face i { height: 64px; border-radius: 12px; box-shadow: inset 0 -4px 0 rgb(0 0 0 / 22%), inset 0 2px 0 rgb(255 255 255 / 24%); transition: background .5s ease; }
+.day-cube-dialog { display: grid; gap: 14px; justify-items: center; text-align: center; }
+.day-cube-dialog ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; text-align: left; justify-self: stretch; }
+.fleet-cube-stage { display: grid; place-items: center; min-height: 520px; perspective: 1500px; touch-action: none; cursor: grab; user-select: none; }
+.fleet-cube-stage.dragging { cursor: grabbing; }
+.fleet-cube { --s: 340px; width: var(--s); height: var(--s); position: relative; transform-style: preserve-3d; }
+.fleet-cube.spin { animation: fleet-cube-spin 24s linear infinite; }
+@keyframes fleet-cube-spin { from { transform: rotateX(-18deg) rotateY(0deg); } to { transform: rotateX(-18deg) rotateY(360deg); } }
+.fleet-cube-face { position: absolute; inset: 0; box-sizing: border-box; padding: 8px; display: grid; gap: 5px; background: #0a0c10; border-radius: 20px; backface-visibility: hidden; }
+.fleet-cube-face button { border: 0 !important; border-radius: 9px !important; padding: 0 !important; min-width: 0; min-height: 0; cursor: pointer; box-shadow: inset 0 -3px 0 rgb(0 0 0 / 22%), inset 0 2px 0 rgb(255 255 255 / 24%) !important; }
+.fleet-cube-face button.empty { background: #161b22 !important; cursor: default; box-shadow: inset 0 -3px 0 rgb(0 0 0 / 40%) !important; }
+.fleet-cube-face b { position: absolute; left: 50%; bottom: -30px; transform: translateX(-50%); color: var(--text-secondary, #9da7b3); font-size: 13px; white-space: nowrap; }
+.fleet-cube-legend { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.fleet-cube-legend button { display: inline-flex; gap: 6px; align-items: center; }
+@media (prefers-reduced-motion: reduce) { .fleet-cube.spin { animation: none; transform: rotateX(-18deg) rotateY(-30deg); } }
