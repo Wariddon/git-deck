@@ -1,0 +1,40 @@
+'use strict';
+// Cube shell: the workspace as a 3x3 cube face (twists, centre, saved face, Git moves), zoom-out cube, wiring.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+
+const shell = require('../web/cube-shell.js');
+const start = shell.startCells();
+assert.equal(start[4], 'changes', 'Changes starts in the centre');
+assert(shell.validCells(start));
+assert.deepEqual(shell.twist(start, 'row', 1, 1).slice(3, 6), ['compare', 'tags', 'changes'], 'middle row right: Tags slides into the centre');
+assert.deepEqual(shell.twist(start, 'row', 1, -1).slice(3, 6), ['changes', 'compare', 'tags']);
+const down = shell.twist(start, 'col', 1, 1);
+assert.deepEqual([down[1], down[4], down[7]], ['recovery', 'branches', 'changes'], 'middle column down: Branches drops into the centre');
+assert.deepEqual(shell.twist(shell.twist(start, 'row', 0, 1), 'row', 0, -1), start, 'a twist and its reverse cancel');
+const centred = shell.toCentre(start, 'remotes');
+assert.equal(centred[4], 'remotes'); assert.equal(centred[8], 'changes', 'bringing a view swaps it with the centre');
+assert(shell.validCells(centred));
+assert(!shell.validCells(['changes']), 'a broken saved face is not used');
+assert(!shell.validCells([...start.slice(0, 8), 'changes']), 'a view twice is not a face');
+assert.equal(shell.moveFor('commit'), 'commit');
+assert.equal(shell.moveFor('pull-ref'), 'pull');
+assert.equal(shell.moveFor('push-selection'), 'push');
+assert.equal(shell.moveFor('stash-pop'), 'unstash');
+assert.equal(shell.moveFor('fetch'), '', 'not every action is a twist');
+
+const js = read('web/cube-shell.js');
+assert.doesNotMatch(js, /[฀-๿]/);
+assert.match(js, /const on=\(\)=>layout==='cube'&&root\.classList\.contains\('gd-rubik'\)/, 'only with the Rubik shape');
+assert.match(js, /if\(result&&on\(\)\)play\(moveFor\(action\)\)/, 'a move plays only after the action succeeded');
+assert.match(js, /for\(const kid of kids\)main\.append\(kid\)/, 'switching back to Classic restores the original layout');
+const css = read('web/cube-shell.css');
+assert.match(css, /grid-template-areas: "a b c" "d e f" "g h i";/);
+assert.match(css, /body\.gd-cube-shell \.gd-cube-edge \{ display: none !important; \}/);
+assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.gd-shell\[class\*="gd-move-"\]/);
+const html = read('web/index.html');
+assert(html.includes('<script src="/cube-shell.js" defer></script>'));
+assert(html.includes('<link rel="stylesheet" href="/cube-shell.css">'));
+console.log('PASS: cube shell (twists, centre, saved face, git moves, zoom-out cube, wiring)');
