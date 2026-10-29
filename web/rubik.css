@@ -1,0 +1,72 @@
+/* Rubik shape (Appearance › Shape › Rubik; html.gd-rubik together with html.gd-soft, see web/rubik.js).
+   - Dark plastic ground; every island, card and button is a sticker: rounded, a bevel of light on top
+     and shade at the bottom, separated from the next by a groove of plastic.
+   - Each view has its sticker colour (web/rubik.js sets --gd-face-color): the side rail, the sliding
+     highlight and the top edge of the content take it.
+   - Every view change turns the cube: View Transitions animate the old face away and the new face in
+     around the cube's centre (--gd-depth = half the face). Reduced motion: no turn. */
+
+/* ---- plastic and stickers ------------------------------------------------------------------------- */
+html.gd-rubik.gd-soft.ui-modern body:not(.gd-never) {
+  --canvas: #0a0c10; --surface: #161c24; --surface-subtle: #1b222c; --surface-muted: #252e3a; --surface-hover: #212a35;
+  --border-default: #2a3340; --border-muted: #1f2731; --code-bg: #121820;
+  --text-primary: #e6edf3; --text-secondary: #a3adb9; --text-tertiary: #7d8590;
+  --gd-sticker: inset 0 -4px 0 rgb(0 0 0 / 38%), inset 0 1px 0 rgb(255 255 255 / 7%);
+  --gd-sticker-lit: inset 0 -4px 0 rgb(0 0 0 / 24%), inset 0 2px 0 rgb(255 255 255 / 24%);
+  --ink: var(--text-primary); --muted: var(--text-secondary); --line: var(--border-default); --paper: var(--canvas);
+  background: var(--canvas); color: var(--text-primary);
+}
+html.gd-rubik { --gd-face-color: #0b6e47; background: #0a0c10; }
+/* Islands: stickers with a 6 px groove of plastic around them; the content's top edge shows the view's colour. */
+html.gd-rubik.gd-soft.ui-modern body :is(.workbench-tree, #workspace-content) { border-width: 6px !important; box-shadow: var(--gd-sticker) !important; border-radius: calc(var(--gd-r-lg) + 6px) !important; }
+html.gd-rubik.gd-soft.ui-modern body #workspace-content { box-shadow: var(--gd-sticker), inset 0 3px 0 var(--gd-face-color) !important; }
+html.gd-rubik.gd-soft.ui-modern body .operations-modal { background: var(--canvas) !important; }
+html.gd-rubik.gd-soft.ui-modern body :is(.operations-view, .operations-tabs) { border-radius: var(--gd-r-lg) !important; background: var(--surface) !important; box-shadow: var(--gd-sticker) !important; }
+html.gd-rubik.gd-soft.ui-modern body .operations-tabs { margin: 0 6px 6px 0; }
+/* Cards and panels inside: smaller stickers, no lines. */
+html.gd-rubik.gd-soft.ui-modern body :is(.gd-card, .gd-today-col, .forecast-card, .lane, .lane-card, .weather-family, .weather-tile, .day-close-card, .commit-list, .commit-detail, .change-group, .settings-card, .inbox-list, .inbox-detail, .lesson-card, .review-box, .smap-stage, .smap-side, .replay-stage, .multi-repo-explain, .history-options-body, .patch-hunk, .ask-commit, .tm-files) {
+  background: var(--surface-subtle) !important; border-color: transparent !important; box-shadow: var(--gd-sticker) !important;
+}
+html.gd-rubik.gd-soft.ui-modern body :is(.gd-card, .forecast-card, .lesson-card, .multi-repo-explain) { box-shadow: var(--gd-sticker), inset 4px 0 0 var(--tone, var(--gd-face-color)) !important; }
+/* Buttons: neutral stickers; the main action is a green sticker. */
+html.gd-rubik.gd-soft.ui-modern body :is(button, select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea):not(.modern-rail-item):not(.gd-window-controls button):not(.operations-tabs button):not(.workbench-tree *):not(.repo-tabs *):not(.change-file *):not(.commit-file-row *):not(.modern-tb):not(.review-name) { border-color: transparent !important; background-color: var(--surface-muted) !important; box-shadow: var(--gd-sticker) !important; }
+/* Rows in lists stay flat: only the selected row becomes a sticker. */
+html.gd-rubik.gd-soft.ui-modern body :is(.workbench-tree, .change-group, .commit-files) :is(.active, .selected, .current) { background: var(--surface-muted) !important; box-shadow: var(--gd-sticker), inset 3px 0 0 var(--gd-face-color) !important; border-radius: 10px; }
+html.gd-rubik.gd-soft.ui-modern body :is(button.primary, .primary, .modern-act-primary) { background-color: #0b6e47 !important; color: #ffffff !important; box-shadow: var(--gd-sticker-lit) !important; }
+html.gd-rubik.gd-soft.ui-modern body :is(button, select):hover:not(:disabled):not(.modern-rail-item):not(.operations-tabs button) { filter: brightness(1.12); }
+/* Side rail: each view's icon in its sticker colour; the selected one is a full sticker. */
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="changes"] svg { color: #e5534b; }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="history"] svg { color: #58a6ff; }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="branches"] svg { color: #d29922; }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="tags"] svg { color: #eef1f4; }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="stashes"] svg { color: #f2cc60; }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="compare"] svg { color: #3fb950; }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item.active :is(svg, span) { color: #0a0c10 !important; }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item.active[data-tab="history"] :is(svg, span), html.gd-rubik.gd-soft.ui-modern body .modern-rail-item.active[data-tab="changes"] :is(svg, span) { color: #ffffff !important; }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail .gd-liquid { background: var(--gd-face-color); box-shadow: var(--gd-sticker-lit); }
+html.gd-rubik.gd-soft.ui-modern body .operations-tabs .gd-liquid { background: #0b6e47; box-shadow: var(--gd-sticker-lit); }
+html.gd-rubik.gd-soft.ui-modern body .operations-tabs button.active { color: #ffffff !important; }
+/* Repository tabs: the open one is a sticker with the view's colour on top. */
+html.gd-rubik.gd-soft.ui-modern body .repo-tab.active { background: var(--surface) !important; box-shadow: var(--gd-sticker), inset 0 3px 0 var(--gd-face-color) !important; border-color: transparent !important; }
+
+/* ---- the turn ------------------------------------------------------------------------------------- */
+html.gd-rubik::view-transition-old(root), html.gd-rubik::view-transition-new(root) { animation: none; }
+html.gd-rubik::view-transition-group(gd-face) { animation-duration: .62s; animation-timing-function: cubic-bezier(.65,0,.3,1); }
+html.gd-rubik::view-transition-old(gd-face), html.gd-rubik::view-transition-new(gd-face) { animation-duration: .62s; animation-timing-function: cubic-bezier(.65,0,.3,1); animation-fill-mode: both; backface-visibility: hidden; mix-blend-mode: normal; }
+html.gd-rubik[data-turn="next"]::view-transition-old(gd-face) { animation-name: gd-face-out-next; }
+html.gd-rubik[data-turn="next"]::view-transition-new(gd-face) { animation-name: gd-face-in-next; }
+html.gd-rubik[data-turn="prev"]::view-transition-old(gd-face) { animation-name: gd-face-out-prev; }
+html.gd-rubik[data-turn="prev"]::view-transition-new(gd-face) { animation-name: gd-face-in-prev; }
+html.gd-rubik[data-turn="up"]::view-transition-old(gd-face) { animation-name: gd-face-out-up; }
+html.gd-rubik[data-turn="up"]::view-transition-new(gd-face) { animation-name: gd-face-in-up; }
+html.gd-rubik[data-turn="down"]::view-transition-old(gd-face) { animation-name: gd-face-out-down; }
+html.gd-rubik[data-turn="down"]::view-transition-new(gd-face) { animation-name: gd-face-in-down; }
+@keyframes gd-face-out-next { from { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateY(0deg) translateZ(var(--gd-depth)); } to { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateY(-90deg) translateZ(var(--gd-depth)); filter: brightness(.45); } }
+@keyframes gd-face-in-next { from { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateY(90deg) translateZ(var(--gd-depth)); filter: brightness(.45); } to { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateY(0deg) translateZ(var(--gd-depth)); } }
+@keyframes gd-face-out-prev { from { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateY(0deg) translateZ(var(--gd-depth)); } to { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateY(90deg) translateZ(var(--gd-depth)); filter: brightness(.45); } }
+@keyframes gd-face-in-prev { from { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateY(-90deg) translateZ(var(--gd-depth)); filter: brightness(.45); } to { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateY(0deg) translateZ(var(--gd-depth)); } }
+@keyframes gd-face-out-up { from { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateX(0deg) translateZ(var(--gd-depth)); } to { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateX(90deg) translateZ(var(--gd-depth)); filter: brightness(.45); } }
+@keyframes gd-face-in-up { from { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateX(-90deg) translateZ(var(--gd-depth)); filter: brightness(.45); } to { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateX(0deg) translateZ(var(--gd-depth)); } }
+@keyframes gd-face-out-down { from { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateX(0deg) translateZ(var(--gd-depth)); } to { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateX(-90deg) translateZ(var(--gd-depth)); filter: brightness(.45); } }
+@keyframes gd-face-in-down { from { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateX(90deg) translateZ(var(--gd-depth)); filter: brightness(.45); } to { transform: perspective(2400px) translateZ(calc(var(--gd-depth) * -1)) rotateX(0deg) translateZ(var(--gd-depth)); } }
+@media (prefers-reduced-motion: reduce) { html.gd-rubik::view-transition-old(gd-face), html.gd-rubik::view-transition-new(gd-face), html.gd-rubik::view-transition-group(gd-face) { animation: none; } }

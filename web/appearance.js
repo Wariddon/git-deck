@@ -13,8 +13,9 @@
   const looks=['modern','classic'];const defaultLook='modern';
   // Density: Comfortable (34 px rows) or Compact (26 px rows, tighter tables) for more on one screen.
   const densities=['comfortable','compact'];const defaultDensity='comfortable';
-  // Shape: Soft (rounded islands, glass dialogs; web/soft.css) or Square (the previous boxes).
-  const shapes=['soft','square'];const defaultShape='soft';
+  // Shape: Rubik (sticker tiles on dark plastic, every view change turns the cube; web/rubik.css,
+  // rubik.js; builds on Soft), Soft (rounded islands, glass dialogs; web/soft.css) or Square (boxes).
+  const shapes=['rubik','soft','square'];const defaultShape='rubik';
   // Opening: how Git Deck appears when it starts (web/entrance.js).
   const openings=['cube','logo','stars','command','off'];const defaultOpening='cube';
   const keys={size:'gitdeck.textSize',look:'gitdeck.look',density:'gitdeck.density',shape:'gitdeck.shape',opening:'gitdeck.opening'};
@@ -26,7 +27,7 @@
   let shape=read(keys.shape);if(!shapes.includes(shape))shape=defaultShape;
   let opening=read(keys.opening);if(!openings.includes(opening))opening=defaultOpening;
   const root=document.documentElement;
-  const apply=()=>{root.style.setProperty('--ui-text-size',size+'px');root.classList.toggle('ui-clean',look==='modern');root.classList.toggle('ui-modern',look==='modern');root.classList.toggle('gd-compact',density==='compact');root.classList.toggle('gd-soft',shape==='soft');};
+  const apply=()=>{root.style.setProperty('--ui-text-size',size+'px');root.classList.toggle('ui-clean',look==='modern');root.classList.toggle('ui-modern',look==='modern');root.classList.toggle('gd-compact',density==='compact');root.classList.toggle('gd-soft',shape==='soft'||shape==='rubik');root.classList.toggle('gd-rubik',shape==='rubik');};
   const refresh=()=>document.querySelectorAll('[data-text-size],[data-look],[data-density],[data-shape],[data-opening]').forEach(button=>{
     const active=button.dataset.textSize?Number(button.dataset.textSize)===size:button.dataset.density?button.dataset.density===density:button.dataset.shape?button.dataset.shape===shape:button.dataset.opening?button.dataset.opening===opening:button.dataset.look===look;
     button.setAttribute('aria-pressed',String(active));
@@ -62,6 +63,7 @@
         {data:{density:'compact'},label:t('Compact'),title:t('Rows of 26 px and tighter tables: more on one screen'),run:()=>setDensity('compact')},
       ]),
       group('look-choice shape-choice',t('Shape'),[
+        {data:{shape:'rubik'},label:t('Rubik'),title:t('Sticker tiles on dark plastic; every view change turns the cube'),run:()=>setShape('rubik')},
         {data:{shape:'soft'},label:t('Soft'),title:t('Rounded islands, glass dialogs and a sliding highlight'),run:()=>setShape('soft')},
         {data:{shape:'square'},label:t('Square'),title:t('Boxes with straight edges, as before'),run:()=>setShape('square')},
       ]),

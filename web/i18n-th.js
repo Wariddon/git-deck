@@ -2025,4 +2025,6 @@ GitDeckI18n.register('th',{
   "Minimize":"ย่อ",
   "Maximize":"ขยายเต็มจอ",
   "Restore":"คืนขนาด",
+  "Rubik":"รูบิค",
+  "Sticker tiles on dark plastic; every view change turns the cube":"แผ่นสติกเกอร์บนพลาสติกสีดำ ลูกบาศก์หมุนทุกครั้งที่เปลี่ยนหน้า",
 });

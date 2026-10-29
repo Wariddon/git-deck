@@ -34,9 +34,9 @@ assert(Math.hypot(crs[0].x - crs[1].x, crs[0].y - crs[1].y) < Math.hypot(crs[0].
 
 // Settings: Shape (Soft default) and Opening (Logo default) in the Appearance menu.
 const appearance = web('appearance.js');
-assert.match(appearance, /const shapes=\['soft','square'\];const defaultShape='soft';/);
+assert.match(appearance, /const shapes=\['rubik','soft','square'\];const defaultShape='rubik';/);
 assert.match(appearance, /const openings=\['cube','logo','stars','command','off'\];const defaultOpening='cube';/);
-assert.match(appearance, /root\.classList\.toggle\('gd-soft',shape==='soft'\)/);
+assert.match(appearance, /root\.classList\.toggle\('gd-soft',shape==='soft'\|\|shape==='rubik'\)/);
 assert.match(appearance, /label:t\('Preview'\).*GitDeckEntrance\?\.preview\?\.\(\)/, 'Opening has a Preview');
 assert.match(web('entrance.js'), /function preview\(chosen=mode\(\)\)/);
 assert.match(web('mini.css'), /corner-shape: squircle/, 'Mini mode shares the soft corners');
