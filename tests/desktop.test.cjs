@@ -42,4 +42,12 @@ assert.match(css, /\[data-tab="changes"\] svg \{ color: var\(--st-red\); \}/, 'r
 assert.match(read('web/rubik.js'), /var\(--st-\$\{faceSlots\[view\]\}, \$\{faceColor\(view\)\}\)/);
 const html = read('web/index.html');
 for (const name of ['desktop-bridge.js', 'cube-room.js']) assert(html.includes(`<script src="/${name}" defer></script>`), name);
+// Performance: web files are revalidated (ETag, 304) and served in parallel; periodic work pauses when hidden.
+const server = read('git-dashboard-server.ps1');
+assert.match(server, /if \(\[string\]\$Context\.Request\.Headers\['If-None-Match'\] -eq \$tag\)/, '304 for unchanged web files');
+assert.match(server, /\$response\.Headers\['Cache-Control'\] = 'no-cache'; \$response\.Headers\['ETag'\] = \$ETag/);
+assert(server.includes("$route -eq '/' -or $route -match '^/[A-Za-z0-9][A-Za-z0-9_-]*\\.(js|css|html|svg|png|ico|json)$')) { Start-GitDeckPooledRequest $pool $context }"), 'web files through the pool');
+for (const file of ['day-cube.js', 'desktop-bridge.js', 'lessons.js', 'cube-room.js']) assert.match(read('web/' + file), /document\.hidden/, `${file} pauses when hidden`);
+assert.doesNotMatch(read('web/cube-room.js'), /new MutationObserver/, 'cube room does not watch the whole page');
+assert.match(read('web/cube-play.js'), /if\(framed\)return;framed=true;/, 'tilt once per frame');
 console.log('PASS: desktop commands, tray, hotkey, taskbar number, Jump List, sticker sets, cube room edges');

@@ -59,6 +59,6 @@
       const lines=jumpLines(repos);if(lines!==lastJump){lastJump=lines;host.postMessage(`jump:${lines}`);}
     }
   }
-  setInterval(report,5000);setTimeout(report,2500);
+  setInterval(()=>{if(!document.hidden)report();},5000);setTimeout(report,2500);
   window.addEventListener('storage',(event)=>{if(event.key==='gitdeck.pendingSnapshot'||event.key==='gitdeck.inboxState')report();});
 })();

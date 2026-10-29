@@ -36,17 +36,19 @@
     const r=face.getBoundingClientRect(),cs=getComputedStyle(face);
     const box={left:r.left+parseFloat(cs.borderLeftWidth),top:r.top+parseFloat(cs.borderTopWidth),width:r.width-parseFloat(cs.borderLeftWidth)-parseFloat(cs.borderRightWidth),height:r.height-parseFloat(cs.borderTopWidth)-parseFloat(cs.borderBottomWidth)};
     const e=edges(box,depth);
+    // Write only what changed: an unchanged edge costs one layout read and no style work.
     const set=(node,points)=>{
+      const key=points.join(';');node.hidden=false;if(node.dataset.at===key)return;node.dataset.at=key;
       const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);const x0=Math.min(...xs),y0=Math.min(...ys);
       node.style.left=`${x0}px`;node.style.top=`${y0}px`;node.style.width=`${Math.max(...xs)-x0}px`;node.style.height=`${Math.max(...ys)-y0}px`;
-      node.style.clipPath=`polygon(${points.map(([x,y])=>`${x-x0}px ${y-y0}px`).join(', ')})`;node.hidden=false;
+      node.style.clipPath=`polygon(${points.map(([x,y])=>`${x-x0}px ${y-y0}px`).join(', ')})`;
     };
     set(top,e.top);set(right,e.right);
     // The next face's colour on the right; the Dashboard's green on top.
     const order=(R.railOrder()||[]).filter(tab=>workspaceTabs.includes(tab));
     const current=R.dashboardOpen()?'':(typeof state!=='undefined'?state.workspaceTab:'');
     const next=R.dashboardOpen()?'':order[(order.indexOf(current)+1)%Math.max(1,order.length)]||'';
-    right.style.setProperty('--edge',R.faceValue?R.faceValue(next||'dashboard'):'#6e7781');
+    const edge=R.faceValue?R.faceValue(next||'dashboard'):'#6e7781';if(right.style.getPropertyValue('--edge')!==edge)right.style.setProperty('--edge',edge);
     const nextLabel=next?next[0].toUpperCase()+next.slice(1):t('Next view');
     right.title=t('Turn to {view} (Ctrl+Alt+Right)',{view:nextLabel});right.setAttribute('aria-label',right.title);
     top.hidden=R.dashboardOpen();top.title=t('Turn up to the Dashboard (Ctrl+Alt+Up)');top.setAttribute('aria-label',top.title);
@@ -54,8 +56,8 @@
   let queued=false;const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;place();});};
   window.addEventListener('resize',schedule);document.addEventListener('gitdeck:appearance',schedule);
   document.addEventListener('gitdeck:turn',()=>{top.hidden=right.hidden=true;setTimeout(schedule,700);});
-  new MutationObserver(schedule).observe(document.body,{attributes:true,subtree:true,attributeFilter:['class','hidden']});
-  setInterval(schedule,1000);schedule();
+  // Views change through the cube turn (event above); a light check each second catches the rest.
+  setInterval(()=>{if(!document.hidden)schedule();},1000);schedule();
 
   // ---- your own sticker colours --------------------------------------------------------------------
   function edit(){

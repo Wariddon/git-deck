@@ -82,7 +82,6 @@
     else if(!key)ui.body.append(el('p','fleet-muted',t('Open a ticket branch or ticket mode; Git Deck remembers where you were for each ticket.')));
   }
   if(pill)pill.onclick=openResume;
-  setInterval(remember,5000);
-  setInterval(draw,5000);draw();
+  setInterval(()=>{if(document.hidden)return;remember();draw();},5000);draw();
   window.GitDeckTicketTime={...helpers,since:(fromDay)=>totals(load(),fromDay),noteFor:(key)=>contexts()[key]?.note||'',resume,openResume};
 })();

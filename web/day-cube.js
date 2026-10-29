@@ -75,6 +75,7 @@
     try{const pending=(await api('/api/repo/pending?path='+encodeURIComponent(path))).pending;const now=readJson('gitdeck.pendingSnapshot',snap);now.items=(now.items||[]).map(item=>String(item.path).toLowerCase()===key?{path:item.path,pending}:item);writeJson('gitdeck.pendingSnapshot',now);update();}catch{}
   });
   window.addEventListener('storage',(event)=>{if(event.key==='gitdeck.pendingSnapshot'||event.key==='gitdeck.inboxState')update();});
-  setInterval(update,5000);update();
+  setInterval(()=>{if(!document.hidden)update();},5000);update();
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)update();});
   window.GitDeckDayCube={...helpers,update};
 })();

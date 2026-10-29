@@ -43,12 +43,16 @@
     }
   }
   let queued=false;
-  const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;for(const spec of targets)update(spec);});};
+  const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;watch();for(const spec of targets)update(spec);});};
   // Items move without a class change (counts load, fonts settle, the menu scrolls into place): re-measure
   // when a menu changes size, and once a second as a cheap safety net (nothing moves when nothing changed).
   const resizes=typeof ResizeObserver==='function'?new ResizeObserver(schedule):null;
   setInterval(()=>{if(!document.hidden)schedule();},1000);
-  new MutationObserver(schedule).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class','aria-current'],childList:true});
+  // Watch only the menus it highlights (and the page, for when they are first drawn).
+  const watched=new WeakSet();const menus=new MutationObserver(schedule);
+  const watch=()=>{for(const spec of targets)for(const node of document.querySelectorAll(spec.container))if(!watched.has(node)){watched.add(node);menus.observe(node,{subtree:true,attributes:true,attributeFilter:['class','aria-current'],childList:true});}};
+  // Menus are drawn later and redrawn: look for new ones once per frame when the page changes.
+  new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});watch();
   window.addEventListener('resize',schedule);document.addEventListener('gitdeck:appearance',schedule);
   schedule();
 })();

@@ -892,13 +892,14 @@ function Get-GitDeckVersionState {
     return @{ web = [string]$web; serverStale = ([int64]$server -gt [int64]$script:ServerStamp) }
 }
 
-function Write-Response($Context, [byte[]]$Bytes, [string]$ContentType, [int]$StatusCode=200) {
+function Write-Response($Context, [byte[]]$Bytes, [string]$ContentType, [int]$StatusCode=200, [string]$ETag='') {
     $response = $Context.Response
     try {
         $response.StatusCode = $StatusCode
         $response.ContentType = $ContentType
         $response.ContentEncoding = [Text.Encoding]::UTF8
-        $response.Headers['Cache-Control'] = 'no-store'
+        # Web files carry an ETag and are revalidated (304 when unchanged); API answers are never stored.
+        if ($ETag) { $response.Headers['Cache-Control'] = 'no-cache'; $response.Headers['ETag'] = $ETag } else { $response.Headers['Cache-Control'] = 'no-store' }
         $response.Headers['X-Content-Type-Options'] = 'nosniff'
         $response.Headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'"
         $response.ContentLength64 = $Bytes.Length
@@ -922,7 +923,16 @@ function Write-Json($Context, $Data, [int]$StatusCode=200) {
 function Write-StaticFile($Context, [string]$Name, [string]$ContentType) {
     $path = Join-Path $script:WebRoot $Name
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { Write-Json $Context @{error='File not found'} 404; return }
-    Write-Response $Context ([IO.File]::ReadAllBytes($path)) $ContentType
+    # The browser keeps web files and asks again with If-None-Match; unchanged files cost a 304 and no body.
+    $info = Get-Item -LiteralPath $path
+    $tag = '"' + $info.LastWriteTimeUtc.Ticks.ToString('x') + '-' + $info.Length.ToString('x') + '"'
+    if ([string]$Context.Request.Headers['If-None-Match'] -eq $tag) {
+        $response = $Context.Response
+        try { $response.StatusCode = 304; $response.Headers['ETag'] = $tag; $response.Headers['Cache-Control'] = 'no-cache'; $response.ContentLength64 = 0 } catch {}
+        finally { try { $response.Close() } catch {} }
+        return
+    }
+    Write-Response $Context ([IO.File]::ReadAllBytes($path)) $ContentType 200 $tag
 }
 
 # Query string decoded as UTF-8 (HttpListener's QueryString uses the ANSI code page for %-escapes).
@@ -1874,7 +1884,8 @@ try {
             $route = $request.Url.AbsolutePath
             if ($request.HttpMethod -eq 'GET' -and $route -eq '/api/events') { Add-GitDeckEventClient $context }
             elseif ($request.HttpMethod -eq 'GET') {
-                if ($pool -and $route.StartsWith('/api/')) { Start-GitDeckPooledRequest $pool $context }
+                # API reads and web files run in parallel in the pool (the page asks for ~100 files at start).
+                if ($pool -and ($route.StartsWith('/api/') -or $route -eq '/' -or $route -match '^/[A-Za-z0-9][A-Za-z0-9_-]*\.(js|css|html|svg|png|ico|json)$')) { Start-GitDeckPooledRequest $pool $context }
                 else { Invoke-GitDeckRequest $context }
             } elseif ($request.HttpMethod -eq 'POST' -and $route -eq '/api/action') {
                 if ($request.Headers['X-Git-Deck'] -ne '1') { Write-Json $context @{error='Invalid local request'} 403; continue }

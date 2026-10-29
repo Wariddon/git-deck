@@ -63,7 +63,7 @@
     // Switches queued during this turn run once it has finished (turning is false by then).
     let release;pending=new Promise(resolve=>{release=resolve;});
     const finish=()=>{turning=false;const next=face();if(next)next.style.viewTransitionName='';old.style.viewTransitionName='';delete root.dataset.turn;release();};
-    transition.finished.catch(()=>{}).finally(finish);
+    transition.ready.catch(()=>{});transition.finished.catch(()=>{}).finally(finish);
     // A window that is not painting (minimized, covered) never starts the turn: switch at once instead.
     const shown=new Promise(resolve=>{
       const guard=setTimeout(()=>{if(started)return;try{transition.skipTransition();}catch{}finish();resolve(run());},400);

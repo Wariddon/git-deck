@@ -67,11 +67,16 @@
 
   // ---- cards tilt toward the pointer ---------------------------------------------------------------
   const tiltable='.gd-card, .forecast-card, .lane-card, .weather-family, .day-close-card, .lesson-card, .gd-today-col, .day-cube-face';
+  // At most once per frame, however fast the pointer moves.
+  let pointer=null,framed=false;
   document.addEventListener('pointermove',(event)=>{
     if(!on()||still()||event.pointerType==='touch')return;
-    const card=event.target.closest?.(tiltable);if(!card)return;
-    const box=card.getBoundingClientRect();const t=tilt(event.clientX-box.left,event.clientY-box.top,box.width,box.height);
-    card.style.setProperty('--gd-rx',`${t.rx}deg`);card.style.setProperty('--gd-ry',`${t.ry}deg`);card.classList.add('gd-tilting');
+    pointer=event;if(framed)return;framed=true;
+    requestAnimationFrame(()=>{
+      framed=false;const e=pointer;const card=e.target.closest?.(tiltable);if(!card)return;
+      const box=card.getBoundingClientRect();const t=tilt(e.clientX-box.left,e.clientY-box.top,box.width,box.height);
+      card.style.setProperty('--gd-rx',`${t.rx}deg`);card.style.setProperty('--gd-ry',`${t.ry}deg`);card.classList.add('gd-tilting');
+    });
   },{passive:true});
   document.addEventListener('pointerout',(event)=>{
     const card=event.target.closest?.(tiltable);if(!card||card.contains(event.relatedTarget))return;

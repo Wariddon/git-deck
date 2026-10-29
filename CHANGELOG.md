@@ -4,6 +4,8 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- **Faster start**: web files are served in parallel and revalidated with an ETag (unchanged files answer 304), so opening Git Deck again loads about 28 KB instead of 1.9 MB and finishes in about half the time (measured 1.7 s → 1.25 s first, 0.65 s after).
+- **Lighter while open**: the cube edges only write when something moved, the sliding highlight watches only its menus, card tilt runs at most once per frame, and the periodic checks (today's cube, taskbar number, lessons, ticket time) pause while the window is hidden. A skipped cube turn no longer logs an error.
 - **Desktop powers** (frameless window): **Win+Shift+G** from any app shows Git Deck with the command box (Ctrl+Alt+G if Windows has the key); **system tray** icon with Open, Command, Today, Mini mode, Close the day and Quit — closing the window keeps Git Deck in the tray; the **taskbar button** shows how many things need you now; the **Jump List** lists recent repositories and the Today / Command / Mini mode / Close the day tasks. Starting GitDeck.exe again (Jump List, Explorer menu) hands the request to the open window instead of opening a second one.
 - **Sticker sets** (Appearance › Stickers): Classic, Neon, Pastel, Mono, Songkran, New Year, or your own colours per view.
 - **Cube room** (Rubik shape): the app always sits on a cube — the cube's top face (green, turns up to the Dashboard) and right face (the next view's colour, turns to it) show beside the face you work on, which stays flat and sharp.

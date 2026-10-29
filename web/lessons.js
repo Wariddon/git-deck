@@ -50,7 +50,7 @@
     pill.title=t('{count} note(s) mention this work: {words}',{count,words:terms.join(', ')});
     pill.onclick=()=>{if(typeof releaseDialog!=='function')return;const ui=releaseDialog(t('Lessons for this work'));ui.body.append(el('p','fleet-muted',t('From your notes that mention: {words}',{words:terms.join(', ')})));render(answer.lessons,ui.body);};
   }
-  setInterval(()=>{void refresh();},4000);
+  setInterval(()=>{if(!document.hidden)void refresh();},4000);
 
   // ---- Push dialog: the same lessons before you push -------------------------------------------
   window.GitDeckLessons={...helpers,lessonsFor,render,currentTerms};
