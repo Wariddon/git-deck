@@ -441,3 +441,10 @@ html.ui-modern body .log-locate-text { width: 100%; font: 12px/1.5 var(--modern-
 html.ui-modern body .log-locate-hit { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0; }
 html.ui-modern body .log-locate-commit { display: block; margin-left: 4px; opacity: .75; font-size: 12px; }
 html.ui-modern body .log-locate-exceptions { font: 600 12px/1.5 var(--modern-mono, monospace); color: #b45309; }
+
+/* Action rows: a button's label stays on one line; when the row is full, buttons move to the next row.
+   A settings block inside a row (Automation › Windows notifications) takes a row of its own instead of
+   squeezing the buttons into tall slivers. */
+:is(.cockpit-tools, .fleet-actions, .operations-card-actions) { flex-wrap: wrap; align-items: flex-start; }
+:is(.cockpit-tools, .fleet-actions, .operations-card-actions) > button { white-space: nowrap; }
+.operations-card-actions > :not(button) { flex: 1 1 100%; }

@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([string]$Version='1.7.0')
+param([string]$Version='1.7.1')
 $ErrorActionPreference='Stop'
 if($Version -notmatch '^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$'){throw 'Invalid version'}
 $root=$PSScriptRoot

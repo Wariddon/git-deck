@@ -90,3 +90,10 @@ label.gd-power-row > b { grid-column: auto; }
 .gd-radar strong, .gd-radar small { grid-column: 1 / -1; }
 .gd-morning { bottom: 56px; max-height: 60vh; overflow: auto; }
 .gd-morning > button:first-of-type { position: absolute; top: 8px; right: 10px; }
+
+/* ---- theme menu choices: a label never breaks inside its button; buttons flow to the next row --------- */
+html.ui-modern body .theme-menu :is(.look-choice, .text-size-choice) > button { flex: 1 1 auto; white-space: nowrap; min-width: max-content; }
+/* Flow: on/off switches, one per row. */
+html.ui-modern body .theme-menu .flow-choice > button { flex: 1 1 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; text-align: left; padding-inline: 10px !important; }
+html.ui-modern body .theme-menu .flow-choice > button::after { content: ""; flex: none; width: 26px; height: 14px; border-radius: 7px; background: var(--border-default, #d0d7de); box-shadow: inset -12px 0 0 2px var(--surface, #ffffff); transition: background .15s ease, box-shadow .15s ease; }
+html.ui-modern body .theme-menu .flow-choice > button[aria-pressed="true"]::after { background: var(--st-green, var(--green, #1f883d)); box-shadow: inset 12px 0 0 2px var(--surface, #ffffff); }

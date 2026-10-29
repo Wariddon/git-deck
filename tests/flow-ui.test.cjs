@@ -33,13 +33,20 @@ assert.equal(flow.zoomBy(2, -100), 2, 'at most 2x');
 assert.equal(flow.zoomBy(0.3, 100), 0.3, 'at least 0.3x');
 
 const js = read('web/flow-ui.js');
-assert.doesNotMatch(js, /[฀-๿]/, 'Thai words are escaped in the source');
+assert.doesNotMatch(js, /[\u0E00-\u0E7F]/, 'Thai words are escaped in the source');
 assert.match(js, /const defaults=\{morph:true,sentence:true,zen:true,lens:false,peek:true\};/, 'the focus lens is off unless chosen');
 assert.match(js, /runWorkspaceAction\('pull',\{strategy:state\.meta\.pullStrategy\},typeof syncConfirmation==='function'\?syncConfirmation\('pull'\)/, 'pull from the sentence asks first');
 assert.match(js, /F\.addPanel\('desks'/);
 const css = read('web/flow-ui.css');
 assert.match(css, /body\.gd-flow-sentence #workspace-statusbar > :is\(button:has\(#status-branch\), button:has\(#status-changes\), #status-sync, #status-remote\) \{ display: none !important; \}/);
 assert.match(css, /:root body\.gd-flow-morph \.modern-actions button\[data-act\]\.gd-next \{/, 'outranks the Rubik action style');
+// Button labels never break inside a button: theme menu choices flow to the next row, Flow is a list of switches,
+// action rows wrap whole buttons and a settings block takes its own row (Automation).
+assert.match(css, /\.theme-menu :is\(\.look-choice, \.text-size-choice\) > button \{ flex: 1 1 auto; white-space: nowrap; min-width: max-content; \}/);
+assert.match(css, /\.theme-menu \.flow-choice > button \{ flex: 1 1 100%;/);
+const polish = read('web/polish.css');
+assert.match(polish, /:is\(\.cockpit-tools, \.fleet-actions, \.operations-card-actions\) > button \{ white-space: nowrap; \}/);
+assert.match(polish, /\.operations-card-actions > :not\(button\) \{ flex: 1 1 100%; \}/);
 const html = read('web/index.html');
 assert(html.includes('<script src="/flow-ui.js" defer></script>'));
 assert(html.includes('<link rel="stylesheet" href="/flow-ui.css">'));

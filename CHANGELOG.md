@@ -4,6 +4,10 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+## 1.7.1 — 2026-10-29
+
+- **Tidy buttons everywhere**: every button and menu was measured for labels that wrap or spill. Theme menu choices keep their label on one line and move to the next row instead; Flow is a list of on/off switches; action rows in the Dashboard wrap whole buttons; Automation no longer squeezes "Fetch scope now" and "Save automation" into tall slivers beside the notification settings.
+
 ## 1.7.0 — 2026-10-29
 
 The screen follows what you are doing, and power tools that work across repositories.

@@ -381,9 +381,9 @@ Preview reads the selected commit, or its first parent for a deleted file. Markd
 After publishing a GitHub release with the ZIP from `Build-Release.ps1`, generate package manifests that point at it:
 
 ```powershell
-.\Build-Release.ps1 -Version 1.7.0
-# upload dist\GitDeck-1.7.0-windows.zip to the GitHub release v1.7.0
-.\packaging\New-PackageManifests.ps1 -Version 1.7.0
+.\Build-Release.ps1 -Version 1.7.1
+# upload dist\GitDeck-1.7.1-windows.zip to the GitHub release v1.7.1
+.\packaging\New-PackageManifests.ps1 -Version 1.7.1
 ```
 
 This writes `dist\packaging\git-deck.json` (a Scoop bucket manifest with `checkver`/`autoupdate` and persisted local data) and `dist\packaging\winget\<version>\` (a portable-zip winget manifest). Run `winget validate` and a local install test on Windows before submitting to a Scoop bucket or `microsoft/winget-pkgs`.

@@ -15,8 +15,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyCompany("Wariddon Rattanamalee")]
 [assembly: System.Reflection.AssemblyCopyright("Created by Wariddon Rattanamalee with OpenAI Codex")]
 [assembly: System.Reflection.AssemblyDescription("A compact local Git desktop workspace for Windows")]
-[assembly: System.Reflection.AssemblyVersion("1.7.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.7.0.0")]
+[assembly: System.Reflection.AssemblyVersion("1.7.1.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.7.1.0")]
 
 internal static class GitDeckLauncher
 {
