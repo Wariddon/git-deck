@@ -4,6 +4,16 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- **Flow UI**: the screen follows what you are doing (theme menu › Flow switches each part):
+  - **Next step first**: the action bar puts the sensible next step forward (Commit when files changed, Pull when behind, Push when ahead, Fetch when clean); the rest become small icons.
+  - **Status as a sentence**: "main · 29 commits to pull"; click a part to act on it (pull and push still ask).
+  - **Zen while writing**: writing a commit message fades everything else; move to an edge to see it again; Ctrl+Alt+Z by hand.
+  - **Peek**: hold Space over a commit or a changed file for a floating preview.
+  - **Timeline** (Ctrl+Alt+T): history as one line from old to now; drag a changed file onto Stage.
+  - **Plain requests in Ctrl+K**, in English or Thai: "open txi", "fetch all in SCB", "go history", "theme dark".
+  - **Desks** (Dashboard): worksets and open tabs as desks on a canvas you pan and zoom, each with a note.
+  - **Focus lens** (off unless chosen): the part under the pointer stays sharp, the rest fades.
+- Rubik shape: main buttons (Commit, Pull origin…) keep their colour instead of the plain sticker grey, so they are readable on white plastic too.
 ## 1.6.1 — 2026-10-29
 
 - **Colour themes work with the Rubik shape**: the theme now picks the cube's plastic. Light is a white cube, Paper a warm white one, Dark a graphite one, Midnight a near-black blue one and Focus the black speedcube; System follows Windows. Before, Rubik kept the dark palette whatever theme was chosen. The separate *Plastic* setting is gone: the theme does it.

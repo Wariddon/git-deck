@@ -1,0 +1,75 @@
+/* Flow UI (web/flow-ui.js): next step first, status sentence, zen, focus lens, peek, timeline, desks.
+   Body classes gd-flow-<part> say which parts are on (theme menu › Flow). */
+
+/* ---- next step first: the suggested action stands out, the rest become small icons --------------- */
+:root body.gd-flow-morph .modern-actions button[data-act].gd-quiet .modern-act-label { display: none; }
+:root body.gd-flow-morph .modern-actions button[data-act].gd-quiet { opacity: .62; min-width: 36px !important; }
+:root body.gd-flow-morph .modern-actions button[data-act].gd-quiet:hover { opacity: 1; }
+:root body.gd-flow-morph .modern-actions button[data-act].gd-next { opacity: 1; color: #ffffff !important; background: var(--st-green, var(--green, #1f883d)) !important; border-radius: 10px !important; box-shadow: inset 0 -3px 0 rgb(0 0 0 / 22%), inset 0 1px 0 rgb(255 255 255 / 25%) !important; padding-inline: 14px !important; }
+:root body.gd-flow-morph .modern-actions button[data-act].gd-next :is(svg, span) { color: #ffffff !important; }
+:root body.gd-flow-morph .modern-actions button[data-act].gd-next-2 { box-shadow: inset 0 -2px 0 var(--st-green, var(--green, #1f883d)) !important; }
+
+/* ---- status as a sentence ----------------------------------------------------------------------------- */
+.gd-sentence { display: none; }
+body.gd-flow-sentence .gd-sentence { display: inline-flex; align-items: center; flex-wrap: nowrap; gap: 2px; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 12px; }
+body.gd-flow-sentence .gd-sentence i { font-style: normal; color: var(--text-tertiary, #6e7781); }
+body.gd-flow-sentence .gd-sentence-part { border: 0 !important; background: transparent !important; box-shadow: none !important; padding: 1px 4px !important; min-height: 0 !important; color: var(--text-primary, #1f2328) !important; cursor: pointer; border-radius: 6px !important; text-decoration: underline dotted transparent; }
+body.gd-flow-sentence .gd-sentence-part:hover { text-decoration-color: currentColor; background: var(--surface-hover, rgb(0 0 0 / 6%)) !important; }
+body.gd-flow-sentence .gd-sentence-part.is-branch { font-weight: 700; }
+body.gd-flow-sentence .gd-sentence-part.is-work { color: var(--st-yellow, #9a6700) !important; }
+body.gd-flow-sentence .gd-sentence-part.is-pull { color: var(--st-blue, #0969da) !important; }
+body.gd-flow-sentence .gd-sentence-part.is-push { color: var(--st-white, #57606a) !important; }
+body.gd-flow-sentence .gd-sentence-part.is-bad { color: var(--st-red, #cf222e) !important; font-weight: 700; }
+body.gd-flow-sentence .gd-sentence-part.is-ok { color: var(--text-secondary, #57606a) !important; }
+/* The sentence says what these said: hide them. */
+body.gd-flow-sentence #workspace-statusbar > :is(button:has(#status-branch), button:has(#status-changes), #status-sync, #status-remote) { display: none !important; }
+
+/* ---- zen: only the commit message and what it is about --------------------------------------------- */
+body.gd-zen :is(.panel.repos, .modern-rail, .workbench-tree, .workspace-modal-head, #workspace-statusbar, #repo-tabs, .gd-cube-edge) { opacity: .04; transition: opacity .3s ease; }
+body.gd-zen.gd-zen-peek :is(.panel.repos, .modern-rail, .workbench-tree, .workspace-modal-head, #workspace-statusbar, #repo-tabs, .gd-cube-edge) { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { body.gd-zen :is(.panel.repos, .modern-rail, .workbench-tree, .workspace-modal-head, #workspace-statusbar, #repo-tabs) { transition: none; } }
+
+/* ---- focus lens ------------------------------------------------------------------------------------- */
+body.gd-flow-lens.gd-lens-active :is(.panel.repos, .modern-rail, .workbench-tree, #workspace-content, .workspace-modal-head, #workspace-statusbar, #repo-tabs):not(.gd-lens-on) { opacity: .45; filter: saturate(.6); transition: opacity .2s ease, filter .2s ease; }
+body.gd-flow-lens :is(.panel.repos, .modern-rail, .workbench-tree, #workspace-content, .workspace-modal-head, #workspace-statusbar, #repo-tabs) { transition: opacity .2s ease, filter .2s ease; }
+
+/* ---- peek ------------------------------------------------------------------------------------------- */
+.gd-peek { position: fixed; z-index: 13000; display: grid; gap: 6px; max-height: 70vh; overflow: auto; padding: 14px 16px; border-radius: 14px; background: var(--surface, #ffffff); color: var(--text-primary, #1f2328); box-shadow: 0 18px 50px rgb(0 0 0 / 35%), 0 0 0 1px var(--border-default, #d0d7de); pointer-events: none; }
+.gd-peek strong { font-size: 14px; }
+.gd-peek-body { margin: 0; white-space: pre-wrap; font: 12px/1.45 inherit; color: var(--text-secondary, #57606a); }
+.gd-peek-body:empty { display: none; }
+.gd-peek-files { margin: 0; padding: 0; list-style: none; font: 12px/1.6 ui-monospace, Consolas, monospace; }
+.gd-peek-diff { margin: 0; font: 12px/1.45 ui-monospace, Consolas, monospace; white-space: pre; overflow: hidden; }
+.gd-peek-diff .add { color: #3fb950; } .gd-peek-diff .del { color: #f85149; } .gd-peek-diff .hunk { color: #58a6ff; }
+
+/* ---- timeline ------------------------------------------------------------------------------------- */
+.gd-timeline { position: fixed; left: 16px; right: 16px; bottom: 44px; z-index: 12500; display: grid; gap: 8px; padding: 12px 14px; border-radius: 16px; background: var(--surface, #ffffff); color: var(--text-primary, #1f2328); box-shadow: 0 20px 60px rgb(0 0 0 / 40%), 0 0 0 1px var(--border-default, #d0d7de); }
+.gd-timeline-head { display: flex; align-items: center; gap: 12px; }
+.gd-timeline-head button { margin-left: auto; }
+.gd-timeline-track { position: relative; display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding: 14px 4px 10px; scrollbar-width: thin; }
+.gd-timeline-track::before { content: ""; position: absolute; left: 0; right: 0; top: 22px; height: 2px; background: var(--border-default, #d0d7de); }
+.gd-tl-commit { position: relative; flex: none; width: 190px; display: grid; gap: 3px; align-content: start; text-align: left; padding: 18px 10px 10px !important; border-radius: 12px !important; background: var(--surface-subtle, #f6f8fa) !important; border: 0 !important; box-shadow: var(--gd-sticker, 0 0 0 1px var(--border-default, #d0d7de)) !important; cursor: pointer; }
+.gd-tl-commit:hover { background: var(--surface-hover, #eef1f4) !important; }
+.gd-tl-dot { position: absolute; top: -1px; left: 12px; width: 12px; height: 12px; border-radius: 50%; background: var(--st-blue, #0969da); box-shadow: 0 0 0 3px var(--surface, #ffffff); }
+.gd-tl-commit small { color: var(--text-tertiary, #6e7781); font: 11px ui-monospace, Consolas, monospace; }
+.gd-tl-commit b { font-size: 12px; font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.gd-tl-commit em { justify-self: start; font-style: normal; font-size: 10px; padding: 1px 6px; border-radius: 6px; background: color-mix(in srgb, var(--st-green, #1f883d) 22%, transparent); }
+.gd-tl-now { flex: none; width: 320px; display: grid; gap: 6px; align-content: start; padding: 12px; border-radius: 12px; background: color-mix(in srgb, var(--st-yellow, #d4a72c) 14%, var(--surface-subtle, #f6f8fa)); box-shadow: var(--gd-sticker, 0 0 0 1px var(--border-default, #d0d7de)); }
+.gd-tl-files { display: flex; flex-wrap: wrap; gap: 4px; max-height: 92px; overflow: auto; }
+.gd-tl-file { padding: 2px 8px; border-radius: 6px; background: var(--surface-muted, #eaeef2); font-size: 12px; cursor: grab; }
+.gd-tl-stage { display: grid; place-items: center; min-height: 34px; border: 2px dashed var(--border-default, #d0d7de); border-radius: 10px; color: var(--text-secondary, #57606a); font-size: 12px; }
+.gd-tl-stage.over { border-color: var(--st-green, #1f883d); color: var(--st-green, #1f883d); }
+
+/* ---- desks: a canvas of worksets ----------------------------------------------------------------------- */
+.gd-desks { position: relative; height: min(68vh, 720px); overflow: hidden; border-radius: 16px; background: radial-gradient(circle, color-mix(in srgb, var(--text-tertiary, #6e7781) 25%, transparent) 1px, transparent 1.5px) 0 0 / 22px 22px, var(--canvas, #f6f8fa); cursor: grab; touch-action: none; }
+.gd-desks.dragging { cursor: grabbing; }
+.gd-desks-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.gd-desk { position: absolute; width: 340px; display: grid; gap: 8px; padding: 0 0 12px; border-radius: 16px; background: var(--surface, #ffffff); box-shadow: var(--gd-sticker, 0 0 0 1px var(--border-default, #d0d7de)), 0 10px 30px rgb(0 0 0 / 18%); cursor: default; }
+.gd-desk-title { padding: 10px 14px; border-radius: 16px 16px 0 0; background: var(--surface-muted, #eaeef2); font-weight: 700; cursor: move; user-select: none; }
+.gd-desk-repos { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px; }
+.gd-desk-repo { padding: 4px 10px !important; border-radius: 8px !important; font-size: 12px; border: 0 !important; background: var(--surface-subtle, #f6f8fa) !important; box-shadow: inset 3px 0 0 var(--st-green, #1f883d) !important; }
+.gd-desk-repo.is-work { box-shadow: inset 3px 0 0 var(--st-yellow, #d4a72c) !important; }
+.gd-desk-repo.is-pull { box-shadow: inset 3px 0 0 var(--st-blue, #0969da) !important; }
+.gd-desk-repo.is-push { box-shadow: inset 3px 0 0 var(--st-white, #8c959f) !important; }
+.gd-desk-repo.is-conflict { box-shadow: inset 3px 0 0 var(--st-red, #cf222e) !important; }
+.gd-desk-note { margin: 0 12px; min-height: 64px; resize: vertical; font: inherit; font-size: 12px; }
