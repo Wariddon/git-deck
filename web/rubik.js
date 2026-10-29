@@ -3,7 +3,7 @@
 // Every view is a face: switching a workspace tab, opening another repository, opening or closing the
 // Dashboard and switching Dashboard views turns the cube to the new face (View Transitions: the old
 // face rotates away around the cube's centre while the new one rotates in). The tiles are stickers on
-// dark plastic, each view with its own sticker colour. Reduced motion, or a browser without View
+// plastic (its colour from the colour theme), each view with its own sticker colour. Reduced motion, or a browser without View
 // Transitions, switches without the turn.
 (function(){
   // ---- pure helpers (tested) ----------------------------------------------------------------
@@ -19,7 +19,15 @@
   // The sticker variable each view uses, so sticker sets (web/rubik.css) recolour it.
   const faceSlots={changes:'red',history:'blue',branches:'orange',tags:'white',stashes:'yellow',compare:'green',dashboard:'green',repos:'green',all:'green'};
   const faceValue=(view)=>faceSlots[view]?`var(--st-${faceSlots[view]}, ${faceColor(view)})`:faceColor(view);
-  const helpers={direction,faceColors,faceColor,faceSlots,faceValue};
+  // The plastic for the page's colour theme (from the body classes app.js sets).
+  function plasticFor(body){
+    const has=(name)=>body.classList.contains(name);
+    if(has('theme-midnight'))return 'midnight';
+    if(has('theme-focus'))return 'focus';
+    if(has('theme-dark'))return 'dark';
+    return body.dataset?.theme==='paper'?'paper':'light';
+  }
+  const helpers={direction,faceColors,faceColor,faceSlots,faceValue,plasticFor};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
   if(typeof document==='undefined')return;
 
@@ -114,14 +122,14 @@
     // The close button was bound to the original function; send it through the turn too.
     document.getElementById('operations-close')?.addEventListener('click',(event)=>{if(!rubik())return;event.stopImmediatePropagation();hideOperationsCenter();},true);
   }
-  // Rubik is dark plastic whatever the colour theme: keep the dark, green-accent palette while it is on.
+  // The colour theme picks the cube's plastic: Light and Paper are a white cube, Dark, Midnight and
+  // Focus a black one (each its own tone; web/rubik.css), System follows Windows.
   if(typeof applyAppearance==='function'){
     const base=applyAppearance;
     applyAppearance=function(...args){
       const result=base.apply(this,args);
-      // White plastic is the light cube: the light palette instead.
-      if(rubik()&&root.classList.contains('gd-plastic-white')){document.body.classList.remove('theme-dark','theme-focus','theme-midnight');root.style.colorScheme='light';}
-      else if(rubik()){document.body.classList.add('theme-dark','theme-focus');root.style.colorScheme='dark';}
+      root.dataset.plastic=plasticFor(document.body);
+      root.classList.toggle('gd-plastic-white',!document.body.classList.contains('theme-dark'));
       return result;
     };
     document.addEventListener('gitdeck:appearance',()=>applyAppearance());

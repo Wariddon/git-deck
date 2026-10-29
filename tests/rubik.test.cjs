@@ -21,7 +21,15 @@ for (const fn of ['selectWorkspaceTab', 'openWorkspace', 'switchOperationsView',
 assert.match(js, /if\(!rubik\(\)\|\|still\(\)\|\|!canTurn\(\)\|\|turning\|\|!old\|\|!old\.offsetParent\)return update\(\);/, 'no turn without Rubik, with reduced motion, without View Transitions or while turning');
 assert.match(js, /transition\.skipTransition\(\)/, 'a window that is not painting switches at once');
 assert.match(js, /if\(waiting\(\)\)return pending\.then\(\(\)=>selectWorkspaceTab\(tab,\.\.\.rest\)\);/, 'switches during a turn wait for it');
-assert.match(js, /document\.body\.classList\.add\('theme-dark','theme-focus'\)/, 'Rubik keeps the dark plastic palette');
+// The colour theme picks the plastic: light themes a white cube, dark themes a black one.
+const body = (classes, theme) => ({ classList: { contains: (name) => classes.includes(name) }, dataset: { theme } });
+assert.equal(rubik.plasticFor(body([], 'light')), 'light');
+assert.equal(rubik.plasticFor(body([], 'paper')), 'paper');
+assert.equal(rubik.plasticFor(body(['theme-dark'], 'dark')), 'dark');
+assert.equal(rubik.plasticFor(body(['theme-dark', 'theme-midnight'], 'midnight')), 'midnight');
+assert.equal(rubik.plasticFor(body(['theme-dark', 'theme-focus'], 'system')), 'focus');
+assert.doesNotMatch(js, /classList\.add\('theme-dark'/, 'Rubik no longer overrides the chosen theme');
+assert.match(js, /root\.classList\.toggle\('gd-plastic-white',!document\.body\.classList\.contains\('theme-dark'\)\)/);
 
 const css = read('web/rubik.css');
 for (const way of ['next', 'prev', 'up', 'down']) {

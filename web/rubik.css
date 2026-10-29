@@ -165,7 +165,8 @@ html.gd-rubik .gd-window-controls { gap: 4px; padding-left: 6px; }
 html.gd-rubik .gd-window-controls button { border-radius: 8px !important; background: var(--surface-subtle) !important; box-shadow: var(--gd-sticker) !important; width: 40px; }
 html.gd-rubik .gd-window-controls .gd-win-close:hover { background: var(--st-red) !important; color: #ffffff !important; }
 
-/* ---- white plastic (Appearance › Plastic › White): the light cube for daytime ----------------------- */
+/* ---- plastic from the colour theme (web/rubik.js sets data-plastic and gd-plastic-white) -------------
+   Light and Paper: a white cube. Dark, Midnight and Focus: a black cube, each its own tone. */
 html.gd-rubik.gd-plastic-white { background: #e9ecf0; --gd-groove: #d3d8de; }
 html.gd-rubik.gd-plastic-white.gd-soft.ui-modern body:not(.gd-never) {
   --canvas: #e4e8ed; --surface: #f7f8fa; --surface-subtle: #ffffff; --surface-muted: #eef1f4; --surface-hover: #f2f4f7;
@@ -173,6 +174,19 @@ html.gd-rubik.gd-plastic-white.gd-soft.ui-modern body:not(.gd-never) {
   --text-primary: #1f2328; --text-secondary: #57606a; --text-tertiary: #6e7781;
   --gd-sticker: inset 0 -3px 0 rgb(31 35 40 / 12%), inset 0 1px 0 rgb(255 255 255 / 90%);
   --gd-sticker-lit: inset 0 -3px 0 rgb(0 0 0 / 18%), inset 0 2px 0 rgb(255 255 255 / 30%);
+}
+html.gd-rubik[data-plastic="paper"] { background: #ece6da; --gd-groove: #d8d0c0; }
+html.gd-rubik[data-plastic="paper"].gd-soft.ui-modern body:not(.gd-never) {
+  --canvas: #e9e3d6; --surface: #f8f5ee; --surface-subtle: #fffdf8; --surface-muted: #f1ece2; --surface-hover: #f5f1e8;
+  --border-default: #d9d0bf; --border-muted: #e6dfd2; --code-bg: #f4efe5; --text-primary: #2b2620; --text-secondary: #5f574b; --text-tertiary: #7a7163;
+}
+html.gd-rubik[data-plastic="dark"] { background: #15191f; --gd-groove: #15191f; }
+html.gd-rubik[data-plastic="dark"].gd-soft.ui-modern body:not(.gd-never) {
+  --canvas: #15191f; --surface: #1f252e; --surface-subtle: #252c36; --surface-muted: #2e3642; --surface-hover: #2a313c;
+}
+html.gd-rubik[data-plastic="midnight"] { background: #05070c; --gd-groove: #05070c; }
+html.gd-rubik[data-plastic="midnight"].gd-soft.ui-modern body:not(.gd-never) {
+  --canvas: #05070c; --surface: #0d121b; --surface-subtle: #121927; --surface-muted: #1a2335; --surface-hover: #16202f;
 }
 html.gd-rubik.gd-plastic-white .gd-cube-edge-top, html.gd-rubik.gd-plastic-white .gd-cube-edge-right { filter: saturate(.8) brightness(.95); }
 html.gd-rubik.gd-plastic-white .day-cube-face, html.gd-rubik.gd-plastic-white .day-cube-mini, html.gd-rubik.gd-plastic-white .fleet-cube-face { background: var(--gd-groove) !important; }

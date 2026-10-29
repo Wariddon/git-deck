@@ -44,13 +44,10 @@ assert.equal(fleet.heat('940d24d 2026-10-10 fix', now), 1);
 assert.equal(fleet.heat('940d24d 2025-01-01 fix', now), 0);
 assert.equal(fleet.heat('', now), 0);
 
-const appearance = read('web/appearance.js');
-assert.match(appearance, /const plastics=\['black','white'\];const defaultPlastic='black';/);
-assert.match(appearance, /root\.classList\.toggle\('gd-plastic-white',plastic==='white'\)/);
-assert.match(read('web/rubik.js'), /gd-plastic-white'\)\)\{document\.body\.classList\.remove\('theme-dark'/, 'white plastic uses the light palette');
+assert.match(read('web/rubik.css'), /html\.gd-rubik\[data-plastic="paper"\]/, 'each theme has its own plastic tone');
 const css = read('web/rubik.css');
 assert.match(css, /html\.gd-rubik \.repo-tab\[data-sticker="conflict"\] \.gd-tab-sticker \{ background: var\(--st-red\); \}/);
 assert.match(css, /@media \(max-width: 1440px\)/, 'narrow windows keep the sticker row on one line');
 assert.match(css, /var\(--gd-groove, #0a0c10\)/, 'cube edge grooves follow the plastic');
 assert(read('web/index.html').includes('<script src="/speedcube.js" defer></script>'));
-console.log('PASS: speedcube (tab stickers, moves, quick faces, edge drag, speedrun, fleet folders and heat, white plastic)');
+console.log('PASS: speedcube (tab stickers, moves, quick faces, edge drag, speedrun, fleet folders and heat, plastic from the theme)');

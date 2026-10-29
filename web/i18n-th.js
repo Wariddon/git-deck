@@ -2073,9 +2073,4 @@ GitDeckI18n.register('th',{
   "Colour: weather":"สี: สภาพอากาศ",
   "Colour: activity":"สี: ความเคลื่อนไหว",
   "Your repositories on one cube: each face is a family or folder, each sticker a repository in its weather colour (green clear, blue cloudy, amber rain, red storm, grey not checked) or its activity (brighter green: committed more recently). Drag to turn it, pick a face to turn to it, click a sticker to open the repository.":"repository ทั้งหมดบนลูกบาศก์เดียว: แต่ละหน้าคือตระกูลหรือโฟลเดอร์ แต่ละสติกเกอร์คือ repository ตามสีสภาพอากาศ (เขียวแจ่มใส ฟ้ามีเมฆ เหลืองฝนตก แดงพายุ เทายังไม่ตรวจ) หรือตามความเคลื่อนไหว (เขียวสว่างกว่า = commit ล่าสุดกว่า) ลากเพื่อหมุน เลือกหน้าเพื่อหมุนไปหา คลิกสติกเกอร์เพื่อเปิด repository",
-  "Plastic":"พลาสติก",
-  "Black":"ดำ",
-  "White":"ขาว",
-  "A black speedcube: dark plastic":"speedcube สีดำ: พลาสติกโทนมืด",
-  "A white cube: light plastic for daytime":"ลูกบาศก์สีขาว: พลาสติกโทนสว่างสำหรับกลางวัน",
 });

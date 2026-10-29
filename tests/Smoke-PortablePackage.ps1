@@ -5,7 +5,7 @@ param([Parameter(Mandatory = $true)][string]$Zip)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $zipPath = (Resolve-Path -LiteralPath $Zip).Path
-# The version the ZIP claims in its name (GitDeck-1.6.0-windows.zip) must be what the server reports.
+# The version the ZIP claims in its name (GitDeck-1.6.1-windows.zip) must be what the server reports.
 $expectedVersion = if ([IO.Path]::GetFileName($zipPath) -match 'GitDeck-(\d+\.\d+\.\d+)') { $Matches[1] } else { ([regex]::Match((Get-Content -LiteralPath (Join-Path $root 'Build-Release.ps1') -Raw), "Version='([0-9.]+)'")).Groups[1].Value }
 $expected = ((Get-Content -LiteralPath ($zipPath + '.sha256') -Raw).Trim() -split '\s+')[0]
 if ((Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash -ne $expected) { throw 'ZIP checksum mismatch' }

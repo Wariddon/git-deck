@@ -4,12 +4,16 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+## 1.6.1 — 2026-10-29
+
+- **Colour themes work with the Rubik shape**: the theme now picks the cube's plastic. Light is a white cube, Paper a warm white one, Dark a graphite one, Midnight a near-black blue one and Focus the black speedcube; System follows Windows. Before, Rubik kept the dark palette whatever theme was chosen. The separate *Plastic* setting is gone: the theme does it.
+
 ## 1.6.0 — 2026-10-29
 
 The whole app as a speedcube: a frameless window, a cube that turns between views, desktop powers (tray, hotkey, Jump List) and faster starts.
 
 - **Scrolling in the top bar** (frameless window): the action bar and the repository tab row can be scrolled again: their scrollbars no longer move the window, and the mouse wheel scrolls them sideways.
-- **Speedcube extras** (Rubik shape): every repository tab carries a status sticker (green clean, yellow work to commit, blue to pull, white to push, red conflicts); hold **Ctrl+Alt and type F P U** to fetch, pull and push in one algorithm (pull and push still ask); **Ctrl+Alt+1-6** turns straight to a view; **drag a cube edge** and the face leans with the pointer, turning once dragged far enough; today's cube does a victory spin when solved and keeps a **solve time** with this week's best and the average of five; the softer clack of a speedcube for the cube sound; the Fleet cube can group faces by **folder** and colour stickers by **activity** (a heatmap of the latest commit); **Appearance > Plastic > White** is a light cube for daytime; the sticker row fits windows down to 1280 px.
+- **Speedcube extras** (Rubik shape): every repository tab carries a status sticker (green clean, yellow work to commit, blue to pull, white to push, red conflicts); hold **Ctrl+Alt and type F P U** to fetch, pull and push in one algorithm (pull and push still ask); **Ctrl+Alt+1-6** turns straight to a view; **drag a cube edge** and the face leans with the pointer, turning once dragged far enough; today's cube does a victory spin when solved and keeps a **solve time** with this week's best and the average of five; the softer clack of a speedcube for the cube sound; the Fleet cube can group faces by **folder** and colour stickers by **activity** (a heatmap of the latest commit); the sticker row fits windows down to 1280 px.
 - **Speedcube look** (Rubik shape): the whole window is matte black plastic with dark stickers of one height; colour appears only where it means something (a small chip on Repository and Branch, the open view on its rail item, tab and content edge, Dashboard green while open). Calmer classic sticker colours, slimmer cube edges, and the view colour now follows the view restored at start. The rail highlight no longer sticks to Repos.
 - **Faster start**: web files are served in parallel and revalidated with an ETag (unchanged files answer 304), so opening Git Deck again loads about 28 KB instead of 1.9 MB and finishes in about half the time (measured 1.7 s → 1.25 s first, 0.65 s after).
 - **Lighter while open**: the cube edges only write when something moved, the sliding highlight watches only its menus, card tilt runs at most once per frame, and the periodic checks (today's cube, taskbar number, lessons, ticket time) pause while the window is hidden. A skipped cube turn no longer logs an error.
