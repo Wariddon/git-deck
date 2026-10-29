@@ -33,6 +33,14 @@ internal static class GitDeckLauncher
             return;
         }
 
+        // The frameless window is open (perhaps hidden in the tray): hand it the request and leave.
+        IntPtr hosted = FindHostedWindow();
+        if (hosted != IntPtr.Zero)
+        {
+            string folder = FolderArgument(args), action = ActionArgument(args);
+            SendCommand(hosted, folder != null ? "open:" + folder : action != null ? "do:" + action : "show");
+            return;
+        }
         // Already open: bring that window back without a splash.
         if (FolderArgument(args) == null && IsReady())
         {
@@ -88,6 +96,8 @@ internal static class GitDeckLauncher
                     string url = AppUrl;
                     string folder = FolderArgument(args);
                     if (folder != null) url += "?path=" + Uri.EscapeDataString(folder);
+                    string action = ActionArgument(args);
+                    if (action != null) url += (url.Contains("?") ? "&" : "?") + "do=" + action;
                     if (Hosted.Available(AppDomain.CurrentDomain.BaseDirectory)) { hostedUrl = url; return null; }
                 }
                 bool appWindow = OpenAppWindow(args);
@@ -106,6 +116,50 @@ internal static class GitDeckLauncher
         string requested = args[0].Trim().Trim('"');
         try { requested = Path.GetFullPath(requested); } catch { return null; }
         return Directory.Exists(requested) ? requested : null;
+    }
+
+    // Jump List tasks start GitDeck.exe with "--do <task>"; only these tasks are passed on.
+    private static readonly string[] Actions = { "today", "mini", "day-close", "dashboard", "palette" };
+    private static string ActionArgument(string[] args)
+    {
+        if (args == null || args.Length < 2 || args[0] != "--do") return null;
+        return Array.IndexOf(Actions, args[1]) >= 0 ? args[1] : null;
+    }
+
+    // The frameless window of another GitDeck.exe, visible or hidden in the tray.
+    private static IntPtr FindHostedWindow()
+    {
+        IntPtr found = IntPtr.Zero;
+        int self = Process.GetCurrentProcess().Id;
+        EnumWindows((window, parameter) =>
+        {
+            var text = new StringBuilder(512);
+            GetWindowText(window, text, text.Capacity);
+            if (!text.ToString().StartsWith("Git Deck —", StringComparison.Ordinal)) return true;
+            uint pid; GetWindowThreadProcessId(window, out pid);
+            if (pid == self) return true;
+            try { if (Process.GetProcessById((int)pid).ProcessName.Equals("GitDeck", StringComparison.OrdinalIgnoreCase)) { found = window; return false; } } catch { }
+            return true;
+        }, IntPtr.Zero);
+        return found;
+    }
+
+    [StructLayout(LayoutKind.Sequential)] internal struct COPYDATASTRUCT { public IntPtr Data; public int Size; public IntPtr Text; }
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
+    [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, ref COPYDATASTRUCT data);
+    [DllImport("user32.dll")] private static extern bool AllowSetForegroundWindow(int process);
+
+    private static void SendCommand(IntPtr window, string command)
+    {
+        uint pid; GetWindowThreadProcessId(window, out pid);
+        AllowSetForegroundWindow((int)pid);
+        IntPtr text = Marshal.StringToHGlobalUni(command);
+        try
+        {
+            var data = new COPYDATASTRUCT { Data = (IntPtr)0x47444B, Size = (command.Length + 1) * 2, Text = text };
+            SendMessage(window, 0x004A, IntPtr.Zero, ref data); // WM_COPYDATA
+        }
+        finally { Marshal.FreeHGlobal(text); }
     }
 
     private static void FocusWindow(IntPtr window)
@@ -378,7 +432,12 @@ internal sealed class AppWindow : Form
                 // Git Deck pages stay here; links to GitLab, GitHub and other sites open in the browser.
                 core.NavigationStarting += (s, a) => { if (!Local(a.Uri)) { a.Cancel = true; OpenOutside(a.Uri); } };
                 core.NewWindowRequested += (s, a) => { if (!Local(a.Uri)) { a.Handled = true; OpenOutside(a.Uri); } };
-                core.NavigationCompleted += (s, a) => SendState();
+                core.NavigationCompleted += (s, a) =>
+                {
+                    pageReady = true; SendState();
+                    var queued = waiting.ToArray(); waiting.Clear();
+                    foreach (string message in queued) Post(message);
+                };
                 core.Navigate(url);
             }
             catch (Exception ex)
@@ -389,7 +448,56 @@ internal sealed class AppWindow : Form
                 Close();
             }
         };
-        Resize += (sender, e) => SendState();
+        Resize += (sender, e) => { if (WindowState != FormWindowState.Minimized) restoreTo = WindowState; SendState(); };
+        // System tray: Git Deck keeps running when its window is closed; Quit ends it.
+        var menu = new ContextMenuStrip();
+        menu.Items.Add("Open Git Deck", null, (s, a) => ShowApp());
+        menu.Items.Add("Command…  (Win+Shift+G)", null, (s, a) => { ShowApp(); Post("palette:open"); });
+        menu.Items.Add("Today", null, (s, a) => { ShowApp(); Post("do:today"); });
+        menu.Items.Add("Mini mode", null, (s, a) => Post("do:mini"));
+        menu.Items.Add("Close the day", null, (s, a) => { ShowApp(); Post("do:day-close"); });
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("Quit Git Deck", null, (s, a) => { quitting = true; Close(); });
+        tray = new NotifyIcon { Icon = Icon ?? SystemIcons.Application, Text = "Git Deck", ContextMenuStrip = menu, Visible = true };
+        tray.DoubleClick += (s, a) => ShowApp();
+        FormClosing += (s, a) =>
+        {
+            if (quitting || a.CloseReason != CloseReason.UserClosing) return;
+            a.Cancel = true; Hide();
+            if (!toldAboutTray) { toldAboutTray = true; tray.ShowBalloonTip(4000, "Git Deck", "Still running here. Win+Shift+G or a click brings it back; right-click for quick actions or Quit.", ToolTipIcon.Info); }
+        };
+        FormClosed += (s, a) => { tray.Visible = false; tray.Dispose(); Desktop.ClearBadge(ref badge); };
+    }
+
+    private readonly NotifyIcon tray;
+    private bool quitting, toldAboutTray, pageReady;
+    private FormWindowState restoreTo = FormWindowState.Maximized;
+    private IntPtr badge = IntPtr.Zero;
+    private int badgeCount = -1;
+    private string jumpList = "";
+    private readonly System.Collections.Generic.List<string> waiting = new System.Collections.Generic.List<string>();
+
+    private void ShowApp()
+    {
+        if (!Visible) Show();
+        if (WindowState == FormWindowState.Minimized) WindowState = restoreTo;
+        Activate();
+    }
+
+    // Messages for the page wait until it has loaded.
+    private void Post(string message)
+    {
+        if (!pageReady || view.CoreWebView2 == null) { waiting.Add(message); return; }
+        try { view.CoreWebView2.PostWebMessageAsString(message); } catch { }
+    }
+
+    // A command from another GitDeck.exe (Jump List, Explorer menu, a second start): show and pass it on.
+    private void OnCommand(string command)
+    {
+        if (string.IsNullOrEmpty(command)) return;
+        if (command == "do:mini") { Post(command); return; }
+        ShowApp();
+        if (command.StartsWith("open:", StringComparison.Ordinal) || command.StartsWith("do:", StringComparison.Ordinal)) Post(command);
     }
 
     private bool Local(string address)
@@ -410,6 +518,18 @@ internal sealed class AppWindow : Form
         else if (message == "window:maximize") WindowState = WindowState == FormWindowState.Maximized ? FormWindowState.Normal : FormWindowState.Maximized;
         else if (message == "window:close") Close();
         else if (message == "window:state") SendState();
+        else if (message != null && message.StartsWith("badge:", StringComparison.Ordinal))
+        {
+            // The number of things waiting, on the taskbar button (web/desktop-bridge.js).
+            int count;
+            if (int.TryParse(message.Substring(6), out count) && count != badgeCount) { badgeCount = count; Desktop.SetBadge(Handle, count, ref badge); }
+        }
+        else if (message != null && message.StartsWith("jump:", StringComparison.Ordinal))
+        {
+            // Recent repositories for the Jump List: one "name<TAB>path" per line.
+            string list = message.Substring(5);
+            if (list != jumpList) { jumpList = list; Desktop.SetJumpList(Application.ExecutablePath, list); }
+        }
     }
 
     private void SendState()
@@ -422,10 +542,34 @@ internal sealed class AppWindow : Form
         base.OnHandleCreated(e);
         // Recalculate the frame now that WM_NCCALCSIZE removes the title bar.
         SetWindowPos(Handle, IntPtr.Zero, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0004 | 0x0020); // NOSIZE NOMOVE NOZORDER FRAMECHANGED
+        // Win+Shift+G from anywhere shows Git Deck with the command box (Ctrl+Alt+G if Windows has it taken).
+        if (!RegisterHotKey(Handle, 1, 0x0008 | 0x0004 | 0x4000, 0x47)) RegisterHotKey(Handle, 1, 0x0002 | 0x0001 | 0x4000, 0x47); // WIN SHIFT / CTRL ALT, NOREPEAT, G
     }
+
+    protected override void OnHandleDestroyed(EventArgs e)
+    {
+        UnregisterHotKey(Handle, 1);
+        base.OnHandleDestroyed(e);
+    }
+
+    [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr window, int id, uint modifiers, uint key);
+    [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr window, int id);
 
     protected override void WndProc(ref Message m)
     {
+        if (m.Msg == 0x0312 && m.WParam == (IntPtr)1) // WM_HOTKEY: show with the command box, or put it away
+        {
+            if (Visible && WindowState != FormWindowState.Minimized && ActiveForm == this) WindowState = FormWindowState.Minimized;
+            else { ShowApp(); Post("palette:open"); }
+            return;
+        }
+        if (m.Msg == 0x004A) // WM_COPYDATA from another GitDeck.exe
+        {
+            var data = (GitDeckLauncher.COPYDATASTRUCT)Marshal.PtrToStructure(m.LParam, typeof(GitDeckLauncher.COPYDATASTRUCT));
+            if (data.Data == (IntPtr)0x47444B && data.Size > 0 && data.Size < 8192) OnCommand(Marshal.PtrToStringUni(data.Text).TrimEnd('\0'));
+            m.Result = (IntPtr)1;
+            return;
+        }
         if (m.Msg == WM_NCCALCSIZE && m.WParam != IntPtr.Zero)
         {
             // Let Windows size the borders, then give the title bar back to the client area. Maximized
@@ -439,5 +583,131 @@ internal sealed class AppWindow : Form
             return;
         }
         base.WndProc(ref m);
+    }
+}
+
+// Taskbar number (overlay icon) and Jump List (recent repositories + tasks) through the Windows shell
+// COM interfaces. Every call is best effort: a failure leaves the taskbar as it was.
+internal static class Desktop
+{
+    [ComImport, Guid("ea1afb91-9e28-4b86-90e9-9e9f8a5eedaf"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface ITaskbarList3
+    {
+        void HrInit(); void AddTab(IntPtr hwnd); void DeleteTab(IntPtr hwnd); void ActivateTab(IntPtr hwnd); void SetActiveAlt(IntPtr hwnd);
+        void MarkFullscreenWindow(IntPtr hwnd, [MarshalAs(UnmanagedType.Bool)] bool fullscreen);
+        void SetProgressValue(IntPtr hwnd, ulong completed, ulong total); void SetProgressState(IntPtr hwnd, int flags);
+        void RegisterTab(IntPtr tab, IntPtr hwnd); void UnregisterTab(IntPtr tab); void SetTabOrder(IntPtr tab, IntPtr before); void SetTabActive(IntPtr tab, IntPtr hwnd, uint reserved);
+        void ThumbBarAddButtons(IntPtr hwnd, uint count, IntPtr buttons); void ThumbBarUpdateButtons(IntPtr hwnd, uint count, IntPtr buttons); void ThumbBarSetImageList(IntPtr hwnd, IntPtr images);
+        void SetOverlayIcon(IntPtr hwnd, IntPtr icon, [MarshalAs(UnmanagedType.LPWStr)] string description);
+        void SetThumbnailTooltip(IntPtr hwnd, [MarshalAs(UnmanagedType.LPWStr)] string tip); void SetThumbnailClip(IntPtr hwnd, IntPtr clip);
+    }
+    [ComImport, Guid("56FDF344-FD6D-11d0-958A-006097C9A090")] private class TaskbarList { }
+
+    [ComImport, Guid("92CA9DCD-5622-4BBA-A805-5E9F541BD8C9"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IObjectArray { void GetCount(out uint count); void GetAt(uint index, ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out object item); }
+    [ComImport, Guid("5632B1A4-E38A-400A-928A-D4CD63230295"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IObjectCollection
+    {
+        void GetCount(out uint count); void GetAt(uint index, ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out object item);
+        void AddObject([MarshalAs(UnmanagedType.Interface)] object item); void AddFromArray(IObjectArray items); void RemoveObjectAt(uint index); void Clear();
+    }
+    [ComImport, Guid("2D3468C1-36A7-43B6-AC24-D3F02FD9607A")] private class EnumerableObjectCollection { }
+    [ComImport, Guid("6332DEBF-87B5-4670-90C0-5E57B408A49E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface ICustomDestinationList
+    {
+        void SetAppID([MarshalAs(UnmanagedType.LPWStr)] string id);
+        void BeginList(out uint minSlots, ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out object removed);
+        void AppendCategory([MarshalAs(UnmanagedType.LPWStr)] string category, IObjectArray items);
+        void AppendKnownCategory(int category); void AddUserTasks(IObjectArray tasks); void CommitList();
+        void GetRemovedDestinations(ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out object removed);
+        void DeleteList([MarshalAs(UnmanagedType.LPWStr)] string id); void AbortList();
+    }
+    [ComImport, Guid("77F10CF0-3DB5-4966-B520-B7C54FD35ED6")] private class DestinationList { }
+    [ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IShellLinkW
+    {
+        void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder file, int max, IntPtr data, uint flags); void GetIDList(out IntPtr list); void SetIDList(IntPtr list);
+        void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder text, int max); void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string text);
+        void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder dir, int max); void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string dir);
+        void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder args, int max); void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string args);
+        void GetHotkey(out short key); void SetHotkey(short key); void GetShowCmd(out int show); void SetShowCmd(int show);
+        void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder path, int max, out int index); void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string path, int index);
+        void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string path, uint reserved); void Resolve(IntPtr hwnd, uint flags); void SetPath([MarshalAs(UnmanagedType.LPWStr)] string path);
+    }
+    [ComImport, Guid("00021401-0000-0000-C000-000000000046")] private class ShellLink { }
+    [ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IPropertyStore { void GetCount(out uint count); void GetAt(uint index, out PropertyKey key); void GetValue(ref PropertyKey key, out PropVariant value); void SetValue(ref PropertyKey key, ref PropVariant value); void Commit(); }
+    [StructLayout(LayoutKind.Sequential)] private struct PropertyKey { public Guid Format; public uint Id; }
+    [StructLayout(LayoutKind.Sequential)] private struct PropVariant { public ushort Type; public ushort R1, R2, R3; public IntPtr Value; public IntPtr Value2; }
+    [DllImport("user32.dll")] private static extern bool DestroyIcon(IntPtr icon);
+
+    private static ITaskbarList3 taskbar;
+
+    public static void ClearBadge(ref IntPtr icon) { if (icon != IntPtr.Zero) { DestroyIcon(icon); icon = IntPtr.Zero; } }
+
+    // A red dot with the count (9+ above nine) over the taskbar button; none for zero.
+    public static void SetBadge(IntPtr window, int count, ref IntPtr icon)
+    {
+        try
+        {
+            if (taskbar == null) { taskbar = (ITaskbarList3)new TaskbarList(); taskbar.HrInit(); }
+            IntPtr next = IntPtr.Zero;
+            if (count > 0)
+            {
+                using (var bitmap = new Bitmap(32, 32))
+                using (var g = Graphics.FromImage(bitmap))
+                using (var red = new SolidBrush(Color.FromArgb(0xE5, 0x53, 0x4B)))
+                using (var font = new Font("Segoe UI", count > 9 ? 13f : 17f, FontStyle.Bold, GraphicsUnit.Pixel))
+                using (var center = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias; g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+                    g.FillEllipse(red, 0, 0, 31, 31);
+                    g.DrawString(count > 9 ? "9+" : count.ToString(), font, Brushes.White, new RectangleF(0, 1, 32, 32), center);
+                    next = bitmap.GetHicon();
+                }
+            }
+            taskbar.SetOverlayIcon(window, next, count > 0 ? count + " waiting" : "");
+            ClearBadge(ref icon); icon = next;
+        }
+        catch { }
+    }
+
+    private static IShellLinkW Link(string exe, string arguments, string title)
+    {
+        var link = (IShellLinkW)new ShellLink();
+        link.SetPath(exe); link.SetArguments(arguments); link.SetIconLocation(exe, 0); link.SetDescription(title);
+        var store = (IPropertyStore)link;
+        var key = new PropertyKey { Format = new Guid("F29F85E0-4FF9-1068-AB91-08002B27B3D9"), Id = 2 }; // PKEY_Title
+        var value = new PropVariant { Type = 31, Value = Marshal.StringToCoTaskMemUni(title) }; // VT_LPWSTR
+        try { store.SetValue(ref key, ref value); store.Commit(); } finally { Marshal.FreeCoTaskMem(value.Value); }
+        return link;
+    }
+
+    // Recent repositories ("name<TAB>path" lines) and the fixed tasks.
+    public static void SetJumpList(string exe, string recent)
+    {
+        try
+        {
+            var list = (ICustomDestinationList)new DestinationList();
+            uint slots; object removed; var iid = typeof(IObjectArray).GUID;
+            list.BeginList(out slots, ref iid, out removed);
+            var repos = (IObjectCollection)new EnumerableObjectCollection();
+            int added = 0;
+            foreach (string line in (recent ?? "").Split('\n'))
+            {
+                string[] parts = line.Split('\t');
+                if (parts.Length != 2 || parts[1].Length == 0 || !Directory.Exists(parts[1]) || added >= 10) continue;
+                repos.AddObject(Link(exe, "\"" + parts[1] + "\"", parts[0])); added++;
+            }
+            if (added > 0) list.AppendCategory("Recent repositories", (IObjectArray)repos);
+            var tasks = (IObjectCollection)new EnumerableObjectCollection();
+            tasks.AddObject(Link(exe, "--do today", "Today"));
+            tasks.AddObject(Link(exe, "--do palette", "Command…"));
+            tasks.AddObject(Link(exe, "--do mini", "Mini mode"));
+            tasks.AddObject(Link(exe, "--do day-close", "Close the day"));
+            list.AddUserTasks((IObjectArray)tasks);
+            list.CommitList();
+        }
+        catch { }
     }
 }

@@ -4,6 +4,9 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- **Desktop powers** (frameless window): **Win+Shift+G** from any app shows Git Deck with the command box (Ctrl+Alt+G if Windows has the key); **system tray** icon with Open, Command, Today, Mini mode, Close the day and Quit — closing the window keeps Git Deck in the tray; the **taskbar button** shows how many things need you now; the **Jump List** lists recent repositories and the Today / Command / Mini mode / Close the day tasks. Starting GitDeck.exe again (Jump List, Explorer menu) hands the request to the open window instead of opening a second one.
+- **Sticker sets** (Appearance › Stickers): Classic, Neon, Pastel, Mono, Songkran, New Year, or your own colours per view.
+- **Cube room** (Rubik shape): the app always sits on a cube — the cube's top face (green, turns up to the Dashboard) and right face (the next view's colour, turns to it) show beside the face you work on, which stays flat and sharp.
 - **Twist with the keyboard** (Rubik shape): Ctrl+Alt+Left/Right turns to the previous or next view (or Dashboard view), Ctrl+Alt+Up opens the Dashboard and Ctrl+Alt+Down closes it; a two-finger sideways swipe on the touchpad twists where nothing scrolls sideways.
 - **Stickers you can press**: buttons sink when pressed, cards tilt a little toward the pointer (not with reduced motion); **Cube sound** (Appearance, off by default) clicks on every turn, made with Web Audio.
 - **Today's cube**: a 3x3 face in the status bar scrambled with the day's open work; each item done turns a sticker green, a solved face celebrates. Repositories Git Deck sees change are re-checked so it stays current.

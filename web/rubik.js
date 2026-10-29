@@ -16,7 +16,10 @@
   // Sticker colour per view (the six cube colours, plus grey for the rest).
   const faceColors={changes:'#e5534b',history:'#2f81f7',branches:'#d29922',tags:'#eef1f4',stashes:'#f2cc60',compare:'#3fb950',dashboard:'#0b6e47',repos:'#0b6e47',all:'#0b6e47'};
   const faceColor=(view)=>faceColors[view]||'#6e7781';
-  const helpers={direction,faceColors,faceColor};
+  // The sticker variable each view uses, so sticker sets (web/rubik.css) recolour it.
+  const faceSlots={changes:'red',history:'blue',branches:'orange',tags:'white',stashes:'yellow',compare:'green',dashboard:'green',repos:'green',all:'green'};
+  const faceValue=(view)=>faceSlots[view]?`var(--st-${faceSlots[view]}, ${faceColor(view)})`:faceColor(view);
+  const helpers={direction,faceColors,faceColor,faceSlots,faceValue};
   if(typeof module!=='undefined'){module.exports=helpers;return;}
   if(typeof document==='undefined')return;
 
@@ -31,7 +34,7 @@
     if(dashboardOpen())return document.querySelector('.operations-view:not([hidden])')||document.querySelector('.operations-modal');
     return document.getElementById('workspace-content');
   }
-  const setFace=(view)=>{root.dataset.face=view||'';root.style.setProperty('--gd-face-color',faceColor(view));};
+  const setFace=(view)=>{root.dataset.face=view||'';root.style.setProperty('--gd-face-color',faceValue(view));};
 
   let turning=false,updating=false,pending=Promise.resolve();
   // Runs `update` while the cube turns `way` (next, prev, up, down). Returns what update returns.

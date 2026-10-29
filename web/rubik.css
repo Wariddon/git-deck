@@ -16,7 +16,14 @@ html.gd-rubik.gd-soft.ui-modern body:not(.gd-never) {
   --ink: var(--text-primary); --muted: var(--text-secondary); --line: var(--border-default); --paper: var(--canvas);
   background: var(--canvas); color: var(--text-primary);
 }
-html.gd-rubik { --gd-face-color: #0b6e47; background: #0a0c10; }
+html.gd-rubik { --gd-face-color: var(--st-green); background: #0a0c10;
+  --st-red: #e5534b; --st-blue: #2f81f7; --st-orange: #d29922; --st-white: #eef1f4; --st-yellow: #f2cc60; --st-green: #0b6e47; }
+/* Sticker sets (Appearance › Stickers); "Your own" sets the same variables inline (web/appearance.js). */
+html.gd-rubik.gd-st-neon { --st-red: #ff3b6b; --st-blue: #18c8ff; --st-orange: #ff9f1c; --st-white: #f5f5f5; --st-yellow: #fff13b; --st-green: #12b85e; }
+html.gd-rubik.gd-st-pastel { --st-red: #e88f8f; --st-blue: #8fb5ea; --st-orange: #efb989; --st-white: #f4efe6; --st-yellow: #f3df8b; --st-green: #5fae88; }
+html.gd-rubik.gd-st-mono { --st-red: #6b7685; --st-blue: #8792a2; --st-orange: #a5aebb; --st-white: #d0d6de; --st-yellow: #b9c1cc; --st-green: #0b6e47; }
+html.gd-rubik.gd-st-songkran { --st-red: #ff6f91; --st-blue: #00a6d6; --st-orange: #ffb703; --st-white: #e0fbfc; --st-yellow: #ffe066; --st-green: #06a77d; }
+html.gd-rubik.gd-st-newyear { --st-red: #d62828; --st-blue: #1d5c85; --st-orange: #f77f00; --st-white: #fefae0; --st-yellow: #fcbf49; --st-green: #2a9d8f; }
 /* Islands: stickers with a 6 px groove of plastic around them; the content's top edge shows the view's colour. */
 html.gd-rubik.gd-soft.ui-modern body :is(.workbench-tree, #workspace-content) { border-width: 6px !important; box-shadow: var(--gd-sticker) !important; border-radius: calc(var(--gd-r-lg) + 6px) !important; }
 html.gd-rubik.gd-soft.ui-modern body #workspace-content { box-shadow: var(--gd-sticker), inset 0 3px 0 var(--gd-face-color) !important; }
@@ -32,19 +39,19 @@ html.gd-rubik.gd-soft.ui-modern body :is(.gd-card, .forecast-card, .lesson-card,
 html.gd-rubik.gd-soft.ui-modern body :is(button, select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea):not(.modern-rail-item):not(.gd-window-controls button):not(.operations-tabs button):not(.workbench-tree *):not(.repo-tabs *):not(.change-file *):not(.commit-file-row *):not(.modern-tb):not(.review-name):not(.fleet-cube-face *):not(.day-cube-mini) { border-color: transparent !important; background-color: var(--surface-muted) !important; box-shadow: var(--gd-sticker) !important; }
 /* Rows in lists stay flat: only the selected row becomes a sticker. */
 html.gd-rubik.gd-soft.ui-modern body :is(.workbench-tree, .change-group, .commit-files) :is(.active, .selected, .current) { background: var(--surface-muted) !important; box-shadow: var(--gd-sticker), inset 3px 0 0 var(--gd-face-color) !important; border-radius: 10px; }
-html.gd-rubik.gd-soft.ui-modern body :is(button.primary, .primary, .modern-act-primary) { background-color: #0b6e47 !important; color: #ffffff !important; box-shadow: var(--gd-sticker-lit) !important; }
+html.gd-rubik.gd-soft.ui-modern body :is(button.primary, .primary, .modern-act-primary) { background-color: var(--st-green) !important; color: #ffffff !important; box-shadow: var(--gd-sticker-lit) !important; }
 html.gd-rubik.gd-soft.ui-modern body :is(button, select):hover:not(:disabled):not(.modern-rail-item):not(.operations-tabs button) { filter: brightness(1.12); }
 /* Side rail: each view's icon in its sticker colour; the selected one is a full sticker. */
-html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="changes"] svg { color: #e5534b; }
-html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="history"] svg { color: #58a6ff; }
-html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="branches"] svg { color: #d29922; }
-html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="tags"] svg { color: #eef1f4; }
-html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="stashes"] svg { color: #f2cc60; }
-html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="compare"] svg { color: #3fb950; }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="changes"] svg { color: var(--st-red); }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="history"] svg { color: var(--st-blue); }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="branches"] svg { color: var(--st-orange); }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="tags"] svg { color: var(--st-white); }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="stashes"] svg { color: var(--st-yellow); }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item[data-tab="compare"] svg { color: var(--st-green); }
 html.gd-rubik.gd-soft.ui-modern body .modern-rail-item.active :is(svg, span) { color: #0a0c10 !important; }
 html.gd-rubik.gd-soft.ui-modern body .modern-rail-item.active[data-tab="history"] :is(svg, span), html.gd-rubik.gd-soft.ui-modern body .modern-rail-item.active[data-tab="changes"] :is(svg, span) { color: #ffffff !important; }
 html.gd-rubik.gd-soft.ui-modern body .modern-rail .gd-liquid { background: var(--gd-face-color); box-shadow: var(--gd-sticker-lit); }
-html.gd-rubik.gd-soft.ui-modern body .operations-tabs .gd-liquid { background: #0b6e47; box-shadow: var(--gd-sticker-lit); }
+html.gd-rubik.gd-soft.ui-modern body .operations-tabs .gd-liquid { background: var(--st-green); box-shadow: var(--gd-sticker-lit); }
 html.gd-rubik.gd-soft.ui-modern body .operations-tabs button.active { color: #ffffff !important; }
 /* Repository tabs: the open one is a sticker with the view's colour on top. */
 html.gd-rubik.gd-soft.ui-modern body .repo-tab.active { background: var(--surface) !important; box-shadow: var(--gd-sticker), inset 0 3px 0 var(--gd-face-color) !important; border-color: transparent !important; }
@@ -97,3 +104,15 @@ html.gd-rubik.gd-soft.ui-modern body .gd-tilting { transform: perspective(900px)
 .fleet-cube-legend { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .fleet-cube-legend button { display: inline-flex; gap: 6px; align-items: center; }
 @media (prefers-reduced-motion: reduce) { .fleet-cube.spin { animation: none; transform: rotateX(-18deg) rotateY(-30deg); } }
+
+/* ---- cube room (web/cube-room.js): the top and right faces of the cube beside the working face ---- */
+html.gd-rubik.gd-cube-room.gd-soft.ui-modern body #workspace-content { border-top-width: 20px !important; border-right-width: 20px !important; }
+html.gd-rubik.gd-cube-room.gd-soft.ui-modern body .operations-view { margin-top: 14px; margin-right: 14px; }
+.gd-cube-edge { position: fixed; z-index: 40; min-width: 0 !important; min-height: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; cursor: pointer; transition: filter .15s ease, opacity .2s ease; }
+.gd-cube-edge[hidden] { display: none !important; }
+.gd-cube-edge-top { --edge: var(--st-green, #0b6e47); background: linear-gradient(90deg, var(--edge) 0 32.6%, #0a0c10 32.6% 33.7%, var(--edge) 33.7% 66.3%, #0a0c10 66.3% 67.4%, var(--edge) 67.4%) !important; filter: brightness(.92); }
+.gd-cube-edge-right { background: linear-gradient(180deg, var(--edge) 0 32.6%, #0a0c10 32.6% 33.7%, var(--edge) 33.7% 66.3%, #0a0c10 66.3% 67.4%, var(--edge) 67.4%) !important; filter: brightness(.68); }
+.gd-cube-edge:hover, .gd-cube-edge:focus-visible { filter: brightness(1.1); outline: none; }
+.sticker-editor { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sticker-editor-row { display: flex; align-items: center; gap: 10px; }
+.sticker-editor-row input[type="color"] { width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: none; cursor: pointer; }
