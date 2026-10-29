@@ -17,7 +17,7 @@ html.gd-rubik.gd-soft.ui-modern body:not(.gd-never) {
   background: var(--canvas); color: var(--text-primary);
 }
 html.gd-rubik { --gd-face-color: var(--st-green); background: #0a0c10;
-  --st-red: #e5534b; --st-blue: #2f81f7; --st-orange: #d29922; --st-white: #eef1f4; --st-yellow: #f2cc60; --st-green: #0b6e47; }
+  --st-red: #c94f4f; --st-blue: #3b74c9; --st-orange: #d28a3c; --st-white: #d9dee4; --st-yellow: #d6b84a; --st-green: #2f8f5b; }
 /* Sticker sets (Appearance › Stickers); "Your own" sets the same variables inline (web/appearance.js). */
 html.gd-rubik.gd-st-neon { --st-red: #ff3b6b; --st-blue: #18c8ff; --st-orange: #ff9f1c; --st-white: #f5f5f5; --st-yellow: #fff13b; --st-green: #12b85e; }
 html.gd-rubik.gd-st-pastel { --st-red: #e88f8f; --st-blue: #8fb5ea; --st-orange: #efb989; --st-white: #f4efe6; --st-yellow: #f3df8b; --st-green: #5fae88; }
@@ -36,7 +36,7 @@ html.gd-rubik.gd-soft.ui-modern body :is(.gd-card, .gd-today-col, .forecast-card
 }
 html.gd-rubik.gd-soft.ui-modern body :is(.gd-card, .forecast-card, .lesson-card, .multi-repo-explain) { box-shadow: var(--gd-sticker), inset 4px 0 0 var(--tone, var(--gd-face-color)) !important; }
 /* Buttons: neutral stickers; the main action is a green sticker. */
-html.gd-rubik.gd-soft.ui-modern body :is(button, select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea):not(.modern-rail-item):not(.gd-window-controls button):not(.operations-tabs button):not(.workbench-tree *):not(.repo-tabs *):not(.change-file *):not(.commit-file-row *):not(.modern-tb):not(.review-name):not(.fleet-cube-face *):not(.day-cube-mini) { border-color: transparent !important; background-color: var(--surface-muted) !important; box-shadow: var(--gd-sticker) !important; }
+html.gd-rubik.gd-soft.ui-modern body :is(button, select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea):not(.modern-rail-item):not(.gd-window-controls button):not(.operations-tabs button):not(.workbench-tree *):not(.repo-tabs *):not(.change-file *):not(.commit-file-row *):not(.modern-tb):not(.review-name):not(.fleet-cube-face *):not(.day-cube-mini):not(#dashboard-button):not(.modern-actions *):not(.workspace-statusbar *):not(.gd-cube-edge) { border-color: transparent !important; background-color: var(--surface-muted) !important; box-shadow: var(--gd-sticker) !important; }
 /* Rows in lists stay flat: only the selected row becomes a sticker. */
 html.gd-rubik.gd-soft.ui-modern body :is(.workbench-tree, .change-group, .commit-files) :is(.active, .selected, .current) { background: var(--surface-muted) !important; box-shadow: var(--gd-sticker), inset 3px 0 0 var(--gd-face-color) !important; border-radius: 10px; }
 html.gd-rubik.gd-soft.ui-modern body :is(button.primary, .primary, .modern-act-primary) { background-color: var(--st-green) !important; color: #ffffff !important; box-shadow: var(--gd-sticker-lit) !important; }
@@ -106,13 +106,56 @@ html.gd-rubik.gd-soft.ui-modern body .gd-tilting { transform: perspective(900px)
 @media (prefers-reduced-motion: reduce) { .fleet-cube.spin { animation: none; transform: rotateX(-18deg) rotateY(-30deg); } }
 
 /* ---- cube room (web/cube-room.js): the top and right faces of the cube beside the working face ---- */
-html.gd-rubik.gd-cube-room.gd-soft.ui-modern body #workspace-content { border-top-width: 20px !important; border-right-width: 20px !important; }
-html.gd-rubik.gd-cube-room.gd-soft.ui-modern body .operations-view { margin-top: 14px; margin-right: 14px; }
+html.gd-rubik.gd-cube-room.gd-soft.ui-modern body #workspace-content { border-top-width: 14px !important; border-right-width: 14px !important; }
+html.gd-rubik.gd-cube-room.gd-soft.ui-modern body .operations-view { margin-top: 10px; margin-right: 10px; }
 .gd-cube-edge { position: fixed; z-index: 40; min-width: 0 !important; min-height: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; cursor: pointer; transition: filter .15s ease, opacity .2s ease; }
 .gd-cube-edge[hidden] { display: none !important; }
-.gd-cube-edge-top { --edge: var(--st-green, #0b6e47); background: linear-gradient(90deg, var(--edge) 0 32.6%, #0a0c10 32.6% 33.7%, var(--edge) 33.7% 66.3%, #0a0c10 66.3% 67.4%, var(--edge) 67.4%) !important; filter: brightness(.92); }
-.gd-cube-edge-right { background: linear-gradient(180deg, var(--edge) 0 32.6%, #0a0c10 32.6% 33.7%, var(--edge) 33.7% 66.3%, #0a0c10 66.3% 67.4%, var(--edge) 67.4%) !important; filter: brightness(.68); }
-.gd-cube-edge:hover, .gd-cube-edge:focus-visible { filter: brightness(1.1); outline: none; }
+.gd-cube-edge-top { --edge: var(--st-green, #2f8f5b); background: linear-gradient(0deg, rgb(0 0 0 / 30%), transparent), linear-gradient(90deg, var(--edge) 0 33%, #0a0c10 33% calc(33% + 3px), var(--edge) calc(33% + 3px) 66.6%, #0a0c10 66.6% calc(66.6% + 3px), var(--edge) calc(66.6% + 3px)) !important; filter: saturate(.7) brightness(.72); }
+.gd-cube-edge-right { background: linear-gradient(90deg, rgb(0 0 0 / 15%), rgb(0 0 0 / 40%)), linear-gradient(180deg, var(--edge) 0 33%, #0a0c10 33% calc(33% + 3px), var(--edge) calc(33% + 3px) 66.6%, #0a0c10 66.6% calc(66.6% + 3px), var(--edge) calc(66.6% + 3px)) !important; filter: saturate(.7) brightness(.55); }
+.gd-cube-edge:hover, .gd-cube-edge:focus-visible { filter: saturate(.9) brightness(.95); outline: none; }
 .sticker-editor { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .sticker-editor-row { display: flex; align-items: center; gap: 10px; }
 .sticker-editor-row input[type="color"] { width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: none; cursor: pointer; }
+
+/* ---- the whole window as a cube face (speedcube look) ---------------------------------------------
+   Matte black body; every block is a dark sticker of one height and radius on a 6 px groove. Colour only
+   where it means something: a small chip names a block (Repository green, Branch white), the open view
+   colours its rail item, its tab and the content's top edge, and Dashboard turns green while open. */
+html.gd-rubik.gd-soft.ui-modern body .workspace-modal-head { gap: 6px; padding: 6px 6px 2px; align-items: stretch !important; }
+html.gd-rubik.gd-soft.ui-modern body .workspace-modal-head > * { align-self: stretch; display: flex; align-items: stretch; }
+html.gd-rubik.gd-soft.ui-modern body .modern-toolbar { gap: 6px; }
+html.gd-rubik.gd-soft.ui-modern body :is(.modern-tb-repo, .modern-tb-branch, .modern-actions, .sync-more > summary, #dashboard-button, .workbench-secondary > summary) {
+  border: 0 !important; border-radius: 12px !important; background: var(--surface-subtle) !important; box-shadow: var(--gd-sticker) !important;
+  height: 48px !important; min-height: 48px; box-sizing: border-box; padding-inline: 14px !important; display: flex !important; align-items: center; gap: 8px; color: var(--text-primary) !important;
+}
+html.gd-rubik.gd-soft.ui-modern body :is(.modern-tb-repo, .modern-tb-branch)::before { content: ""; flex: none; width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 -2px 0 rgb(0 0 0 / 25%); }
+html.gd-rubik.gd-soft.ui-modern body .modern-tb-repo::before { background: var(--st-green); }
+html.gd-rubik.gd-soft.ui-modern body .modern-tb-branch::before { background: var(--st-white); }
+html.gd-rubik.gd-soft.ui-modern body :is(.modern-tb-repo, .modern-tb-branch, .sync-more > summary, #dashboard-button, .workbench-secondary > summary):hover { background: var(--surface-hover) !important; }
+html.gd-rubik.gd-soft.ui-modern body .modern-actions { padding-inline: 4px !important; gap: 0; }
+html.gd-rubik.gd-soft.ui-modern body .modern-actions button { background: transparent !important; border: 0 !important; box-shadow: none !important; border-radius: 9px !important; }
+html.gd-rubik.gd-soft.ui-modern body .modern-actions button:hover:not(:disabled) { background: var(--surface-hover) !important; }
+html.gd-rubik.gd-soft.ui-modern body .modern-actions button:disabled { opacity: .45; }
+html.gd-rubik.gd-soft.ui-modern body #dashboard-button { justify-content: center; }
+html.gd-rubik.gd-soft.ui-modern body.dashboard-page-open #dashboard-button { background: var(--st-green) !important; box-shadow: var(--gd-sticker-lit) !important; color: #ffffff !important; }
+/* Repository tabs: dark stickers; the open one a little lighter with the view's colour along its bottom. */
+html.gd-rubik.gd-soft.ui-modern body .repo-tabs { gap: 6px; padding: 4px 6px !important; }
+html.gd-rubik.gd-soft.ui-modern body .repo-tab { background: var(--surface-subtle) !important; border: 0 !important; border-radius: 9px !important; box-shadow: var(--gd-sticker) !important; }
+html.gd-rubik.gd-soft.ui-modern body .repo-tab.active { background: var(--surface-muted) !important; box-shadow: inset 0 -3px 0 var(--gd-face-color), inset 0 1px 0 rgb(255 255 255 / 7%) !important; }
+/* Rail: dark stickers with each view's colour on its icon; the open view is the filled sticker. */
+html.gd-rubik.gd-soft.ui-modern body .modern-rail { gap: 5px; padding-inline: 6px; }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item:not(.active) { background: var(--surface-subtle) !important; box-shadow: var(--gd-sticker) !important; }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item.active:not([data-tab="repos"]) :is(svg, span) { color: var(--gd-face-ink, #ffffff) !important; }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item.active[data-tab="repos"] { background: var(--surface-muted) !important; box-shadow: var(--gd-sticker), inset 3px 0 0 var(--st-green) !important; }
+html.gd-rubik.gd-soft.ui-modern body .modern-rail-item.active[data-tab="repos"] :is(svg, span) { color: var(--text-primary) !important; }
+/* Status bar: one row of dark stickers; colour only as small chips. */
+html.gd-rubik.gd-soft.ui-modern body .workspace-statusbar { gap: 5px; padding: 3px 6px !important; height: auto !important; min-height: 30px; }
+html.gd-rubik.gd-soft.ui-modern body .workspace-statusbar > :is(button, span) { border: 0 !important; border-radius: 8px !important; padding: 2px 10px !important; background: var(--surface-subtle) !important; box-shadow: var(--gd-sticker) !important; color: var(--text-secondary) !important; }
+html.gd-rubik.gd-soft.ui-modern body .workspace-statusbar > :is(button, span) :is(b, kbd, span) { color: inherit !important; }
+html.gd-rubik.gd-soft.ui-modern body .workspace-statusbar > button:has(#status-branch) { color: var(--text-primary) !important; }
+html.gd-rubik.gd-soft.ui-modern body .workspace-statusbar > button:has(#status-branch)::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 2px; background: var(--st-green); vertical-align: 0; }
+html.gd-rubik.gd-soft.ui-modern body .workspace-statusbar > :is(.day-cube-mini, .gd-ticket-time[hidden], .gd-lessons[hidden]) { padding: 2px !important; }
+/* Window buttons: dark stickers; close turns red only under the pointer. */
+html.gd-rubik .gd-window-controls { gap: 4px; padding-left: 6px; }
+html.gd-rubik .gd-window-controls button { border-radius: 8px !important; background: var(--surface-subtle) !important; box-shadow: var(--gd-sticker) !important; width: 40px; }
+html.gd-rubik .gd-window-controls .gd-win-close:hover { background: var(--st-red) !important; color: #ffffff !important; }

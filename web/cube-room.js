@@ -19,7 +19,7 @@
   if(typeof module!=='undefined'){module.exports=helpers;return;}
   if(typeof document==='undefined'||typeof el!=='function')return;
 
-  const root=document.documentElement;const depth=14;
+  const root=document.documentElement;const depth=10;
   const on=()=>window.GitDeckRubik?.active?.();
   const top=el('button','gd-cube-edge gd-cube-edge-top');const right=el('button','gd-cube-edge gd-cube-edge-right');
   for(const edge of [top,right]){edge.type='button';edge.hidden=true;document.body.append(edge);}

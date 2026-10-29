@@ -31,6 +31,13 @@ for (const way of ['next', 'prev', 'up', 'down']) {
 assert.match(css, /prefers-reduced-motion: reduce\) \{ html\.gd-rubik::view-transition-old\(gd-face\)/);
 for (const line of css.split('\n').filter((l) => /^html[.:[]/.test(l))) assert(/gd-rubik/.test(line), `scoped to Rubik: ${line.slice(0, 60)}`);
 
+// The whole window as a cube face: dark stickers of one height; colour only where it means something.
+assert.match(css, /\.workbench-secondary > summary\) \{\s*border: 0 !important; border-radius: 12px !important; background: var\(--surface-subtle\) !important;[^}]*height: 48px !important;/);
+assert.match(css, /\.modern-tb-repo::before \{ background: var\(--st-green\); \}/, 'Repository chip');
+assert.match(css, /body\.dashboard-page-open #dashboard-button \{ background: var\(--st-green\)/, 'Dashboard green only while open');
+assert.match(css, /\.repo-tab\.active \{ background: var\(--surface-muted\) !important; box-shadow: inset 0 -3px 0 var\(--gd-face-color\)/);
+assert.match(read('web/soft.js'), /\.modern-rail-item\.active:not\(\[data-tab="repos"\]\)/, 'the rail highlight follows the view, not the Repos drawer');
+assert.match(js, /--gd-face-ink/, 'readable ink on light stickers');
 const appearance = read('web/appearance.js');
 assert.match(appearance, /const shapes=\['rubik','soft','square'\];const defaultShape='rubik';/);
 assert.match(appearance, /root\.classList\.toggle\('gd-rubik',shape==='rubik'\)/);

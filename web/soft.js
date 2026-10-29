@@ -17,7 +17,8 @@
   const soft=()=>document.documentElement.classList.contains('gd-soft')&&document.documentElement.classList.contains('ui-modern');
   const still=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const targets=[
-    {container:'.modern-rail',active:'.modern-rail-item.active'},
+    // The Repos drawer button can be active beside a view; the highlight follows the view.
+    {container:'.modern-rail',active:'.modern-rail-item.active:not([data-tab="repos"])'},
     {container:'.operations-tabs',active:'button.active'},
   ];
   const state_=new WeakMap();

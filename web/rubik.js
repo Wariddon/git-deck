@@ -34,7 +34,7 @@
     if(dashboardOpen())return document.querySelector('.operations-view:not([hidden])')||document.querySelector('.operations-modal');
     return document.getElementById('workspace-content');
   }
-  const setFace=(view)=>{root.dataset.face=view||'';root.style.setProperty('--gd-face-color',faceValue(view));};
+  const setFace=(view)=>{root.dataset.face=view||'';root.style.setProperty('--gd-face-color',faceValue(view));root.style.setProperty('--gd-face-ink',['white','yellow','orange'].includes(faceSlots[view])?'#1f2328':'#ffffff');};
 
   let turning=false,updating=false,pending=Promise.resolve();
   // Runs `update` while the cube turns `way` (next, prev, up, down). Returns what update returns.
@@ -88,8 +88,11 @@
     openWorkspace=function(repo,...rest){
       if(waiting())return pending.then(()=>openWorkspace(repo,...rest));
       const same=state.workspaceRepo&&repo&&String(state.workspaceRepo.path).toLowerCase()===String(repo.path).toLowerCase();
-      if(same||!state.workspaceRepo)return base.call(this,repo,...rest);
-      return turn('next',()=>base.call(this,repo,...rest));
+      // openWorkspace(repo, tab) picks the view itself (also the restored one at start): follow it.
+      if(typeof rest[0]==='string')setFace(rest[0]);
+      const open=()=>{const result=base.call(this,repo,...rest);Promise.resolve(result).then(()=>{if(!dashboardOpen())setFace(state.workspaceTab);},()=>{});return result;};
+      if(same||!state.workspaceRepo)return open();
+      return turn('next',open);
     };
   }
   if(typeof switchOperationsView==='function'){
