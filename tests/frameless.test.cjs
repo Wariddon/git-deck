@@ -36,3 +36,16 @@ assert.match(css, /html\.gd-hosted :is\(\.repo-tabs[^)]*\) \{ -webkit-app-region
 assert.match(css, /:is\(button, a, input[^)]*\) \{ -webkit-app-region: no-drag; app-region: no-drag; \}/);
 assert(read('web/index.html').includes('<script src="/window-frame.js" defer></script>'));
 console.log('PASS: frameless window (WebView2 host, fallback, build and package, window buttons and drag areas)');
+
+// Scrolling in the top bar: the wheel scrolls the tab row and action bar sideways; scroll boxes are no-drag.
+{
+  const frame = require('../web/window-frame.js');
+  const box = { scrollWidth: 900, clientWidth: 600, scrollLeft: 250 };
+  assert.equal(frame.sideways(0, 100, box), 50, 'stops at the end');
+  assert.equal(frame.sideways(0, -100, { ...box, scrollLeft: 30 }), -30, 'stops at the start');
+  assert.equal(frame.sideways(80, 10, box), 0, 'a sideways swipe scrolls on its own');
+  assert.equal(frame.sideways(0, 100, { scrollWidth: 600, clientWidth: 600, scrollLeft: 0 }), 0, 'nothing to scroll');
+  const softCss = fs.readFileSync(path.join(__dirname, '..', 'web', 'soft.css'), 'utf8');
+  assert.match(softCss, /html\.gd-hosted \.gd-scrolls, html\.gd-hosted \.gd-scrolls \* \{ -webkit-app-region: no-drag; app-region: no-drag; \}/);
+  console.log('PASS: top bar scrolling (wheel sideways, scroll boxes are no-drag)');
+}

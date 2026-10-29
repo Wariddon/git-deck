@@ -153,6 +153,7 @@ html.gd-soft.ui-modern body :is(.history-options-body, .clean-diff-more-panel, .
    top right over the tab row, which keeps room for them. Applies with either shape. */
 html.gd-hosted :is(.repo-tabs, .workspace-modal-head, .modern-toolbar, .shell > header, .shell > section > header:first-child) { -webkit-app-region: drag; app-region: drag; }
 html.gd-hosted :is(.repo-tabs, .workspace-modal-head, .modern-toolbar, .shell > header, .shell > section > header:first-child) :is(button, a, input, select, textarea, summary, details, label, [role="button"], [tabindex], .repo-tab) { -webkit-app-region: no-drag; app-region: no-drag; }
+html.gd-hosted .gd-scrolls, html.gd-hosted .gd-scrolls * { -webkit-app-region: no-drag; app-region: no-drag; }
 .gd-window-controls { display: flex; flex: none; align-self: stretch; align-items: center; margin-left: auto; -webkit-app-region: no-drag; app-region: no-drag; }
 .gd-window-controls.gd-window-floating { position: fixed; top: 0; right: 0; z-index: 12000; height: 36px; }
 .gd-window-controls button { width: 44px; height: 100%; min-height: 30px; padding: 0 !important; display: grid; place-items: center; border: 0 !important; border-radius: 0 !important; background: transparent !important; color: var(--text-secondary, #5b6470); cursor: default; }

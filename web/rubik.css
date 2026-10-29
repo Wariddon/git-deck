@@ -132,8 +132,13 @@ html.gd-rubik.gd-soft.ui-modern body :is(.modern-tb-repo, .modern-tb-branch)::be
 html.gd-rubik.gd-soft.ui-modern body .modern-tb-repo::before { background: var(--st-green); }
 html.gd-rubik.gd-soft.ui-modern body .modern-tb-branch::before { background: var(--st-white); }
 html.gd-rubik.gd-soft.ui-modern body :is(.modern-tb-repo, .modern-tb-branch, .sync-more > summary, #dashboard-button, .workbench-secondary > summary):hover { background: var(--surface-hover) !important; }
-html.gd-rubik.gd-soft.ui-modern body .modern-actions { padding-inline: 4px !important; gap: 0; }
-html.gd-rubik.gd-soft.ui-modern body .modern-actions button { background: transparent !important; border: 0 !important; box-shadow: none !important; border-radius: 9px !important; }
+html.gd-rubik.gd-soft.ui-modern body .modern-actions { padding-inline: 4px !important; gap: 2px !important; }
+html.gd-rubik.gd-soft.ui-modern body .modern-actions .modern-act-group { padding-inline: 2px !important; gap: 0 !important; }
+html.gd-rubik.gd-soft.ui-modern body :is(.modern-tb-repo, .modern-tb-branch) { max-width: 200px; min-width: 0; }
+html.gd-rubik.gd-soft.ui-modern body .modern-actions button { background: transparent !important; border: 0 !important; box-shadow: none !important; border-radius: 9px !important; padding-inline: 4px !important; min-width: 50px !important; }
+/* When the actions still do not fit they scroll: a scrollbar that is easy to see and grab. */
+html.gd-rubik.gd-soft.ui-modern body .modern-actions::-webkit-scrollbar { height: 6px; }
+html.gd-rubik.gd-soft.ui-modern body .modern-actions::-webkit-scrollbar-thumb { background: var(--text-tertiary); border-radius: 3px; }
 html.gd-rubik.gd-soft.ui-modern body .modern-actions button:hover:not(:disabled) { background: var(--surface-hover) !important; }
 html.gd-rubik.gd-soft.ui-modern body .modern-actions button:disabled { opacity: .45; }
 html.gd-rubik.gd-soft.ui-modern body #dashboard-button { justify-content: center; }
