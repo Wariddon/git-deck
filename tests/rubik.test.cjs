@@ -18,7 +18,7 @@ assert.equal(rubik.faceColor('something-else'), '#6e7781');
 const js = read('web/rubik.js');
 for (const fn of ['selectWorkspaceTab', 'openWorkspace', 'switchOperationsView', 'showOperationsCenter', 'hideOperationsCenter', 'applyAppearance'])
   assert.match(js, new RegExp(`${fn}=function`), `${fn} goes through the cube`);
-assert.match(js, /if\(!rubik\(\)\|\|still\(\)\|\|!canTurn\(\)\|\|turning\|\|!old\|\|!old\.offsetParent\)return update\(\);/, 'no turn without Rubik, with reduced motion, without View Transitions or while turning');
+assert.match(js, /if\(!rubik\(\)\|\|still\(\)\|\|!canTurn\(\)\|\|turning\|\|!old\|\|!old\.offsetParent\|\|document\.body\.classList\.contains\('gd-living'\)\)return update\(\);/, 'no turn without Rubik, with reduced motion, without View Transitions or while turning');
 assert.match(js, /transition\.skipTransition\(\)/, 'a window that is not painting switches at once');
 assert.match(js, /if\(waiting\(\)\)return pending\.then\(\(\)=>selectWorkspaceTab\(tab,\.\.\.rest\)\);/, 'switches during a turn wait for it');
 // The colour theme picks the plastic: light themes a white cube, dark themes a black one.

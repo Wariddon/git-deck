@@ -1,40 +1,35 @@
 'use strict';
-// Cube shell: the workspace as a 3x3 cube face (twists, centre, saved face, Git moves), zoom-out cube, wiring.
+// The living cube: the window is the cube's front face (grooves), the top and right faces recede in 3D,
+// views change by twisting slices, Git moves twist, zoom-out cube, wiring.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 
-const shell = require('../web/cube-shell.js');
-const start = shell.startCells();
-assert.equal(start[4], 'changes', 'Changes starts in the centre');
-assert(shell.validCells(start));
-assert.deepEqual(shell.twist(start, 'row', 1, 1).slice(3, 6), ['compare', 'tags', 'changes'], 'middle row right: Tags slides into the centre');
-assert.deepEqual(shell.twist(start, 'row', 1, -1).slice(3, 6), ['changes', 'compare', 'tags']);
-const down = shell.twist(start, 'col', 1, 1);
-assert.deepEqual([down[1], down[4], down[7]], ['recovery', 'branches', 'changes'], 'middle column down: Branches drops into the centre');
-assert.deepEqual(shell.twist(shell.twist(start, 'row', 0, 1), 'row', 0, -1), start, 'a twist and its reverse cancel');
-const centred = shell.toCentre(start, 'remotes');
-assert.equal(centred[4], 'remotes'); assert.equal(centred[8], 'changes', 'bringing a view swaps it with the centre');
-assert(shell.validCells(centred));
-assert(!shell.validCells(['changes']), 'a broken saved face is not used');
-assert(!shell.validCells([...start.slice(0, 8), 'changes']), 'a view twice is not a face');
-assert.equal(shell.moveFor('commit'), 'commit');
-assert.equal(shell.moveFor('pull-ref'), 'pull');
-assert.equal(shell.moveFor('push-selection'), 'push');
-assert.equal(shell.moveFor('stash-pop'), 'unstash');
-assert.equal(shell.moveFor('fetch'), '', 'not every action is a twist');
+const cube = require('../web/cube-shell.js');
+assert.equal(cube.nextView('changes'), 'history');
+assert.equal(cube.nextView('compare'), 'changes', 'round the cube');
+assert.equal(cube.nextView('settings'), 'history', 'a view that is not a face counts as the first');
+assert.deepEqual(cube.movesFor('commit'), [['row', 1, 'y', -1]], 'a commit turns the middle row');
+assert.deepEqual(cube.movesFor('pull-ref'), [['row', 0, 'x', 1]], 'a pull turns the top row down');
+assert.deepEqual(cube.movesFor('push'), [['row', 0, 'x', -1]]);
+assert.equal(cube.movesFor('merge').length, 2, 'a merge turns both side columns');
+assert.deepEqual(cube.movesFor('fetch'), [], 'not every action is a twist');
+assert.equal(cube.slice('row', 0), 'inset(0.000% 0 66.667% 0)');
+assert.equal(cube.slice('col', 2), 'inset(0 0.000% 0 66.667%)');
 
 const js = read('web/cube-shell.js');
 assert.doesNotMatch(js, /[฀-๿]/);
 assert.match(js, /const on=\(\)=>layout==='cube'&&root\.classList\.contains\('gd-rubik'\)/, 'only with the Rubik shape');
-assert.match(js, /if\(result&&on\(\)\)play\(moveFor\(action\)\)/, 'a move plays only after the action succeeded');
-assert.match(js, /for\(const kid of kids\)main\.append\(kid\)/, 'switching back to Classic restores the original layout');
+assert.match(js, /if\(result&&on\(\)\)twistSlices\(movesFor\(action\),'round'\)/, 'a move plays only after the action succeeded');
+assert.match(js, /copy\.querySelectorAll\('\[id\]'\)\.forEach\(node=>node\.removeAttribute\('id'\)\)/, 'slice copies carry no duplicate ids');
+assert.match(read('web/rubik.js'), /document\.body\.classList\.contains\('gd-living'\)\)return update\(\);/, 'the flat Rubik turn steps aside for the living cube');
 const css = read('web/cube-shell.css');
-assert.match(css, /grid-template-areas: "a b c" "d e f" "g h i";/);
-assert.match(css, /body\.gd-cube-shell \.gd-cube-edge \{ display: none !important; \}/);
-assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.gd-shell\[class\*="gd-move-"\]/);
+assert.doesNotMatch(css, /\.grid \{[^}]*perspective:/, 'no perspective on the page grid (it would trap fixed popups)');
+assert.match(css, /\.gd-lc-top \{[^}]*perspective\(1600px\)[^}]*rotateX\(90deg\)/, 'the top face carries its own perspective');
+assert.match(css, /\.gd-lc-right \{[^}]*perspective\(1600px\)[^}]*rotateY\(90deg\)/);
+assert.match(css, /body\.gd-living \.gd-cube-edge \{ display: none !important; \}/);
 const html = read('web/index.html');
 assert(html.includes('<script src="/cube-shell.js" defer></script>'));
 assert(html.includes('<link rel="stylesheet" href="/cube-shell.css">'));
-console.log('PASS: cube shell (twists, centre, saved face, git moves, zoom-out cube, wiring)');
+console.log('PASS: living cube (front face grooves, 3D side faces, slice twists, git moves, zoom-out, wiring)');

@@ -4,11 +4,11 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
-- **The whole program is the cube** (Rubik shape, theme menu › Layout › Cube face, on by default; Classic brings back the side rail and branch tree):
-  - The workspace is a 3x3 cube face: the centre sticker is the view you work in, full size; the eight around it are live mini views (files to commit, latest commits, branches, stashes, tags, compare, conflicts, recovery, remotes). Click one to bring it to the centre.
-  - Twist a row or column with the arrows on the edge (or Ctrl+Alt+Shift+arrows): the stickers slide like a layer of the cube and whatever lands in the centre opens there. The face is remembered.
-  - Zoom out (the cube button top left, or Esc when nothing else is open): the whole cube, each face a real 3x3 face with its view on the centre sticker; drag to turn, click a face to fly into it.
-  - Git moves are twists: after a commit the centre turns, a pull drops the top row in, a push lifts it out, a stash pops the centre to the corner, a merge closes the side columns.
+- **The whole program is a Rubik's cube** (Rubik shape, theme menu › Layout › Cube, on by default; Classic keeps a flat window):
+  - The window is the cube's front face, printed on nine stickers with plastic grooves; it stays flat, so text is sharp and everything works as before.
+  - The cube's top and right faces recede in real 3D beyond the window's edges, each a Rubik face of colour stickers with a live view on its centre sticker (today on top, the next view on the right).
+  - Changing view twists the cube: the three rows of stickers turn away one after the other and the new view is underneath. Git moves twist too: a commit turns the middle row, a pull turns the top row down, a push turns it up, a stash turns the middle column, a merge both side columns.
+  - Zoom out (⧉ in the status bar, or Esc when nothing else is open): the whole cube to turn by hand; click a face to fly into it.
 
 - Every button was checked for contrast in all five themes, overlaps and clipped text. The status sentence no longer gets cut short (it keeps its width; less important status items shorten with an ellipsis), and the pinned buttons of the repository tab row (Worksets, Repos, +) have a solid face so scrolled tabs slide under them instead of showing through.
 

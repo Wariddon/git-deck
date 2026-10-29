@@ -1,32 +1,46 @@
-/* Cube shell (web/cube-shell.js): the workspace is a 3x3 cube face. Only with the Rubik shape and the
-   Cube face layout (body.gd-cube-shell). */
+/* The living cube (web/cube-shell.js): the whole program is a Rubik's cube. Only with the Rubik shape and
+   the Cube layout (body.gd-living). The front face (the window) stays flat; the side faces carry their
+   own perspective in their transform, so nothing else gets a new containing block. */
 
-/* The views live on the face now: no side rail views and no branch tree; Repos, Report, Focus, Tools
-   and Settings stay on the rail. */
-body.gd-cube-shell .modern-rail-item:is([data-tab="changes"], [data-tab="history"], [data-tab="branches"], [data-tab="stashes"], [data-tab="tags"], [data-tab="compare"], [data-tab="recovery"]) { display: none !important; }
-body.gd-cube-shell .workbench-body { grid-template-columns: auto minmax(0, 1fr) !important; }
-body.gd-cube-shell :is(#workbench-tree, #tree-resizer) { display: none !important; }
+/* Room for the top and right faces beyond the window's top and right edges. */
+body.gd-living.workbench-mode .grid { padding: 64px 60px 6px 6px; box-sizing: border-box; }
+body.gd-living #workspace-backdrop { position: relative; overflow: visible !important; }
+body.gd-living .workspace-modal { position: relative; }
+html.gd-hosted body.gd-living.workbench-mode .grid { -webkit-app-region: drag; app-region: drag; }
+html.gd-hosted body.gd-living.workbench-mode .grid > * { -webkit-app-region: no-drag; app-region: no-drag; }
+/* The old cube-room strips are replaced by the real faces. */
+body.gd-living .gd-cube-edge { display: none !important; }
+html.gd-rubik.gd-cube-room.gd-soft.ui-modern body.gd-living #workspace-content { border-top-width: 6px !important; border-right-width: 6px !important; }
 
-/* ---- the face ------------------------------------------------------------------------------------------ */
-.workbench-main.gd-shell {
-  position: relative; display: grid !important; gap: 8px; padding: 18px 20px; overflow: visible;
-  grid-template-columns: minmax(150px, .75fr) minmax(0, 4fr) minmax(150px, .75fr);
-  grid-template-rows: minmax(92px, .8fr) minmax(0, 4fr) minmax(92px, .8fr);
-  grid-template-areas: "a b c" "d e f" "g h i";
-}
-.gd-shell-centre { grid-area: e; position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: 18px; }
-.gd-shell-centre > #workspace-content { flex: 1 1 auto; min-height: 0; }
-html.gd-rubik body.gd-cube-shell .gd-shell-centre #workspace-content { box-shadow: var(--gd-sticker), inset 0 3px 0 var(--centre, var(--gd-face-color)) !important; }
+/* ---- grooves: the front face printed on nine stickers -------------------------------------------- */
+.gd-lc-grooves { position: absolute; inset: 0; z-index: 40; pointer-events: none; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); overflow: hidden; border-radius: inherit;
+  --g: var(--gd-groove, var(--canvas, #05070c)); }
+.gd-lc-grooves > i { border-radius: 14px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--g) 92%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--gd-face-color, #2f8f5b) 35%, transparent); }
 
-.gd-mini {
-  position: relative; min-width: 0; min-height: 0; overflow: hidden; display: flex !important; flex-direction: column; align-items: stretch; gap: 6px;
-  padding: 10px 12px !important; border: 0 !important; border-radius: 16px !important; text-align: left; cursor: pointer;
-  background: var(--surface, #161c24) !important; color: var(--text-primary, #e6edf3) !important;
-  box-shadow: var(--gd-sticker, 0 0 0 1px var(--border-default, #d0d7de)), inset 0 3px 0 var(--mini) !important;
-  transition: filter .15s ease, box-shadow .15s ease;
-}
-.gd-mini[hidden] { display: none !important; }
-.gd-mini:hover { filter: brightness(1.08); box-shadow: var(--gd-sticker, none), inset 0 0 0 2px var(--mini) !important; }
+/* ---- the top and right faces: receding in 3D from the eye above right -------------------------------- */
+.gd-lc-side { position: absolute; box-sizing: border-box; overflow: hidden; pointer-events: none; border-radius: 22px; padding: 10px;
+  display: grid; grid-template: 1fr 2.4fr 1fr / 1fr 2.4fr 1fr; gap: 10px; background: #05070c; color: #e6edf3; backface-visibility: hidden; }
+.gd-lc-sticker { border-radius: 16px; box-shadow: inset 0 -6px 0 rgb(0 0 0 / 25%), inset 0 3px 0 rgb(255 255 255 / 25%); }
+.gd-lc-centre { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; overflow: hidden; padding: 18px 22px; border-radius: 16px;
+  background: #161c24; box-shadow: inset 0 -6px 0 rgb(0 0 0 / 40%), inset 0 4px 0 var(--mini); }
+.gd-lc-centre .gd-mini-head { font-size: 24px; } .gd-lc-centre .gd-mini-chip { width: 16px; height: 16px; border-radius: 5px; }
+.gd-lc-centre .gd-mini-line { font-size: 17px; color: #c9d1d9; gap: 10px; } .gd-lc-centre .gd-mini-line::before { width: 8px; height: 8px; }
+.gd-lc-top { left: 0; width: 100%; height: 360px; top: -360px; transform-origin: 0 100%;
+  transform: translate(calc(var(--lc-w, 1600px) * 1.15), calc(var(--lc-h, 900px) * -.35)) perspective(1600px) translate(calc(var(--lc-w, 1600px) * -1.15), calc(var(--lc-h, 900px) * .35)) rotateX(90deg); }
+.gd-lc-right { top: 0; height: 100%; width: 360px; left: 100%; transform-origin: 0 0;
+  transform: translate(calc(var(--lc-w, 1600px) * .15), calc(var(--lc-h, 900px) * -.35)) perspective(1600px) translate(calc(var(--lc-w, 1600px) * -.15), calc(var(--lc-h, 900px) * .35)) rotateY(90deg); }
+.gd-lc-side::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
+.gd-lc-top::after { background: linear-gradient(to top, rgb(255 255 255 / 6%), rgb(0 0 0 / 12%)); }
+.gd-lc-right::after { background: linear-gradient(to right, rgb(0 0 0 / 22%), rgb(0 0 0 / 38%)); }
+
+/* ---- the zoom button (status bar) -------------------------------------------------------------------- */
+.gd-lc-zoom { order: 99; min-width: 30px; padding: 0 8px !important; font-size: 14px; }
+
+/* ---- twists: copies of the front face, cut into slices, turning away ------------------------------- */
+.gd-lc-twist { position: fixed; inset: 0; z-index: 13500; pointer-events: none; }
+.gd-lc-slice { position: fixed; overflow: hidden; backface-visibility: hidden; will-change: transform; }
+
+/* ---- mini content (side faces and the zoomed-out cube) ---------------------------------------------------- */
 .gd-mini-head { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 13px; }
 .gd-mini-head b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gd-mini-chip { flex: none; width: 10px; height: 10px; border-radius: 3px; background: var(--mini); box-shadow: inset 0 -2px 0 rgb(0 0 0 / 25%); }
@@ -36,42 +50,6 @@ html.gd-rubik body.gd-cube-shell .gd-shell-centre #workspace-content { box-shado
 .gd-mini-line::before { content: ""; flex: none; width: 5px; height: 5px; border-radius: 2px; background: var(--tone, var(--text-tertiary, #6e7781)); }
 .gd-mini-line > span { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gd-mini-line > small { flex: none; color: var(--text-tertiary, #7d8590); font: 11px ui-monospace, Consolas, monospace; }
-
-/* ---- twist arrows on the edges --------------------------------------------------------------------------- */
-.gd-shell-handles { position: absolute; inset: 18px 20px; display: grid; gap: 8px; pointer-events: none; z-index: 6;
-  grid-template-columns: minmax(150px, .75fr) minmax(0, 4fr) minmax(150px, .75fr); grid-template-rows: minmax(92px, .8fr) minmax(0, 4fr) minmax(92px, .8fr); }
-.gd-twist { pointer-events: auto; width: 24px; height: 24px; min-height: 0 !important; padding: 0 !important; display: grid; place-items: center; border: 0 !important; border-radius: 7px !important;
-  background: var(--surface-muted, #252e3a) !important; color: var(--text-secondary, #a3adb9) !important; font: 700 11px/1 'Segoe UI', system-ui, sans-serif; opacity: .55; cursor: pointer;
-  box-shadow: var(--gd-sticker, 0 0 0 1px var(--border-default, #d0d7de)) !important; transition: opacity .15s ease, background .15s ease; }
-.workbench-main.gd-shell:hover .gd-twist { opacity: 1; }
-.gd-twist:hover { background: var(--st-green, #2f8f5b) !important; color: #ffffff !important; }
-.gd-twist-row { grid-row: var(--row); align-self: center; }
-.gd-twist-row.gd-twist-start { grid-column: 1; justify-self: start; margin-left: -19px; }
-.gd-twist-row.gd-twist-end { grid-column: 3; justify-self: end; margin-right: -19px; }
-.gd-twist-col { grid-column: var(--col); justify-self: center; }
-.gd-twist-col.gd-twist-start { grid-row: 1; align-self: start; margin-top: -17px; }
-.gd-twist-col.gd-twist-end { grid-row: 3; align-self: end; margin-bottom: -17px; }
-.gd-zoom-out { grid-column: 1; grid-row: 1; justify-self: start; align-self: start; margin: -17px 0 0 -19px; width: 28px; height: 28px; font-size: 14px; opacity: 1; }
-
-/* ---- git moves are twists (after the action succeeds) ------------------------------------------------- */
-.gd-shell.gd-move-commit .gd-shell-centre { animation: gd-mv-commit .8s cubic-bezier(.65,0,.3,1); }
-@keyframes gd-mv-commit { 0% { transform: perspective(1600px) rotateY(0); } 45% { transform: perspective(1600px) rotateY(-18deg) scale(.97); box-shadow: 0 0 0 3px var(--st-green, #2f8f5b); } 100% { transform: none; } }
-.gd-shell.gd-move-pull .gd-mini:is([data-cell="a"], [data-cell="b"], [data-cell="c"]) { animation: gd-mv-down .7s cubic-bezier(.65,0,.3,1); }
-.gd-shell.gd-move-pull .gd-shell-centre { animation: gd-mv-nudge-down .7s cubic-bezier(.65,0,.3,1); }
-.gd-shell.gd-move-push .gd-mini:is([data-cell="a"], [data-cell="b"], [data-cell="c"]) { animation: gd-mv-up .7s cubic-bezier(.65,0,.3,1); }
-.gd-shell.gd-move-push .gd-shell-centre { animation: gd-mv-nudge-up .7s cubic-bezier(.65,0,.3,1); }
-@keyframes gd-mv-down { 0% { transform: translateY(-120%); opacity: 0; } 100% { transform: none; opacity: 1; } }
-@keyframes gd-mv-up { 0% { transform: none; } 50% { transform: translateY(-120%); opacity: 0; } 51% { transform: translateY(40%); opacity: 0; } 100% { transform: none; opacity: 1; } }
-@keyframes gd-mv-nudge-down { 0% { transform: none; } 40% { transform: translateY(10px); } 100% { transform: none; } }
-@keyframes gd-mv-nudge-up { 0% { transform: none; } 40% { transform: translateY(-10px); } 100% { transform: none; } }
-.gd-shell.gd-move-stash .gd-shell-centre { animation: gd-mv-stash .8s cubic-bezier(.65,0,.3,1); }
-.gd-shell.gd-move-unstash .gd-shell-centre { animation: gd-mv-stash .8s cubic-bezier(.65,0,.3,1) reverse; }
-@keyframes gd-mv-stash { 0% { transform: none; } 40% { transform: translate(30%, -30%) scale(.25) rotate(14deg); opacity: .3; } 41% { transform: scale(.9); opacity: 0; } 100% { transform: none; opacity: 1; } }
-.gd-shell.gd-move-merge .gd-mini:is([data-cell="a"], [data-cell="d"], [data-cell="g"]) { animation: gd-mv-in-left .75s cubic-bezier(.65,0,.3,1); }
-.gd-shell.gd-move-merge .gd-mini:is([data-cell="c"], [data-cell="f"], [data-cell="i"]) { animation: gd-mv-in-right .75s cubic-bezier(.65,0,.3,1); }
-@keyframes gd-mv-in-left { 50% { transform: translateX(40%); } 100% { transform: none; } }
-@keyframes gd-mv-in-right { 50% { transform: translateX(-40%); } 100% { transform: none; } }
-@media (prefers-reduced-motion: reduce) { .gd-shell[class*="gd-move-"] :is(.gd-mini, .gd-shell-centre) { animation: none !important; } }
 
 /* ---- zoom out: the whole cube ------------------------------------------------------------------------- */
 .gd-cube-zoom { position: fixed; inset: 0; z-index: 12900; display: grid; place-items: center; background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--surface, #161c24) 85%, transparent), color-mix(in srgb, var(--canvas, #05070c) 96%, transparent) 70%); animation: gd-cz-in .45s cubic-bezier(.2,.8,.2,1); }
@@ -91,9 +69,3 @@ html body .gd-cube-zoom .gd-cz-face:hover { box-shadow: 0 0 0 3px var(--mini) !i
   background: #161c24; box-shadow: inset 0 -4px 0 rgb(0 0 0 / 40%), inset 0 3px 0 var(--mini); }
 .gd-cz-face .gd-mini-head { font-size: 17px; color: #e6edf3; } .gd-cz-face .gd-mini-line { font-size: 12px; color: #a3adb9; }
 @media (prefers-reduced-motion: reduce) { .gd-cube-zoom, .gd-cube-zoom.gd-cz-fly { animation: none; } }
-
-/* The face itself is the cube now: no slanted side faces around the centre. */
-body.gd-cube-shell .gd-cube-edge { display: none !important; }
-html.gd-rubik.gd-cube-room.gd-soft.ui-modern body.gd-cube-shell #workspace-content { border-top-width: 6px !important; border-right-width: 6px !important; }
-/* A mini view shows whole lines; the last one fades out instead of being cut in half. */
-.gd-mini-lines { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent); }
