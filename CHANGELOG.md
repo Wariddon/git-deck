@@ -4,6 +4,8 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- Every button was checked for contrast in all five themes, overlaps and clipped text. The status sentence no longer gets cut short (it keeps its width; less important status items shorten with an ellipsis), and the pinned buttons of the repository tab row (Worksets, Repos, +) have a solid face so scrolled tabs slide under them instead of showing through.
+
 ## 1.7.1 — 2026-10-29
 
 - **Tidy buttons everywhere**: every button and menu was measured for labels that wrap or spill. Theme menu choices keep their label on one line and move to the next row instead; Flow is a list of on/off switches; action rows in the Dashboard wrap whole buttons; Automation no longer squeezes "Fetch scope now" and "Save automation" into tall slivers beside the notification settings.

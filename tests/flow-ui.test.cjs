@@ -47,6 +47,10 @@ assert.match(css, /\.theme-menu \.flow-choice > button \{ flex: 1 1 100%;/);
 const polish = read('web/polish.css');
 assert.match(polish, /:is\(\.cockpit-tools, \.fleet-actions, \.operations-card-actions\) > button \{ white-space: nowrap; \}/);
 assert.match(polish, /\.operations-card-actions > :not\(button\) \{ flex: 1 1 100%; \}/);
+// The status sentence keeps its width and ends in an ellipsis; pinned tab-row buttons have a solid face.
+assert.match(css, /body\.gd-flow-sentence \.gd-sentence \{ flex: 0 0 auto; max-width: 45%; \}/);
+assert.match(css, /\.gd-sentence-part \{ flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; \}/);
+assert.match(polish, /#repo-tabs > :is\(\.repo-tab-search, \.repo-tab-add\) \{ background-color: var\(--surface-subtle/);
 const html = read('web/index.html');
 assert(html.includes('<script src="/flow-ui.js" defer></script>'));
 assert(html.includes('<link rel="stylesheet" href="/flow-ui.css">'));

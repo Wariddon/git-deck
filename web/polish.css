@@ -448,3 +448,9 @@ html.ui-modern body .log-locate-exceptions { font: 600 12px/1.5 var(--modern-mon
 :is(.cockpit-tools, .fleet-actions, .operations-card-actions) { flex-wrap: wrap; align-items: flex-start; }
 :is(.cockpit-tools, .fleet-actions, .operations-card-actions) > button { white-space: nowrap; }
 .operations-card-actions > :not(button) { flex: 1 1 100%; }
+
+/* Repository tab row: the pinned buttons (ticket on the left; Worksets, Repos and + on the right) stay put
+   while the tabs scroll, so they need a solid face; tabs slide under them instead of showing through. */
+#repo-tabs > :is(.repo-tab-search, .repo-tab-add) { background-color: var(--surface-subtle, var(--surface, #ffffff)) !important; }
+#repo-tabs > :is(.repo-tab-search, .repo-tab-add):not(.gd-ticket-start) { box-shadow: -12px 0 10px -6px var(--canvas, var(--surface, #ffffff)), var(--gd-sticker, none) !important; }
+#repo-tabs > .gd-ticket-start { box-shadow: 12px 0 10px -6px var(--canvas, var(--surface, #ffffff)), var(--gd-sticker, none) !important; }

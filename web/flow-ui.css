@@ -97,3 +97,10 @@ html.ui-modern body .theme-menu :is(.look-choice, .text-size-choice) > button { 
 html.ui-modern body .theme-menu .flow-choice > button { flex: 1 1 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; text-align: left; padding-inline: 10px !important; }
 html.ui-modern body .theme-menu .flow-choice > button::after { content: ""; flex: none; width: 26px; height: 14px; border-radius: 7px; background: var(--border-default, #d0d7de); box-shadow: inset -12px 0 0 2px var(--surface, #ffffff); transition: background .15s ease, box-shadow .15s ease; }
 html.ui-modern body .theme-menu .flow-choice > button[aria-pressed="true"]::after { background: var(--st-green, var(--green, #1f883d)); box-shadow: inset 12px 0 0 2px var(--surface, #ffffff); }
+
+/* The sentence may take up to half the status bar; a part that still does not fit ends with an ellipsis. */
+body.gd-flow-sentence .gd-sentence { flex: 0 0 auto; max-width: 45%; }
+/* Less important status items give way to the sentence. */
+body.gd-flow-sentence #workspace-statusbar > :is(#status-activity, #status-fetch) { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.gd-flow-sentence .gd-sentence-part { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.gd-flow-sentence .gd-sentence > i { flex: none; }
