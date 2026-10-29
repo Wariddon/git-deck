@@ -4,10 +4,12 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
-- **Git Deck opens as a Rubik's cube** (Rubik shape, theme menu › Layout › Cube, on by default; Classic opens straight into the window):
-  - A real 3x3x3 cube and nothing else: drag the empty space to turn it, drag across a sticker to twist that layer, Scramble and Solve (plays the twists back), keys U D L R F B (Shift for the other way). It keeps its twists between visits.
-  - Each face's centre is a door with a live count: Changes, History, Branches, Stashes, Dashboard, Repos. Click it to fly into that view; the program is then the normal window.
-  - **Expand** on the cube goes back to the window where you left it; **⧉ Shrink to the cube** beside the window buttons (or Esc) brings the cube back. No opening animation plays on top of it.
+- **Git Deck opens as a Rubik's cube that is your Git work** (Rubik shape, theme menu › Layout › Cube, on by default; Classic opens straight into the window). A real 3x3x3 cube: drag the space to turn it, drag across a sticker to twist a layer. Four modes:
+  - **Repo**: faces are Changes, Sync, Branches, Stashes, Releases and Conflicts of the open repository. Every sticker round a centre is one real thing that needs you (a changed file, a commit to pull or push, a branch behind, a stash, a commit not released, a conflict) in a scrambled colour; a clean, synced repository is a solved cube and glows. Twisting a face does its Git move: Changes stages everything, Sync pulls one way and pushes the other, Branches fetches, Stashes stashes or pops; Releases and Conflicts open their views. Moves that change things ask first, and the twist plays once the move succeeded.
+  - **Workset**: the 26 pieces are 26 repositories (open tabs, favourites, then the busiest) in their status colours; click one to open it, twist a layer to fetch its repositories.
+  - **Branches**: each face is a branch (the current one in front) and its stickers are the latest commits; those the current branch already has wear the face's colour, the others stand out.
+  - **Play**: a plain cube to twist, scramble and solve.
+  - Each face's centre is a door into its view; **Expand** goes back to the window, **⧉ Shrink to the cube** beside the window buttons (or Esc) brings the cube back.
 
 - Every button was checked for contrast in all five themes, overlaps and clipped text. The status sentence no longer gets cut short (it keeps its width; less important status items shorten with an ellipsis), and the pinned buttons of the repository tab row (Worksets, Repos, +) have a solid face so scrolled tabs slide under them instead of showing through.
 

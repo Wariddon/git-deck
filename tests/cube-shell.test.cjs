@@ -33,11 +33,27 @@ const downwards = cube.pickTwist([1, -1, 1], [0, 0, 1], [0, 1], flat);
 assert.equal(downwards.axis, 'x'); assert.equal(downwards.layer, 1);
 assert.equal(cube.pickTwist([0, 0, 1], [0, 0, 1], [1, 0], flat), null, 'a drag on a door does not twist the middle layers');
 
+// Faces and slots: a layer twist is a face, a sticker has a place on its face.
+assert.equal(cube.faceOfLayer('z', 1), 0, 'front'); assert.equal(cube.faceOfLayer('x', 1), 1, 'right');
+assert.equal(cube.faceOfLayer('y', -1), 4, 'top'); assert.equal(cube.faceOfLayer('y', 0), -1, 'a middle layer is no face');
+assert.equal(cube.slotOf([0, 0, 1], [-1, -1, 1]), 0, 'front top left'); assert.equal(cube.slotOf([0, 0, 1], [0, 0, 1]), 4, 'centre');
+assert.equal(cube.slotOf([1, 0, 0], [1, -1, 1]), 0, 'right face: its top left is next to the front');
+const laid = cube.layout(['a', 'b', 'c']);
+assert.deepEqual([laid[0], laid[1], laid[2], laid[4]], ['a', 'b', 'c', null], 'items go round the centre, the centre stays the door');
+// Branches: commits reachable from a head inside the loaded history.
+const hist = [{ fullHash: 'c3', hash: 'c3', parents: ['c2'], decorations: 'HEAD -> main, origin/main' }, { fullHash: 'b1', hash: 'b1', parents: ['c1'], decorations: 'origin/feature' }, { fullHash: 'c2', hash: 'c2', parents: ['c1'] }, { fullHash: 'c1', hash: 'c1', parents: [] }];
+assert.equal(cube.headOf(hist, 'main'), 'c3'); assert.equal(cube.headOf(hist, 'origin/feature'), 'b1');
+assert.deepEqual([...cube.reachable(hist, 'c3')], ['c3', 'c2', 'c1']);
+assert(!cube.reachable(hist, 'c3').has('b1'), 'a commit only on another branch stands out');
+
 const js = read('web/cube-shell.js');
 assert.doesNotMatch(js, /[฀-๿]/);
-assert.match(js, /const on=\(\)=>layout==='cube'&&root\.classList\.contains\('gd-rubik'\)/, 'only with the Rubik shape');
+assert.match(js, /const on=\(\)=>layoutChoice==='cube'&&root\.classList\.contains\('gd-rubik'\)/, 'only with the Rubik shape');
 assert.match(js, /if\(on\(\)\)show\(\);/, 'Git Deck opens as the cube');
 assert.match(js, /const expand=button\(t\('Expand'\)/, 'Expand goes back to the full window');
+assert.match(js, /if\(f===0\)\{if\(!\(w\.files\|\|\[\]\)\.length\)return;if\(!confirm\(/, 'twisting Changes asks before staging');
+assert.match(js, /if\(result\)\{releaseFor='';await turn\(axis,layer,sign\);/, 'the twist plays only after the Git move succeeded');
+assert.match(js, /const data=faces\[f\]\|\|\{label:'',view:'',items:\[\]\}/, 'fewer branches than faces does not break the cube');
 assert.match(js, /backButton\.title=t\('Shrink to the cube \(Esc\)'\)/);
 assert.match(read('web/entrance.js'), /const mode=\(\)=>cubeHome\(\)\?'off'/, 'no opening animation on top of the cube');
 const css = read('web/cube-shell.css');
@@ -46,4 +62,4 @@ assert.match(read('web/rubik.css'), /:not\(\.gd-home \*\) \{/, 'the cube home ke
 const html = read('web/index.html');
 assert(html.includes('<script src="/cube-shell.js" defer></script>'));
 assert(html.includes('<link rel="stylesheet" href="/cube-shell.css">'));
-console.log('PASS: cube home (real 3x3x3 turns, solve back, drag-to-twist, doors, expand/shrink, wiring)');
+console.log('PASS: cube home (real 3x3x3 turns, repo/workset/branches modes, git twists, doors, expand/shrink, wiring)');
