@@ -4,12 +4,8 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
-- **The program is a cube** (Appearance › Shape › Cube, now the default; GitDeck.exe). A normal window you can move, snap and resize by any edge or corner, remembered between starts; only the cube itself is new. Outside the box the desktop shows and clicks go through while it turns or is held.
-  - Six sides: Changes, History, Branches, Stashes and tags, Today (top), Repositories (bottom). The side facing you is the real, flat Git Deck. Below 1100 px the toolbar gets compact and the branch tree makes room; maximized, everything stays where it is.
-  - **Side bar** under the toolbar: every side with what waits on it, one click turns straight there (Ctrl+Alt+1-6, Ctrl+Alt+arrows). **More views** holds the rest: Compare, Conflicts, Recovery, Report, Tools, Settings. Drag its empty part to move the window, double-click to maximize.
-  - **Hold** with the small cube in the side bar (Ctrl+Alt+0): the whole cube, large, at an angle. Drag to turn it. Every side works from here: click a file, commit or repository to fly straight to it, or use its buttons (Commit, Fetch, Pull, Push). Esc goes back.
-  - **Beside your other windows**: the new dock button by the window buttons (Ctrl+Alt+D, or More views for the left side) makes it a slim column against the screen edge; the same button brings back your normal size. You can also drag it down to about 330 px. Slim, it is one column: icons for the sides, Commit, Pull, Push and Fetch in the toolbar, whole branch names, and repositories with Open one click away.
-  - **Put away** with the minimize button: a small cube in the corner with what waits for you.
+- The start-up animation is off by default; choose one in Appearance › Opening.
+- Every button was checked for contrast in all five themes, overlaps and clipped text. The status sentence no longer gets cut short (it keeps its width; less important status items shorten with an ellipsis), and the pinned buttons of the repository tab row (Worksets, Repos, +) have a solid face so scrolled tabs slide under them instead of showing through.
 
 ## 1.7.1 — 2026-10-29
 
