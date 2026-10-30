@@ -4,13 +4,11 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
-- **The program is a cube** (Appearance › Shape › Cube, now the default; GitDeck.exe). Not a window with a cube in it: the window is square and cut to the cube's outline, so the desktop shows around it and clicks there go through.
-  - Six sides: Changes, History, Branches, Stashes and tags, Today (top), Repositories (bottom). The side facing you is the real, flat Git Deck.
-  - **Side bar** under the toolbar: every side with what waits on it, one click turns straight there (Ctrl+Alt+1-6, Ctrl+Alt+arrows). **More views** holds the rest: Compare, Conflicts, Recovery, Report, Tools, Settings, Full window.
+- **The program is a cube** (Appearance › Shape › Cube, now the default; GitDeck.exe). A normal window you can move, snap and resize by any edge or corner, remembered between starts; only the cube itself is new. Outside the box the desktop shows and clicks go through while it turns or is held.
+  - Six sides: Changes, History, Branches, Stashes and tags, Today (top), Repositories (bottom). The side facing you is the real, flat Git Deck. Below 1100 px the toolbar gets compact and the branch tree makes room; maximized, everything stays where it is.
+  - **Side bar** under the toolbar: every side with what waits on it, one click turns straight there (Ctrl+Alt+1-6, Ctrl+Alt+arrows). **More views** holds the rest: Compare, Conflicts, Recovery, Report, Tools, Settings. Drag its empty part to move the window, double-click to maximize.
   - **Hold** with the small cube in the side bar (Ctrl+Alt+0): the whole cube, large, at an angle. Drag to turn it. Every side works from here: click a file, commit or repository to fly straight to it, or use its buttons (Commit, Fetch, Pull, Push). Esc goes back.
-  - **Move it** by the empty part of the side bar; it starts where you left it, without flashing the full window first.
-  - **Put away** with the minimize button: a small cube in the corner with what waits for you. **Full window** with the maximize button: the wide layout with the side rail and branch tree, for long diffs.
-- Every button was checked for contrast in all five themes, overlaps and clipped text. The status sentence no longer gets cut short (it keeps its width; less important status items shorten with an ellipsis), and the pinned buttons of the repository tab row (Worksets, Repos, +) have a solid face so scrolled tabs slide under them instead of showing through.
+  - **Put away** with the minimize button: a small cube in the corner with what waits for you.
 
 ## 1.7.1 — 2026-10-29
 

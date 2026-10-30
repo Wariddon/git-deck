@@ -415,8 +415,8 @@ internal sealed class AppWindow : Form
         Size = new Size(1440, 900);
         MinimumSize = new Size(760, 520);
         // The cube starts where it was left, without flashing the full window first.
-        Point? place = ReadBoxPlace();
-        if (place.HasValue) { StartPosition = FormStartPosition.Manual; Location = place.Value; Size = new Size(1000, 1000); boxPlace = place; }
+        boxBounds = ReadBoxBounds();
+        if (boxBounds.HasValue) { StartPosition = FormStartPosition.Manual; Bounds = boxBounds.Value; }
         else WindowState = FormWindowState.Maximized;
         view = new Microsoft.Web.WebView2.WinForms.WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = BackColor };
         Controls.Add(view);
@@ -541,80 +541,98 @@ internal sealed class AppWindow : Form
         try { if (view.CoreWebView2 != null) view.CoreWebView2.PostWebMessageAsString(WindowState == FormWindowState.Maximized ? "window:maximized" : "window:restored"); } catch { }
     }
 
-    // The cube (web/cube-box.js): the window is square and cut to the cube's outline, so the desktop shows
-    // around it and clicks outside go through. Maximized (the full window for long diffs) has no cut.
+    // The cube (web/cube-box.js): a normal window you move and resize, cut to the box's outline while it turns
+    // or is held, so the desktop shows around it and clicks outside go through. Maximized has no cut.
     [DllImport("user32.dll")] private static extern int SetWindowRgn(IntPtr window, IntPtr region, bool redraw);
     [DllImport("gdi32.dll")] private static extern IntPtr CreatePolygonRgn(int[] points, int count, int mode);
     [DllImport("gdi32.dll")] private static extern IntPtr CreateRoundRectRgn(int left, int top, int right, int bottom, int width, int height);
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr window);
     [DllImport("user32.dll")] private static extern bool ReleaseCapture();
-    [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
-    private bool boxOn, boxSmall, boxSizing;
-    private Point? boxPlace;
+    [DllImport("user32.dll")] private static extern bool PostMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
+    private bool boxOn, boxSmall, boxFlat, boxPlacing;
+    private Rectangle? boxBounds;
 
     private static string BoxPlaceFile { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GitDeck", "cube-window.txt"); } }
 
-    // Where the cube was left; null when it has never been placed or the place is off every screen.
-    private static Point? ReadBoxPlace()
+    // Where the cube was left and how big; null when never placed or off every screen.
+    private static Rectangle? ReadBoxBounds()
     {
         try
         {
             if (!File.Exists(BoxPlaceFile)) return null;
             var parts = File.ReadAllText(BoxPlaceFile).Trim().Split(',');
-            var point = new Point(int.Parse(parts[0]), int.Parse(parts[1]));
-            foreach (var screen in Screen.AllScreens) if (screen.WorkingArea.Contains(point.X + 120, point.Y + 40)) return point;
+            if (parts.Length != 4) return null;
+            var rect = new Rectangle(int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]), int.Parse(parts[3]));
+            foreach (var screen in Screen.AllScreens) if (screen.WorkingArea.Contains(rect.X + 120, rect.Y + 40)) return rect;
         }
         catch { }
         return null;
     }
 
-    private void SaveBoxPlace()
+    private void SaveBoxBounds()
     {
-        if (!boxOn || boxSmall || boxSizing || !IsHandleCreated || WindowState != FormWindowState.Normal) return;
-        boxPlace = Location;
-        try { File.WriteAllText(BoxPlaceFile, Location.X + "," + Location.Y); } catch { }
+        if (!boxOn || boxSmall || boxPlacing || !IsHandleCreated || WindowState != FormWindowState.Normal) return;
+        boxBounds = Bounds;
+        try { File.WriteAllText(BoxPlaceFile, Left + "," + Top + "," + Width + "," + Height); } catch { }
     }
 
-    protected override void OnMove(EventArgs e)
+    protected override void OnResizeEnd(EventArgs e) { base.OnResizeEnd(e); SaveBoxBounds(); }
+
+    private void Place(Rectangle bounds)
     {
-        base.OnMove(e);
-        SaveBoxPlace();
+        boxPlacing = true;
+        if (WindowState != FormWindowState.Normal) WindowState = FormWindowState.Normal;
+        Bounds = bounds;
+        boxPlacing = false;
     }
 
     private double BoxScale() { try { return GetDpiForWindow(Handle) / 96.0; } catch { return 1.0; } }
 
-    private void SizeClient(int side, bool corner)
+    // The first start: most of the screen's height, wide enough for the branch tree beside the view.
+    private Rectangle FirstBounds()
     {
-        boxSizing = true;
-        if (WindowState != FormWindowState.Normal) WindowState = FormWindowState.Normal;
-        MinimumSize = new Size(120, 120);
         var area = Screen.FromControl(this).WorkingArea;
-        Size = new Size(side, side);
-        Size = new Size(side + (Width - ClientSize.Width), side + (Height - ClientSize.Height));
+        int height = area.Height - 24, width = Math.Min(area.Width - 24, (int)(height * 1.45));
+        return new Rectangle(area.Left + (area.Width - width) / 2, area.Top + (area.Height - height) / 2, width, height);
+    }
+
+    private void ApplyRound()
+    {
         var margin = PointToScreen(Point.Empty);
-        int dx = margin.X - Left, dy = margin.Y - Top;
-        Location = corner ? new Point(area.Right - side - 16 - dx, area.Bottom - side - 16 - dy) : (boxPlace ?? new Point(area.Left + (area.Width - side) / 2 - dx, area.Top + (area.Height - side) / 2 - dy));
-        boxSizing = false;
-        SaveBoxPlace();
+        int x = margin.X - Left, y = margin.Y - Top, radius = (int)(12 * BoxScale());
+        SetWindowRgn(Handle, CreateRoundRectRgn(x, y, x + ClientSize.Width + 1, y + ClientSize.Height + 1, radius, radius), true);
     }
 
     private void OnBox(string message)
     {
-        if (message == "box:on") { boxOn = true; boxSmall = false; var area = Screen.FromControl(this).WorkingArea; SizeClient(Math.Min(area.Width, area.Height) - 24, false); SendState(); }
-        else if (message == "box:small") { boxSmall = true; SizeClient((int)(190 * BoxScale()), true); }
-        else if (message == "box:drag") { ReleaseCapture(); SendMessage(Handle, 0x00A1, (IntPtr)2, IntPtr.Zero); } // WM_NCLBUTTONDOWN, HTCAPTION
-        else if (message == "box:off") { boxOn = false; boxPlace = null; try { File.Delete(BoxPlaceFile); } catch { } SetWindowRgn(Handle, IntPtr.Zero, true); MinimumSize = new Size(760, 520); WindowState = FormWindowState.Maximized; }
-        else if (!boxOn || WindowState == FormWindowState.Maximized) return;
-        else if (message == "box:round")
+        if (message == "box:on")
         {
-            var margin = PointToScreen(Point.Empty);
-            int x = margin.X - Left, y = margin.Y - Top, radius = (int)(20 * BoxScale());
-            SetWindowRgn(Handle, CreateRoundRectRgn(x, y, x + ClientSize.Width + 1, y + ClientSize.Height + 1, radius, radius), true);
+            boxOn = true; boxSmall = false; MinimumSize = new Size((int)(640 * BoxScale()), (int)(480 * BoxScale()));
+            Place(boxBounds ?? FirstBounds()); SaveBoxBounds(); SendState();
         }
+        else if (message == "box:small")
+        {
+            boxSmall = true; boxFlat = false; MinimumSize = new Size(120, 120);
+            var area = Screen.FromControl(this).WorkingArea; int side = (int)(190 * BoxScale());
+            Place(new Rectangle(area.Right - side - 16, area.Bottom - side - 16, side, side));
+            Place(new Rectangle(area.Right - side - 16, area.Bottom - side - 16, side + (Width - ClientSize.Width), side + (Height - ClientSize.Height)));
+        }
+        else if (message == "box:off") { boxOn = false; boxBounds = null; try { File.Delete(BoxPlaceFile); } catch { } SetWindowRgn(Handle, IntPtr.Zero, true); MinimumSize = new Size(760, 520); WindowState = FormWindowState.Maximized; }
+        else if (message == "box:drag" || message.StartsWith("box:size:", StringComparison.Ordinal))
+        {
+            // Hand the press to Windows: it moves or resizes the window, snapping included.
+            int code; if (message == "box:drag") code = 2; else if (!int.TryParse(message.Substring(9), out code) || code < 10 || code > 17) return;
+            var at = Cursor.Position;
+            ReleaseCapture();
+            PostMessage(Handle, 0x00A1, (IntPtr)code, (IntPtr)((at.Y << 16) | (at.X & 0xFFFF))); // WM_NCLBUTTONDOWN
+        }
+        else if (!boxOn || WindowState == FormWindowState.Maximized) return;
+        else if (message == "box:round") { boxFlat = true; ApplyRound(); }
         else if (message.StartsWith("box:poly:", StringComparison.Ordinal))
         {
             var parts = message.Substring(9).Split(',');
             if (parts.Length < 6 || parts.Length % 2 != 0) return;
+            boxFlat = false;
             var margin = PointToScreen(Point.Empty);
             int dx = margin.X - Left, dy = margin.Y - Top; double scale = BoxScale();
             var points = new int[parts.Length];
@@ -630,7 +648,11 @@ internal sealed class AppWindow : Form
 
     protected override void OnResize(EventArgs e)
     {
-        if (boxOn && IsHandleCreated && WindowState == FormWindowState.Maximized) SetWindowRgn(Handle, IntPtr.Zero, true);
+        if (boxOn && IsHandleCreated)
+        {
+            if (WindowState == FormWindowState.Maximized) SetWindowRgn(Handle, IntPtr.Zero, true);
+            else if (WindowState == FormWindowState.Normal && boxFlat) ApplyRound();
+        }
         base.OnResize(e);
     }
 

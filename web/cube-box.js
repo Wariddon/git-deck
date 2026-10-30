@@ -1,27 +1,29 @@
 'use strict';
 // Cube (Appearance › Shape › Cube, the default): the program is a 3D box, not a window with a cube in it.
-// GitDeck.exe makes the window square and cuts it to the cube's outline (launcher/GitDeckLauncher.cs), so
-// the desktop shows around it and clicks there go through.
-// - Work: one side faces you, flat and sharp: the real Git Deck. No transforms remain, so it behaves as ever.
+// GitDeck.exe cuts the window to the box's outline (launcher/GitDeckLauncher.cs), so the desktop shows around it
+// and clicks there go through.
+// - Work: one side faces you, flat and sharp: the real Git Deck, in a normal window you can move, snap and
+//   resize to anything by its edges and corners. Size and place are remembered. No transforms remain.
 // - Side bar under the toolbar: every side with what waits on it; a click turns straight there. More views
 //   holds everything else. Ctrl+Alt+1..6 and Ctrl+Alt+arrows do the same from the keyboard.
 // - Hold (the small cube in the side bar, or Ctrl+Alt+0): the whole cube at an angle, large enough to use.
 //   Drag to turn it. Every side works from here: click a file, a commit or a repository to fly straight to
 //   it, or use its buttons (Commit, Fetch, Pull, Push). Esc goes back.
 // - Put away (the minimize button): a small cube in the corner of the screen with what waits for you.
-// - Full window (the maximize button): the classic wide layout for long diffs; restore folds it back.
+// - Maximize works as in any window; everything stays where it is. Below 1100 px the toolbar gets compact and
+//   the branch tree makes room.
 // The six sides: Changes, History, Branches, Stashes and tags (around), Today (top), Repositories (bottom).
 (function(){
   // ---- pure helpers (tested) ----------------------------------------------------------------
   const ring=['changes','history','branches','stash'];
   const order=['changes','history','branches','stash','today','repos'];
   const sides={
-    changes:{ry:0,place:'translateZ(var(--box-half))',n:[0,0,1]},
-    history:{ry:-90,place:'rotateY(90deg) translateZ(var(--box-half))',n:[1,0,0]},
-    branches:{ry:-180,place:'rotateY(180deg) translateZ(var(--box-half))',n:[0,0,-1]},
-    stash:{ry:90,place:'rotateY(-90deg) translateZ(var(--box-half))',n:[-1,0,0]},
-    today:{rx:-90,place:'rotateX(90deg) translateZ(var(--box-half))',n:[0,-1,0]},
-    repos:{rx:90,place:'rotateX(-90deg) translateZ(var(--box-half))',n:[0,1,0]},
+    changes:{ry:0,place:'translateZ(calc(var(--box-w) / 2))',n:[0,0,1]},
+    history:{ry:-90,place:'rotateY(90deg) translateZ(calc(var(--box-w) / 2))',n:[1,0,0]},
+    branches:{ry:-180,place:'rotateY(180deg) translateZ(calc(var(--box-w) / 2))',n:[0,0,-1]},
+    stash:{ry:90,place:'rotateY(-90deg) translateZ(calc(var(--box-w) / 2))',n:[-1,0,0]},
+    today:{rx:-90,place:'rotateX(90deg) translateZ(calc(var(--box-h) / 2))',n:[0,-1,0]},
+    repos:{rx:90,place:'rotateX(-90deg) translateZ(calc(var(--box-h) / 2))',n:[0,1,0]},
   };
   // The same angle as `to`, the shortest way round from `from`.
   const near=(from,to)=>to+360*Math.round((from-to)/360);
@@ -42,11 +44,11 @@
     const x=p[0]*Math.cos(a)+p[2]*Math.sin(a),z0=-p[0]*Math.sin(a)+p[2]*Math.cos(a);
     return [x,p[1]*Math.cos(b)-z0*Math.sin(b),p[1]*Math.sin(b)+z0*Math.cos(b)];
   };
-  // The cube's eight corners on screen.
-  function corners(rx,ry,z,size,perspective,cx,cy){
-    const h=size/2;const out=[];
+  // The box's eight corners on screen (w wide, h high, d deep).
+  function corners(rx,ry,z,w,h,d,perspective,cx,cy){
+    const out=[];
     for(const sx of [-1,1])for(const sy of [-1,1])for(const sz of [-1,1]){
-      const p=rotate([sx*h,sy*h,sz*h],rx,ry);const k=perspective/(perspective-(p[2]+z));
+      const p=rotate([sx*w/2,sy*h/2,sz*d/2],rx,ry);const k=perspective/(perspective-(p[2]+z));
       out.push([cx+p[0]*k,cy+p[1]*k]);
     }
     return out;
@@ -65,9 +67,10 @@
   }
   const PERSPECTIVE=2.6;
   // As close as the cube can come at this angle and still fit the window: large enough to use when held.
-  function fitZ(rx,ry,size,margin=0.015){
-    const fits=(z)=>corners(rx,ry,z,size,PERSPECTIVE*size,size/2,size/2).every(([x,y])=>x>=size*margin&&x<=size*(1-margin)&&y>=size*margin&&y<=size*(1-margin));
-    let z=-size/2;for(let i=0;i<120&&!fits(z);i++)z-=size*0.03;
+  function fitZ(rx,ry,size,width=size,height=size,margin=0.015){
+    const perspective=PERSPECTIVE*Math.max(width,height);const pad=Math.min(width,height)*margin;
+    const fits=(z)=>corners(rx,ry,z,size,size,size,perspective,width/2,height/2).every(([x,y])=>x>=pad&&x<=width-pad&&y>=pad&&y<=height-pad);
+    let z=-size/2;for(let i=0;i<160&&!fits(z);i++)z-=size*0.03;
     return z;
   }
   const helpers={ring,order,sides,near,neighbour,faceOfTab,faceOfDashboard,corners,hull,shade,fitZ,PERSPECTIVE};
@@ -93,23 +96,30 @@
   cube.append(real);
   const badge=button('','gd-box-small-open');badge.setAttribute('aria-label',t('Open Git Deck'));
 
-  let mounted=false,mode='work',face='changes',last='changes';
-  let pose={rx:0,ry:0,z:0},frame=0;
-  const size=()=>Math.min(innerWidth,innerHeight);
-  const workZ=()=>-size()/2;
+  let mounted=false,mode='work',face='changes',last='changes',maxed=false;
+  let pose={rx:0,ry:0,z:0,w:0,h:0},frame=0;
+  const W=()=>innerWidth,H=()=>innerHeight;
+  const size=()=>Math.min(W(),H());
+  const perspective=()=>PERSPECTIVE*Math.max(W(),H());
+  // Working: the box has the window's shape. Held: a true cube, as large as fits.
+  const workPose=(id,fromRy)=>({...angleOf(id,fromRy),z:sides[id].rx!==undefined?-H()/2:-W()/2,w:W(),h:H()});
+  const holdPose=(id,fromRy,margin)=>{const a=angleOf(id,fromRy);const rx=sides[id].rx!==undefined?a.rx+24:-24,ry=a.ry-34;return {rx,ry,z:fitZ(rx,ry,size(),W(),H(),margin),w:size(),h:size()};};
   const flatNow=()=>body.classList.contains('gd-box-flat');
   function setFlat(on){body.classList.toggle('gd-box-flat',on);if(on){cube.style.transform='';real.style.transform='';}}
 
   // ---- drawing --------------------------------------------------------------------------------------
   let lastRegion=0;
   function region(force){
-    if(!host||mode==='full')return;
+    if(!host||maxed)return;
     const now=performance.now();if(!force&&now-lastRegion<30)return;lastRegion=now;
-    const points=hull(corners(pose.rx,pose.ry,pose.z,size(),PERSPECTIVE*size(),innerWidth/2,innerHeight/2));
+    const points=hull(corners(pose.rx,pose.ry,pose.z,pose.w,pose.h,pose.w,perspective(),W()/2,H()/2));
     post(`box:poly:${points.map(p=>`${Math.round(Math.max(0,Math.min(innerWidth,p[0]))*10)/10},${Math.round(Math.max(0,Math.min(innerHeight,p[1]))*10)/10}`).join(',')}`);
   }
   function draw(force){
+    stage.style.setProperty('--box-w',`${pose.w}px`);stage.style.setProperty('--box-h',`${pose.h}px`);
     cube.style.transform=`translateZ(${pose.z}px) rotateX(${pose.rx}deg) rotateY(${pose.ry}deg)`;
+    // The real side keeps its layout; on the cube it is shown whole, scaled to fit.
+    real.style.transform=`${sides[face].place} translateZ(1px) scale(${Math.min(pose.w/W(),pose.h/H())})`;
     for(const id of order){const value=String(shade(sides[id].n,pose.rx,pose.ry));faces[id].lastChild.style.opacity=value;if(id===face)realShade.style.opacity=value;}
     region(force);
   }
@@ -120,7 +130,7 @@
     const start=performance.now();
     const step=(now)=>{
       const k=Math.min(1,(now-start)/ms);const e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
-      pose={rx:from.rx+(to.rx-from.rx)*e,ry:from.ry+(to.ry-from.ry)*e,z:from.z+(to.z-from.z)*e-dip*Math.sin(Math.PI*k)};
+      pose={rx:from.rx+(to.rx-from.rx)*e,ry:from.ry+(to.ry-from.ry)*e,z:from.z+(to.z-from.z)*e-dip*Math.sin(Math.PI*k),w:from.w+(to.w-from.w)*e,h:from.h+(to.h-from.h)*e};
       draw(k===1);
       if(k<1)frame=requestAnimationFrame(step);else{pose={...to};done?.();}
     };
@@ -128,7 +138,7 @@
   }
   const angleOf=(id,fromRy)=>sides[id].rx!==undefined?{rx:sides[id].rx,ry:near(fromRy,0)}:{rx:0,ry:near(fromRy,sides[id].ry)};
   function placeReal(id){
-    real.style.transform=sides[id].place;real.dataset.face=id;
+    real.dataset.face=id;
     for(const key of order)faces[key].classList.toggle('is-real',key===id);
   }
   function settle(){setFlat(true);if(mode==='work')post('box:round');drawNav();}
@@ -210,38 +220,37 @@
 
   // ---- turning ----------------------------------------------------------------------------------------
   let moving=false,queued='';
-  function leaveFlat(){fill();setFlat(false);placeReal(face);pose={...angleOf(face,pose.ry),z:workZ()};draw(true);}
+  function leaveFlat(){fill();setFlat(false);placeReal(face);pose=workPose(face,pose.ry);draw(true);}
   function turnTo(to){
     if(mode!=='work'||!to)return;
     if(moving){queued=to;return;}
     if(to===face&&flatNow()){open(to);drawNav();return;}
     moving=true;markNav(to);if(flatNow())leaveFlat();
     if(window.GitDeckAppearance?.sound==='on')window.GitDeckCubePlay?.click?.();
-    tween({...angleOf(to,pose.ry),z:workZ()},{dip:0.55*size(),done:()=>{
-      setFace(to);open(to);pose={...angleOf(to,pose.ry),z:workZ()};draw(true);moving=false;settle();
+    tween(workPose(to,pose.ry),{dip:0.55*Math.max(W(),H()),done:()=>{
+      setFace(to);open(to);pose=workPose(to,pose.ry);draw(true);moving=false;settle();
       if(queued){const next=queued;queued='';turnTo(next);}
     }});
   }
   const turn=(dir)=>turnTo(neighbour(face,last,dir));
   function hold(){
-    if(mode==='small'){body.classList.remove('gd-box-small');post('box:on');mode='hold';setTimeout(()=>{fill();setFlat(false);placeReal(face);body.classList.add('gd-box-hold');const a=angleOf(face,0);const rx=sides[face].rx!==undefined?a.rx+24:-24,ry=a.ry-34;pose={rx,ry,z:fitZ(rx,ry,size())};draw(true);},80);return;}
+    if(mode==='small'){body.classList.remove('gd-box-small');post('box:on');mode='hold';setTimeout(()=>{fill();setFlat(false);placeReal(face);body.classList.add('gd-box-hold');pose=holdPose(face,0);draw(true);},120);return;}
     if(mode!=='work'||moving)return;
     moving=true;mode='hold';body.classList.add('gd-box-hold');
     if(flatNow())leaveFlat();
-    const a=angleOf(face,pose.ry);const rx=sides[face].rx!==undefined?a.rx+24:-24,ry=a.ry-34;
-    tween({rx,ry,z:fitZ(rx,ry,size())},{ms:520,done:()=>{moving=false;}});
+    tween(holdPose(face,pose.ry),{ms:520,done:()=>{moving=false;}});
   }
   function enter(id,after){
     if(mode!=='hold'){if(mode==='work'){turnTo(id);if(after)setTimeout(after,520);}return;}
     if(moving)return;moving=true;
     if(id!==face){setFace(id);open(id);}else open(id);
     body.classList.remove('gd-box-hold');mode='work';
-    tween({...angleOf(id,pose.ry),z:workZ()},{ms:520,done:()=>{moving=false;settle();after?.();}});
+    tween(workPose(id,pose.ry),{ms:520,done:()=>{moving=false;settle();after?.();}});
   }
   function putAway(){
     mode='small';setFlat(false);fill();body.classList.remove('gd-box-hold');body.classList.add('gd-box-small');
     drawBadge();post('box:small');
-    setTimeout(()=>{const rx=-24,ry=-34;pose={rx,ry,z:fitZ(rx,ry,size(),0.04)};draw(true);},120);
+    setTimeout(()=>{pose=holdPose('changes',0,0.04);draw(true);},120);
   }
   function drawBadge(){const count=needing().length;badge.replaceChildren();if(count)badge.append(el('b','',String(count)));}
   // The small cube: a click opens it, a drag moves it.
@@ -256,7 +265,7 @@
   stage.addEventListener('pointermove',(event)=>{
     if(!drag)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;
     if(!drag.moved&&Math.abs(dx)+Math.abs(dy)>5){drag.moved=true;try{stage.setPointerCapture(drag.id);}catch{}}
-    if(drag.moved){const ry=drag.ry+dx*.4,rx=Math.max(-85,Math.min(85,drag.rx-dy*.4));pose={rx,ry,z:fitZ(rx,ry,size())};draw(false);}
+    if(drag.moved){const ry=drag.ry+dx*.4,rx=Math.max(-85,Math.min(85,drag.rx-dy*.4));pose={...pose,rx,ry,z:fitZ(rx,ry,size(),W(),H())};draw(false);}
   });
   stage.addEventListener('pointerup',(event)=>{
     if(!drag)return;const moved=drag.moved;drag=null;if(moved){draw(true);return;}
@@ -267,8 +276,11 @@
   // ---- the side bar: where you are, what waits, one click to anywhere ----------------------------------------
   const nav=el('nav','gd-box-nav');nav.setAttribute('aria-label',t('Sides of the cube'));
   const mini=button('','gd-box-mini');mini.title=t('Hold the cube (Ctrl+Alt+0)');mini.setAttribute('aria-label',mini.title);mini.onclick=()=>hold();
-  const miniCube=el('span','gd-box-mini-cube');for(const id of order){const part=el('i');part.style.transform=sides[id].place.replace('var(--box-half)','10px');part.dataset.face=id;miniCube.append(part);}mini.append(miniCube);
+  const miniCube=el('span','gd-box-mini-cube');for(const id of order){const part=el('i');part.style.transform=sides[id].place.replace(/translateZ\(.*\)$/,'translateZ(10px)');part.dataset.face=id;miniCube.append(part);}mini.append(miniCube);
   nav.append(mini);
+  // The empty part of the bar moves the window (snapping included); a double click maximizes.
+  nav.addEventListener('pointerdown',(event)=>{if(event.target===nav&&event.button===0&&!maxed){event.preventDefault();post('box:drag');}});
+  nav.addEventListener('dblclick',(event)=>{if(event.target===nav)post('window:maximize');});
   const navButtons={};
   order.forEach((id,index)=>{
     const node=button('','gd-box-nav-side');node.title=`${names[id]} (Ctrl+Alt+${index+1})`;node.append(el('span','',names[id]),el('b'));node.onclick=()=>turnTo(id);navButtons[id]=node;nav.append(node);
@@ -306,10 +318,15 @@
     for(const part of miniCube.children)part.classList.toggle('is-here',part.dataset.face===face);
   }
 
+  // ---- resizing: every edge and corner grabs, as in any window ------------------------------------------------
+  const grips=Object.entries({n:12,s:15,w:10,e:11,nw:13,ne:14,sw:16,se:17}).map(([name,code])=>{
+    const grip=el('i',`gd-box-grip gd-box-grip-${name}`);grip.addEventListener('pointerdown',(event)=>{if(event.button===0){event.preventDefault();post(`box:size:${code}`);}});return grip;
+  });
+
   // ---- keys ---------------------------------------------------------------------------------------
   const typing=(target)=>Boolean(target&&target.closest&&target.closest('input, textarea, select, [contenteditable="true"]'));
   document.addEventListener('keydown',(event)=>{
-    if(!mounted||mode==='full'||mode==='small')return;
+    if(!mounted||mode==='small')return;
     if(event.ctrlKey&&event.altKey&&!event.shiftKey&&!typing(event.target)){
       const dir={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down'}[event.key];
       if(dir&&mode==='work'){event.preventDefault();event.stopImmediatePropagation();turn(dir);return;}
@@ -321,16 +338,13 @@
   },true);
 
   // ---- window messages, mounting and keeping up -------------------------------------------------------------
-  function full(on){
-    if(on===(mode==='full'))return;
-    if(on){cancelAnimationFrame(frame);moving=false;mode='full';setFlat(true);body.classList.add('gd-box-full');body.classList.remove('gd-box-hold','gd-box-small');}
-    else{mode='work';body.classList.remove('gd-box-full');setFace(currentFace()||face);setFlat(true);post('box:on');setTimeout(()=>{resize();post('box:round');},150);drawNav();}
-  }
-  host?.addEventListener?.('message',(event)=>{if(!mounted)return;if(event.data==='window:maximized')full(true);else if(event.data==='window:restored'&&mode==='full')full(false);});
+  function setMaxed(on){maxed=on;body.classList.toggle('gd-box-max',on);if(!on&&mode==='work'&&flatNow())post('box:round');}
+  host?.addEventListener?.('message',(event)=>{if(!mounted)return;if(event.data==='window:maximized')setMaxed(true);else if(event.data==='window:restored')setMaxed(false);});
   function resize(){
-    if(!mounted)return;root.style.setProperty('--box-size',`${size()}px`);root.style.setProperty('--box-half',`${size()/2}px`);stage.style.perspective=`${PERSPECTIVE*size()}px`;
-    if(mode==='work'){pose={...angleOf(face,pose.ry),z:workZ()};if(flatNow())post('box:round');else draw(true);}
-    else if(mode==='hold'||mode==='small'){pose={...pose,z:fitZ(pose.rx,pose.ry,size(),mode==='small'?0.04:0.015)};draw(true);}
+    if(!mounted)return;stage.style.setProperty('--box-size',`${size()}px`);stage.style.perspective=`${perspective()}px`;
+    body.classList.toggle('gd-box-narrow',W()<1100);
+    if(mode==='work'){pose=workPose(face,pose.ry);if(!flatNow())draw(true);}
+    else if(mode==='hold'||mode==='small'){pose={...pose,w:size(),h:size(),z:fitZ(pose.rx,pose.ry,size(),W(),H(),mode==='small'?0.04:0.015)};draw(true);}
   }
   function controls(){
     const bar=document.querySelector('.gd-window-controls');const minimize=bar?.querySelector('.gd-win-minimize');
@@ -340,12 +354,12 @@
   }
   function mount(){
     if(mounted)return;mounted=true;mode='work';
-    main.before(stage);real.prepend(main);body.append(badge);body.classList.add('gd-box-on');controls();
+    main.before(stage);real.prepend(main);body.append(badge,...grips);body.classList.add('gd-box-on');controls();
     setFace(currentFace()||'changes');resize();setFlat(true);post('box:on');drawNav();setTimeout(()=>{resize();post('box:round');},200);
   }
   function unmount(){
-    if(!mounted)return;mounted=false;cancelAnimationFrame(frame);stage.before(main);stage.remove();badge.remove();nav.remove();
-    body.classList.remove('gd-box-on','gd-box-flat','gd-box-hold','gd-box-small','gd-box-full');post('box:off');
+    if(!mounted)return;mounted=false;cancelAnimationFrame(frame);stage.before(main);stage.remove();badge.remove();nav.remove();for(const grip of grips)grip.remove();
+    body.classList.remove('gd-box-on','gd-box-flat','gd-box-hold','gd-box-small','gd-box-max','gd-box-narrow');post('box:off');
   }
   const preview=()=>{try{return localStorage.getItem('gitdeck.boxPreview')==='true';}catch{return false;}};
   const wanted=()=>root.classList.contains('gd-box')&&root.classList.contains('ui-modern')&&(Boolean(host)||preview());
