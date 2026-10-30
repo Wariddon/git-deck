@@ -2190,4 +2190,9 @@ GitDeckI18n.register('th',{
   "Hold the cube (Ctrl+Alt+0)":"ถือลูกบาศก์ (Ctrl+Alt+0)",
   "More views":"หน้าอื่น ๆ",
   "Repository list":"รายการ repository",
+  "Back to normal size":"กลับขนาดเดิม",
+  "Beside other windows: right":"วางข้างงานอื่น: ด้านขวา",
+  "Beside other windows: left":"วางข้างงานอื่น: ด้านซ้าย",
+  "Back to normal size (Ctrl+Alt+D)":"กลับขนาดเดิม (Ctrl+Alt+D)",
+  "Keep beside other windows (Ctrl+Alt+D)":"ย่อไปวางข้างงานอื่น (Ctrl+Alt+D)",
 });

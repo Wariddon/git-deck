@@ -11,7 +11,8 @@
 //   it, or use its buttons (Commit, Fetch, Pull, Push). Esc goes back.
 // - Put away (the minimize button): a small cube in the corner of the screen with what waits for you.
 // - Maximize works as in any window; everything stays where it is. Below 1100 px the toolbar gets compact and
-//   the branch tree makes room.
+//   the branch tree makes room; below 720 px it is a slim column to keep beside your other windows, down to
+//   340 px. The dock button (Ctrl+Alt+D) puts it against the side of the screen and back again.
 // The six sides: Changes, History, Branches, Stashes and tags (around), Today (top), Repositories (bottom).
 (function(){
   // ---- pure helpers (tested) ----------------------------------------------------------------
@@ -283,7 +284,7 @@
   nav.addEventListener('dblclick',(event)=>{if(event.target===nav)post('window:maximize');});
   const navButtons={};
   order.forEach((id,index)=>{
-    const node=button('','gd-box-nav-side');node.title=`${names[id]} (Ctrl+Alt+${index+1})`;node.append(el('span','',names[id]),el('b'));node.onclick=()=>turnTo(id);navButtons[id]=node;nav.append(node);
+    const node=button('','gd-box-nav-side');node.title=`${names[id]} (Ctrl+Alt+${index+1})`;node.append(el('i','gd-box-nav-icon'),el('span','',names[id]),el('b'));node.onclick=()=>turnTo(id);navButtons[id]=node;nav.append(node);
   });
   const subBar=el('span','gd-box-sub');
   for(const [tab,label] of [['stashes',t('Stashes')],['tags',t('Tags')]]){const node=button(label);node.dataset.tab=tab;node.onclick=()=>{if(typeof selectWorkspaceTab==='function')selectWorkspaceTab(tab);};subBar.append(node);}
@@ -301,12 +302,27 @@
       const node=button(label);node.onclick=()=>{moreViews.removeAttribute('open');item.click();};moreList.append(node);
     }
     const repos_=button(t('Repository list'));repos_.onclick=()=>{moreViews.removeAttribute('open');document.querySelector('.modern-rail-item[data-tab="repos"]')?.click();};moreList.prepend(repos_);
-    const full=button(t('Full window'));full.onclick=()=>{moreViews.removeAttribute('open');post('window:maximize');};moreList.append(full);
+    const place=(label,run)=>{const node=button(label);node.onclick=()=>{moreViews.removeAttribute('open');run();};moreList.append(node);};
+    if(docked)place(t('Back to normal size'),undock);else{place(t('Beside other windows: right'),()=>dock('right'));place(t('Beside other windows: left'),()=>dock('left'));}
+    place(t('Full window'),()=>post('window:maximize'));
   }
   moreSummary.addEventListener('click',drawMore);
   document.addEventListener('click',(event)=>{if(!moreViews.contains(event.target))moreViews.removeAttribute('open');});
+  let docked=false;
+  function dock(side){docked=true;post(`box:dock:${side}`);drawDock();}
+  function undock(){docked=false;post('box:undock');drawDock();}
+  const dockButton=button('','gd-box-dock');dockButton.onclick=()=>{if(docked)undock();else dock('right');};
+  function drawDock(){const title=docked?t('Back to normal size (Ctrl+Alt+D)'):t('Keep beside other windows (Ctrl+Alt+D)');dockButton.title=title;dockButton.setAttribute('aria-label',title);dockButton.classList.toggle('is-docked',docked);}
+  dockButton.innerHTML='<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><rect x="1.5" y="2" width="9" height="8" rx="1.2"/><path d="M7.5 2v8"/></svg>';
+  drawDock();
   function markNav(id){for(const key of order)navButtons[key].classList.toggle('is-here',key===id);}
+  // Each side's icon, the same ones the side rail uses, so a slim bar can show icons alone.
+  function navIcons(){
+    const source={changes:'.modern-rail-item[data-tab="changes"] svg',history:'.modern-rail-item[data-tab="history"] svg',branches:'.modern-rail-item[data-tab="branches"] svg',stash:'.modern-rail-item[data-tab="stashes"] svg',today:'#dashboard-button svg',repos:'.modern-rail-item[data-tab="repos"] svg'};
+    for(const id of order){const holder=navButtons[id].querySelector('.gd-box-nav-icon');if(holder.firstChild)continue;const icon=document.querySelector(source[id]);if(icon)holder.append(icon.cloneNode(true));}
+  }
   function drawNav(){
+    navIcons();
     const here=currentFace()||'';markNav(here||(moving?face:''));
     for(const id of order){
       const count=sideData(id).count;const pill=navButtons[id].lastChild;const text=count?String(count):'';if(pill.textContent!==text)pill.textContent=text;
@@ -328,6 +344,7 @@
   document.addEventListener('keydown',(event)=>{
     if(!mounted||mode==='small')return;
     if(event.ctrlKey&&event.altKey&&!event.shiftKey&&!typing(event.target)){
+      if(event.code==='KeyD'){event.preventDefault();event.stopImmediatePropagation();if(docked)undock();else dock('right');return;}
       const dir={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down'}[event.key];
       if(dir&&mode==='work'){event.preventDefault();event.stopImmediatePropagation();turn(dir);return;}
       const digit=/^Digit([0-6])$/.exec(event.code);
@@ -342,13 +359,14 @@
   host?.addEventListener?.('message',(event)=>{if(!mounted)return;if(event.data==='window:maximized')setMaxed(true);else if(event.data==='window:restored')setMaxed(false);});
   function resize(){
     if(!mounted)return;stage.style.setProperty('--box-size',`${size()}px`);stage.style.perspective=`${perspective()}px`;
-    body.classList.toggle('gd-box-narrow',W()<1100);
+    body.classList.toggle('gd-box-narrow',W()<1100);body.classList.toggle('gd-box-slim',W()<720);
     if(mode==='work'){pose=workPose(face,pose.ry);if(!flatNow())draw(true);}
     else if(mode==='hold'||mode==='small'){pose={...pose,w:size(),h:size(),z:fitZ(pose.rx,pose.ry,size(),W(),H(),mode==='small'?0.04:0.015)};draw(true);}
   }
   function controls(){
     const bar=document.querySelector('.gd-window-controls');const minimize=bar?.querySelector('.gd-win-minimize');
     if(minimize&&!minimize.dataset.box){minimize.dataset.box='1';minimize.addEventListener('click',(event)=>{if(!mounted)return;event.stopImmediatePropagation();putAway();},true);}
+    if(bar&&dockButton.parentElement!==bar)bar.prepend(dockButton);
     const title=t('Put the cube away');if(minimize&&mounted&&minimize.title!==title){minimize.title=title;minimize.setAttribute('aria-label',title);}
     const head=document.querySelector('.workspace-modal-head');if(head&&nav.previousElementSibling!==head)head.after(nav);
   }
@@ -359,7 +377,7 @@
   }
   function unmount(){
     if(!mounted)return;mounted=false;cancelAnimationFrame(frame);stage.before(main);stage.remove();badge.remove();nav.remove();for(const grip of grips)grip.remove();
-    body.classList.remove('gd-box-on','gd-box-flat','gd-box-hold','gd-box-small','gd-box-max','gd-box-narrow');post('box:off');
+    dockButton.remove();body.classList.remove('gd-box-on','gd-box-flat','gd-box-hold','gd-box-small','gd-box-max','gd-box-narrow','gd-box-slim');post('box:off');
   }
   const preview=()=>{try{return localStorage.getItem('gitdeck.boxPreview')==='true';}catch{return false;}};
   const wanted=()=>root.classList.contains('gd-box')&&root.classList.contains('ui-modern')&&(Boolean(host)||preview());

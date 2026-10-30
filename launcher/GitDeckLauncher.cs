@@ -550,7 +550,7 @@ internal sealed class AppWindow : Form
     [DllImport("user32.dll")] private static extern bool ReleaseCapture();
     [DllImport("user32.dll")] private static extern bool PostMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
     private bool boxOn, boxSmall, boxFlat, boxPlacing;
-    private Rectangle? boxBounds;
+    private Rectangle? boxBounds, boxBeforeDock;
 
     private static string BoxPlaceFile { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GitDeck", "cube-window.txt"); } }
 
@@ -571,6 +571,8 @@ internal sealed class AppWindow : Form
 
     private void SaveBoxBounds()
     {
+        // Docked is a visit: the normal size stays the one to come back to, also after a restart.
+        if (boxBeforeDock.HasValue) return;
         if (!boxOn || boxSmall || boxPlacing || !IsHandleCreated || WindowState != FormWindowState.Normal) return;
         boxBounds = Bounds;
         try { File.WriteAllText(BoxPlaceFile, Left + "," + Top + "," + Width + "," + Height); } catch { }
@@ -607,8 +609,24 @@ internal sealed class AppWindow : Form
     {
         if (message == "box:on")
         {
-            boxOn = true; boxSmall = false; MinimumSize = new Size((int)(640 * BoxScale()), (int)(480 * BoxScale()));
-            Place(boxBounds ?? FirstBounds()); SaveBoxBounds(); SendState();
+            boxOn = true; boxSmall = false; MinimumSize = new Size((int)(340 * BoxScale()), (int)(420 * BoxScale()));
+            boxBeforeDock = null; Place(boxBounds ?? FirstBounds()); SaveBoxBounds(); SendState();
+        }
+        else if (message == "box:dock:left" || message == "box:dock:right")
+        {
+            // Beside your other windows: a slim column the full height of the screen, edge to edge.
+            if (!boxBeforeDock.HasValue) boxBeforeDock = WindowState == FormWindowState.Normal ? Bounds : (boxBounds ?? FirstBounds());
+            var area = Screen.FromControl(this).WorkingArea; int side = (int)(440 * BoxScale());
+            Place(new Rectangle(area.Left, area.Top, side, area.Height));
+            var origin = PointToScreen(Point.Empty);
+            int left = origin.X - Left, top = origin.Y - Top, right = Width - ClientSize.Width - left, bottom = Height - ClientSize.Height - top;
+            Place(message == "box:dock:left"
+                ? new Rectangle(area.Left - left, area.Top - top, side + left + right, area.Height + top + bottom)
+                : new Rectangle(area.Right - side - left, area.Top - top, side + left + right, area.Height + top + bottom));
+        }
+        else if (message == "box:undock")
+        {
+            if (boxBeforeDock.HasValue) { Place(boxBeforeDock.Value); boxBeforeDock = null; SaveBoxBounds(); }
         }
         else if (message == "box:small")
         {

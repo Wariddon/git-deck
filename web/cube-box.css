@@ -113,3 +113,65 @@ html.gd-hosted body.gd-box-flat:not(.gd-box-max) .gd-box-grip { display: block; 
 
 /* Below this width Git-flow, Terminal and Explorer wait in More and Ctrl+K: the actions never need scrolling. */
 @media (max-width: 1320px) { html.ui-modern body.gd-box-on .modern-actions > .modern-act-group:nth-child(4) { display: none !important; } }
+
+/* Side icons in the bar. */
+.gd-box-nav-icon { flex: none; display: grid; place-items: center; font-style: normal; }
+.gd-box-nav-icon svg { width: 15px; height: 15px; }
+.gd-window-controls .gd-box-dock.is-docked { color: #2f9e62; }
+
+/* A slim column to keep beside other windows: one thing at a time, every action one click away. */
+body.gd-box-slim #repo-tabs { padding-right: 168px !important; }
+body.gd-box-slim .gd-box-nav { gap: 1px; padding-inline: 4px; }
+body.gd-box-slim .gd-box-nav-side { flex: 1 1 0; justify-content: center; gap: 3px; padding: 0 2px !important; }
+body.gd-box-slim .gd-box-nav-side > span { display: none; }
+body.gd-box-slim .gd-box-nav-side b { min-width: 14px; padding: 0 3px; font-size: 10px; }
+body.gd-box-slim .gd-box-mini-cube { display: none; }
+body.gd-box-slim .gd-box-nav { flex-wrap: wrap; height: auto !important; }
+body.gd-box-slim .gd-box-sub { order: 9; flex: 1 1 100%; margin: 0 0 4px; }
+body.gd-box-slim .gd-box-sub button { flex: 1 1 0; }
+body.gd-box-slim .gd-box-more { margin-left: 0; }
+html.ui-modern body.gd-box-slim .gd-box-more > summary { width: 28px; padding: 0; justify-content: center; font-size: 0 !important; }
+body.gd-box-slim .gd-box-more > summary::after { content: "\22EF"; font-size: 15px; }
+body.gd-box-slim :is(.modern-tb-repo, .modern-tb-branch) { flex: 1 1 0; max-width: none; }
+body.gd-box-slim .modern-toolbar { flex-wrap: wrap; height: auto !important; row-gap: 4px; padding-block: 4px; }
+body.gd-box-slim .modern-actions { flex: 1 1 100%; justify-content: space-between; }
+html.ui-modern body.gd-box-slim .modern-actions > .modern-act-group:nth-child(n+3) { display: none !important; }
+html.ui-modern body.gd-box-slim .modern-actions { display: flex !important; height: 32px !important; overflow: visible !important; }
+html.ui-modern body.gd-box-slim .workspace-modal-head { display: block !important; height: auto !important; }
+html.ui-modern body.gd-box-slim .modern-toolbar { height: auto !important; max-height: none !important; }
+/* A commit reads top to bottom in one scroll, not three small boxes. */
+html.ui-modern body.gd-box-slim .commit-detail, html.ui-modern body.gd-box-slim .commit-detail-split { display: block !important; overflow: visible !important; height: auto !important; }
+html.ui-modern body.gd-box-slim .commit-files { max-height: none !important; height: auto !important; overflow: visible !important; }
+html.ui-modern body.gd-box-slim .commit-diff { min-height: 320px; height: auto !important; }
+html.ui-modern body.gd-box-slim .workspace-modal-head > :is(.sync-actions, .workbench-secondary) { display: none !important; }
+/* History: the graph and the message; the rest is one click away in the commit below. */
+html.ui-modern body.gd-box-slim .modern-history-head { flex-wrap: wrap; height: auto !important; }
+html.ui-modern body.gd-box-slim .modern-history-head > div:first-child:not(.history-controls) { display: none !important; }
+html.ui-modern body.gd-box-slim .history-controls { flex: 1 1 100%; flex-wrap: wrap; }
+html.ui-modern body.gd-box-slim :is(.commit-list-header, .commit-row) { grid-template-columns: 44px minmax(0, 1fr) !important; width: 100% !important; min-width: 0 !important; }
+html.ui-modern body.gd-box-slim .commit-row > :not(.commit-graph):not(.commit-description) { display: none !important; }
+html.ui-modern body.gd-box-slim .commit-list-header { display: none !important; }
+html.ui-modern body.gd-box-slim .commit-list { overflow-x: hidden !important; }
+body.gd-box-slim :is(.changes-layout, .stash-layout, .history-layout, .compare-lower) { grid-template-columns: minmax(0, 1fr) !important; }
+body.gd-box-slim .changes-layout > :is(.modern-changes-column, .changes-column-resizer, .working-diff) { grid-column: 1 !important; grid-row: auto !important; }
+body.gd-box-slim .changes-column-resizer { display: none !important; }
+body.gd-box-slim .changes-layout .working-diff { min-height: 260px; }
+body.gd-box-slim .workspace-statusbar { overflow: hidden; flex-wrap: nowrap; }
+/* The toolbar already names the branch. */
+html.ui-modern body.gd-box-slim .workspace-statusbar > :is(#status-remote, #status-commands, [data-status-nav="branches"]) { display: none !important; }
+/* Branches: the whole name; Switch and Manage appear on the row you point at. */
+html.ui-modern body.gd-box-slim .branch-card .workspace-row { grid-template-columns: minmax(0, 1fr) auto !important; }
+html.ui-modern body.gd-box-slim .branch-card .workspace-row > :first-child > small { display: none !important; }
+html.ui-modern body.gd-box-slim .branch-card .workspace-row > :first-child > strong { flex: 1 1 auto; max-width: none; }
+html.ui-modern body.gd-box-slim .branch-card .workspace-row-actions { display: none !important; }
+html.ui-modern body.gd-box-slim .branch-card .workspace-row:is(:hover, :focus-within) .workspace-row-actions { display: flex !important; }
+/* Repositories: name, health and Open, without sideways scrolling. */
+html.ui-modern body.gd-box-slim #fleet-table { overflow-x: hidden !important; }
+html.ui-modern body.gd-box-slim #fleet-table .fleet-head { display: none !important; }
+html.ui-modern body.gd-box-slim #fleet-table .fleet-row { min-width: 0 !important; width: 100% !important; grid-template-columns: minmax(0, 1fr) auto !important; }
+html.ui-modern body.gd-box-slim #fleet-table .fleet-row > :is(.fleet-branch, .dirty, .clean, .fleet-sync) { display: none !important; }
+html.ui-modern body.gd-box-slim #fleet-table .fleet-health { grid-column: 1; grid-row: 2; }
+html.ui-modern body.gd-box-slim #fleet-table .fleet-actions { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+html.ui-modern body.gd-box-slim :has(> #fleet-filter) { flex-wrap: wrap !important; }
+html.ui-modern body.gd-box-slim :is(#fleet-filter, #fleet-refresh) { flex: 1 1 40%; min-width: 0; }
+html.ui-modern body.gd-box-slim .fleet-summary { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }

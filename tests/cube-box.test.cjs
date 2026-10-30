@@ -58,6 +58,14 @@ assert.match(launcher, /Place\(boxBounds \?\? FirstBounds\(\)\)/, 'the first sta
 assert.match(js, /event\.target===nav&&event\.button===0&&!maxed\)\{event\.preventDefault\(\);post\('box:drag'\)/, 'the empty part of the side bar moves the window');
 assert.match(launcher, /if \(WindowState == FormWindowState\.Maximized\) SetWindowRgn\(Handle, IntPtr\.Zero, true\);/, 'a maximized window has no cut');
 assert.match(read('web/appearance.js'), /const shapes=\['cube','rubik','soft','square'\];const defaultShape='cube';/);
+// Small enough to sit beside other work, one click to get there and back, and the normal size survives.
+assert.match(launcher, /MinimumSize = new Size\(\(int\)\(340 \* BoxScale\(\)\), \(int\)\(420 \* BoxScale\(\)\)\);/);
+assert.match(launcher, /message == "box:dock:left" \|\| message == "box:dock:right"/);
+assert.match(launcher, /if \(boxBeforeDock\.HasValue\) return;/, 'docked is not saved as the normal size');
+const cubeScript = read('web/cube-box.js');
+assert(cubeScript.includes("body.classList.toggle('gd-box-slim',W()<720)"));
+assert(cubeScript.includes("post(`box:dock:${side}`)") && cubeScript.includes("post('box:undock')"));
+assert.match(read('web/cube-box.css'), /gd-box-slim \.modern-actions \{ display: flex !important;/, 'Pull and Push stay when slim');
 const html = read('web/index.html');
 assert(html.includes('<script src="/cube-box.js" defer></script>'));
 assert(!fs.existsSync(path.join(__dirname, '..', 'web', 'cube-shell.js')), 'the 3x3 shell is gone');
