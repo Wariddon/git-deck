@@ -49,6 +49,10 @@ assert.match(css, /body\.gd-box-on:not\(\.gd-box-flat\) \.gd-box-real \* \{ -web
 const launcher = read('launcher/GitDeckLauncher.cs');
 assert.match(launcher, /SetWindowRgn\(Handle, CreatePolygonRgn\(points, points\.Length \/ 2, 2\), true\)/);
 assert.match(launcher, /message == "box:off"/);
+assert.match(launcher, /Point\? place = ReadBoxPlace\(\);/, 'the cube starts where it was left, without a full-window flash');
+assert.match(launcher, /boxSizing \|\| !IsHandleCreated/, 'a resize in progress is not saved as the place');
+assert.match(launcher, /boxPlace \?\? new Point/, 'the first start is centred');
+assert.match(css, /html\.gd-hosted body\.gd-box-on \.gd-box-nav \{ -webkit-app-region: drag;/, 'the side bar moves the window');
 assert.match(launcher, /boxOn && IsHandleCreated && WindowState == FormWindowState\.Maximized\) SetWindowRgn\(Handle, IntPtr\.Zero, true\)/, 'the full window has no cut');
 assert.match(read('web/appearance.js'), /const shapes=\['cube','rubik','soft','square'\];const defaultShape='cube';/);
 const html = read('web/index.html');

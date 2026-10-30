@@ -53,6 +53,9 @@ body.gd-box-on:not(.gd-box-full) :is(.workspace-modal, .workspace-surface) { bor
 /* The side bar: where you are, what waits, one click to anywhere. */
 .gd-box-nav { display: none; }
 body.gd-box-on:not(.gd-box-full) .gd-box-nav { flex: none; display: flex; align-items: center; gap: 3px; padding: 2px 10px 6px; }
+/* The empty part of the side bar moves the window: there is always somewhere to grab the cube. */
+html.gd-hosted body.gd-box-on .gd-box-nav { -webkit-app-region: drag; app-region: drag; }
+html.gd-hosted body.gd-box-on .gd-box-nav > * { -webkit-app-region: no-drag; app-region: no-drag; }
 .gd-box-mini { flex: none; width: 34px; height: 34px; display: grid; place-items: center; padding: 0 !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; box-shadow: none !important; cursor: pointer; perspective: 120px; }
 .gd-box-mini:hover { background: var(--surface-hover, rgb(127 127 127 / 18%)) !important; }
 .gd-box-mini-cube { position: relative; width: 20px; height: 20px; transform-style: preserve-3d; transition: transform .45s cubic-bezier(.65,0,.3,1); }

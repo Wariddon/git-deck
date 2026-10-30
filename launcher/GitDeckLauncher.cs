@@ -414,7 +414,10 @@ internal sealed class AppWindow : Form
         StartPosition = FormStartPosition.CenterScreen;
         Size = new Size(1440, 900);
         MinimumSize = new Size(760, 520);
-        WindowState = FormWindowState.Maximized;
+        // The cube starts where it was left, without flashing the full window first.
+        Point? place = ReadBoxPlace();
+        if (place.HasValue) { StartPosition = FormStartPosition.Manual; Location = place.Value; Size = new Size(1000, 1000); boxPlace = place; }
+        else WindowState = FormWindowState.Maximized;
         view = new Microsoft.Web.WebView2.WinForms.WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = BackColor };
         Controls.Add(view);
         Load += async (sender, e) =>
@@ -546,12 +549,43 @@ internal sealed class AppWindow : Form
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr window);
     [DllImport("user32.dll")] private static extern bool ReleaseCapture();
     [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
-    private bool boxOn;
+    private bool boxOn, boxSmall, boxSizing;
+    private Point? boxPlace;
+
+    private static string BoxPlaceFile { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GitDeck", "cube-window.txt"); } }
+
+    // Where the cube was left; null when it has never been placed or the place is off every screen.
+    private static Point? ReadBoxPlace()
+    {
+        try
+        {
+            if (!File.Exists(BoxPlaceFile)) return null;
+            var parts = File.ReadAllText(BoxPlaceFile).Trim().Split(',');
+            var point = new Point(int.Parse(parts[0]), int.Parse(parts[1]));
+            foreach (var screen in Screen.AllScreens) if (screen.WorkingArea.Contains(point.X + 120, point.Y + 40)) return point;
+        }
+        catch { }
+        return null;
+    }
+
+    private void SaveBoxPlace()
+    {
+        if (!boxOn || boxSmall || boxSizing || !IsHandleCreated || WindowState != FormWindowState.Normal) return;
+        boxPlace = Location;
+        try { File.WriteAllText(BoxPlaceFile, Location.X + "," + Location.Y); } catch { }
+    }
+
+    protected override void OnMove(EventArgs e)
+    {
+        base.OnMove(e);
+        SaveBoxPlace();
+    }
 
     private double BoxScale() { try { return GetDpiForWindow(Handle) / 96.0; } catch { return 1.0; } }
 
     private void SizeClient(int side, bool corner)
     {
+        boxSizing = true;
         if (WindowState != FormWindowState.Normal) WindowState = FormWindowState.Normal;
         MinimumSize = new Size(120, 120);
         var area = Screen.FromControl(this).WorkingArea;
@@ -559,15 +593,17 @@ internal sealed class AppWindow : Form
         Size = new Size(side + (Width - ClientSize.Width), side + (Height - ClientSize.Height));
         var margin = PointToScreen(Point.Empty);
         int dx = margin.X - Left, dy = margin.Y - Top;
-        Location = corner ? new Point(area.Right - side - 16 - dx, area.Bottom - side - 16 - dy) : new Point(area.Left + (area.Width - side) / 2 - dx, area.Top + (area.Height - side) / 2 - dy);
+        Location = corner ? new Point(area.Right - side - 16 - dx, area.Bottom - side - 16 - dy) : (boxPlace ?? new Point(area.Left + (area.Width - side) / 2 - dx, area.Top + (area.Height - side) / 2 - dy));
+        boxSizing = false;
+        SaveBoxPlace();
     }
 
     private void OnBox(string message)
     {
-        if (message == "box:on") { boxOn = true; var area = Screen.FromControl(this).WorkingArea; SizeClient(Math.Min(area.Width, area.Height) - 24, false); SendState(); }
-        else if (message == "box:small") SizeClient((int)(190 * BoxScale()), true);
+        if (message == "box:on") { boxOn = true; boxSmall = false; var area = Screen.FromControl(this).WorkingArea; SizeClient(Math.Min(area.Width, area.Height) - 24, false); SendState(); }
+        else if (message == "box:small") { boxSmall = true; SizeClient((int)(190 * BoxScale()), true); }
         else if (message == "box:drag") { ReleaseCapture(); SendMessage(Handle, 0x00A1, (IntPtr)2, IntPtr.Zero); } // WM_NCLBUTTONDOWN, HTCAPTION
-        else if (message == "box:off") { boxOn = false; SetWindowRgn(Handle, IntPtr.Zero, true); MinimumSize = new Size(760, 520); WindowState = FormWindowState.Maximized; }
+        else if (message == "box:off") { boxOn = false; boxPlace = null; try { File.Delete(BoxPlaceFile); } catch { } SetWindowRgn(Handle, IntPtr.Zero, true); MinimumSize = new Size(760, 520); WindowState = FormWindowState.Maximized; }
         else if (!boxOn || WindowState == FormWindowState.Maximized) return;
         else if (message == "box:round")
         {
