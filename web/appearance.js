@@ -13,11 +13,11 @@
   const looks=['modern','classic'];const defaultLook='modern';
   // Density: Comfortable (34 px rows) or Compact (26 px rows, tighter tables) for more on one screen.
   const densities=['comfortable','compact'];const defaultDensity='comfortable';
-  // Shape: Rubik (sticker tiles on dark plastic, every view change turns the cube; web/rubik.css,
+  // Shape: Cube (the program is a 3D box you turn; web/cube-box.js), Rubik (sticker tiles on dark plastic, every view change turns the cube; web/rubik.css,
   // rubik.js; builds on Soft), Soft (rounded islands, glass dialogs; web/soft.css) or Square (boxes).
-  const shapes=['rubik','soft','square'];const defaultShape='rubik';
+  const shapes=['cube','rubik','soft','square'];const defaultShape='cube';
   // Opening: how Git Deck appears when it starts (web/entrance.js).
-  const openings=['cube','logo','stars','command','off'];const defaultOpening='cube';
+  const openings=['cube','logo','stars','command','off'];const defaultOpening='off';
   // Cube sound: a short click on every Rubik turn (web/cube-play.js); off unless chosen.
   const sounds=['off','on'];const defaultSound='off';
   // Sticker colours for the Rubik shape (web/rubik.css): ready-made sets, or your own (custom).
@@ -34,7 +34,7 @@
   let sound=read(keys.sound);if(!sounds.includes(sound))sound=defaultSound;
   let stickers=read(keys.stickers);if(!stickerSets.includes(stickers))stickers=defaultStickers;
   const root=document.documentElement;
-  const apply=()=>{root.style.setProperty('--ui-text-size',size+'px');root.classList.toggle('ui-clean',look==='modern');root.classList.toggle('ui-modern',look==='modern');root.classList.toggle('gd-compact',density==='compact');root.classList.toggle('gd-soft',shape==='soft'||shape==='rubik');root.classList.toggle('gd-rubik',shape==='rubik');for(const set of stickerSets)root.classList.toggle(`gd-st-${set}`,set===stickers);let own={};try{own=JSON.parse(read(keys.stickerColors)||'{}')||{};}catch{}for(const name of stickerVars)root.style.setProperty(`--st-${name}`,stickers==='custom'&&/^#[0-9a-f]{6}$/i.test(own[name]||'')?own[name]:'');};
+  const apply=()=>{root.style.setProperty('--ui-text-size',size+'px');root.classList.toggle('ui-clean',look==='modern');root.classList.toggle('ui-modern',look==='modern');root.classList.toggle('gd-compact',density==='compact');root.classList.toggle('gd-soft',shape==='soft'||shape==='rubik'||shape==='cube');root.classList.toggle('gd-box',shape==='cube');root.classList.toggle('gd-rubik',shape==='rubik');for(const set of stickerSets)root.classList.toggle(`gd-st-${set}`,set===stickers);let own={};try{own=JSON.parse(read(keys.stickerColors)||'{}')||{};}catch{}for(const name of stickerVars)root.style.setProperty(`--st-${name}`,stickers==='custom'&&/^#[0-9a-f]{6}$/i.test(own[name]||'')?own[name]:'');};
   const refresh=()=>document.querySelectorAll('[data-text-size],[data-look],[data-density],[data-shape],[data-opening],[data-sound],[data-stickers]').forEach(button=>{
     const active=button.dataset.textSize?Number(button.dataset.textSize)===size:button.dataset.density?button.dataset.density===density:button.dataset.shape?button.dataset.shape===shape:button.dataset.opening?button.dataset.opening===opening:button.dataset.sound?button.dataset.sound===sound:button.dataset.stickers?button.dataset.stickers===stickers:button.dataset.look===look;
     button.setAttribute('aria-pressed',String(active));
@@ -72,6 +72,7 @@
         {data:{density:'compact'},label:t('Compact'),title:t('Rows of 26 px and tighter tables: more on one screen'),run:()=>setDensity('compact')},
       ]),
       group('look-choice shape-choice',t('Shape'),[
+        {data:{shape:'cube'},label:t('Cube'),title:t('The program is a 3D cube: every side is a view, turn it to change view'),run:()=>setShape('cube')},
         {data:{shape:'rubik'},label:t('Rubik'),title:t('Sticker tiles on dark plastic; every view change turns the cube'),run:()=>setShape('rubik')},
         {data:{shape:'soft'},label:t('Soft'),title:t('Rounded islands, glass dialogs and a sliding highlight'),run:()=>setShape('soft')},
         {data:{shape:'square'},label:t('Square'),title:t('Boxes with straight edges, as before'),run:()=>setShape('square')},

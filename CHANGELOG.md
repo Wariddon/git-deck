@@ -4,13 +4,12 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
-- **Git Deck opens as a Rubik's cube that is your Git work** (Rubik shape, theme menu › Layout › Cube, on by default; Classic opens straight into the window). A real 3x3x3 cube: drag the space to turn it, drag across a sticker to twist a layer. Four modes:
-  - **Repo**: faces are Changes, Sync, Branches, Stashes, Releases and Conflicts of the open repository. Every sticker round a centre is one real thing that needs you (a changed file, a commit to pull or push, a branch behind, a stash, a commit not released, a conflict) in a scrambled colour; a clean, synced repository is a solved cube and glows. Twisting a face does its Git move: Changes stages everything, Sync pulls one way and pushes the other, Branches fetches, Stashes stashes or pops; Releases and Conflicts open their views. Moves that change things ask first, and the twist plays once the move succeeded.
-  - **Workset**: the 26 pieces are 26 repositories (open tabs, favourites, then the busiest) in their status colours; click one to open it, twist a layer to fetch its repositories.
-  - **Branches**: each face is a branch (the current one in front) and its stickers are the latest commits; those the current branch already has wear the face's colour, the others stand out.
-  - **Play**: a plain cube to twist, scramble and solve.
-  - Each face's centre is a door into its view; **Expand** goes back to the window, **⧉ Shrink to the cube** beside the window buttons (or Esc) brings the cube back.
-
+- **The program is a cube** (Appearance › Shape › Cube, now the default; GitDeck.exe). Not a window with a cube in it: the window is square and cut to the cube's outline, so the desktop shows around it and clicks there go through.
+  - Six sides: Changes, History, Branches, Stashes and tags, Today (top), Repositories (bottom). The side facing you is the real, flat Git Deck.
+  - **Turn** with Ctrl+Alt+arrows or the pill at the middle of an edge (hovering it leans the cube so you peek at the next side).
+  - **Hold** with Esc or the cube button: the whole cube at an angle; drag to turn, click a side to fly in.
+  - **Put away** with the minimize button: a small cube in the corner with what waits for you. **Full window** with the maximize button: the wide layout for long diffs.
+  - Compare, Recovery, Tools and Settings are in Ctrl+K and the menus while a side is square; the side rail returns in the full window.
 - Every button was checked for contrast in all five themes, overlaps and clipped text. The status sentence no longer gets cut short (it keeps its width; less important status items shorten with an ellipsis), and the pinned buttons of the repository tab row (Worksets, Repos, +) have a solid face so scrolled tabs slide under them instead of showing through.
 
 ## 1.7.1 — 2026-10-29

@@ -47,7 +47,7 @@ assert.match(css, /\.repo-tab\.active \{ background: var\(--surface-muted\) !imp
 assert.match(read('web/soft.js'), /\.modern-rail-item\.active:not\(\[data-tab="repos"\]\)/, 'the rail highlight follows the view, not the Repos drawer');
 assert.match(js, /--gd-face-ink/, 'readable ink on light stickers');
 const appearance = read('web/appearance.js');
-assert.match(appearance, /const shapes=\['rubik','soft','square'\];const defaultShape='rubik';/);
+assert.match(appearance, /const shapes=\['cube','rubik','soft','square'\];const defaultShape='cube';/);
 assert.match(appearance, /root\.classList\.toggle\('gd-rubik',shape==='rubik'\)/);
 const html = read('web/index.html');
 assert(html.indexOf('href="/rubik.css"') > html.indexOf('href="/soft.css"'), 'rubik.css after soft.css');

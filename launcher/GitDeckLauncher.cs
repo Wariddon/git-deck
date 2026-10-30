@@ -518,6 +518,7 @@ internal sealed class AppWindow : Form
         else if (message == "window:maximize") WindowState = WindowState == FormWindowState.Maximized ? FormWindowState.Normal : FormWindowState.Maximized;
         else if (message == "window:close") Close();
         else if (message == "window:state") SendState();
+        else if (message.StartsWith("box:", StringComparison.Ordinal)) OnBox(message);
         else if (message != null && message.StartsWith("badge:", StringComparison.Ordinal))
         {
             // The number of things waiting, on the taskbar button (web/desktop-bridge.js).
@@ -535,6 +536,63 @@ internal sealed class AppWindow : Form
     private void SendState()
     {
         try { if (view.CoreWebView2 != null) view.CoreWebView2.PostWebMessageAsString(WindowState == FormWindowState.Maximized ? "window:maximized" : "window:restored"); } catch { }
+    }
+
+    // The cube (web/cube-box.js): the window is square and cut to the cube's outline, so the desktop shows
+    // around it and clicks outside go through. Maximized (the full window for long diffs) has no cut.
+    [DllImport("user32.dll")] private static extern int SetWindowRgn(IntPtr window, IntPtr region, bool redraw);
+    [DllImport("gdi32.dll")] private static extern IntPtr CreatePolygonRgn(int[] points, int count, int mode);
+    [DllImport("gdi32.dll")] private static extern IntPtr CreateRoundRectRgn(int left, int top, int right, int bottom, int width, int height);
+    [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr window);
+    private bool boxOn;
+
+    private double BoxScale() { try { return GetDpiForWindow(Handle) / 96.0; } catch { return 1.0; } }
+
+    private void SizeClient(int side, bool corner)
+    {
+        if (WindowState != FormWindowState.Normal) WindowState = FormWindowState.Normal;
+        MinimumSize = new Size(120, 120);
+        var area = Screen.FromControl(this).WorkingArea;
+        Size = new Size(side, side);
+        Size = new Size(side + (Width - ClientSize.Width), side + (Height - ClientSize.Height));
+        var margin = PointToScreen(Point.Empty);
+        int dx = margin.X - Left, dy = margin.Y - Top;
+        Location = corner ? new Point(area.Right - side - 16 - dx, area.Bottom - side - 16 - dy) : new Point(area.Left + (area.Width - side) / 2 - dx, area.Top + (area.Height - side) / 2 - dy);
+    }
+
+    private void OnBox(string message)
+    {
+        if (message == "box:on") { boxOn = true; var area = Screen.FromControl(this).WorkingArea; SizeClient(Math.Min(area.Width, area.Height) - 24, false); SendState(); }
+        else if (message == "box:small") SizeClient((int)(190 * BoxScale()), true);
+        else if (message == "box:off") { boxOn = false; SetWindowRgn(Handle, IntPtr.Zero, true); MinimumSize = new Size(760, 520); WindowState = FormWindowState.Maximized; }
+        else if (!boxOn || WindowState == FormWindowState.Maximized) return;
+        else if (message == "box:round")
+        {
+            var margin = PointToScreen(Point.Empty);
+            int x = margin.X - Left, y = margin.Y - Top, radius = (int)(20 * BoxScale());
+            SetWindowRgn(Handle, CreateRoundRectRgn(x, y, x + ClientSize.Width + 1, y + ClientSize.Height + 1, radius, radius), true);
+        }
+        else if (message.StartsWith("box:poly:", StringComparison.Ordinal))
+        {
+            var parts = message.Substring(9).Split(',');
+            if (parts.Length < 6 || parts.Length % 2 != 0) return;
+            var margin = PointToScreen(Point.Empty);
+            int dx = margin.X - Left, dy = margin.Y - Top; double scale = BoxScale();
+            var points = new int[parts.Length];
+            for (int i = 0; i < parts.Length; i++)
+            {
+                double value;
+                if (!double.TryParse(parts[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value)) return;
+                points[i] = (int)Math.Round(value * scale) + (i % 2 == 0 ? dx : dy);
+            }
+            SetWindowRgn(Handle, CreatePolygonRgn(points, points.Length / 2, 2), true);
+        }
+    }
+
+    protected override void OnResize(EventArgs e)
+    {
+        if (boxOn && IsHandleCreated && WindowState == FormWindowState.Maximized) SetWindowRgn(Handle, IntPtr.Zero, true);
+        base.OnResize(e);
     }
 
     protected override void OnHandleCreated(EventArgs e)

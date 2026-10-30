@@ -50,9 +50,7 @@
 
   const root=document.documentElement;root.dataset.daypart=daypart(new Date().getHours());
   const startup=window.GitDeckStartup;if(!startup)return;
-  // With the Cube layout Git Deck opens as the cube itself (web/cube-shell.js): no opening on top of it.
-  const cubeHome=()=>{try{return document.documentElement.classList.contains('gd-rubik')&&localStorage.getItem('gitdeck.layout')!=='"classic"';}catch{return false;}};
-  const mode=()=>cubeHome()?'off':window.GitDeckAppearance?.opening||'cube';
+  const mode=()=>window.GitDeckAppearance?.opening||'cube';
   const still=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const make=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node;};
   let name='';
