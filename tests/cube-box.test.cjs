@@ -28,10 +28,11 @@ assert.equal(flat.length, 4, 'one face seen: four corners');
 for (const [x, y] of flat) assert(Math.abs(x) < 0.01 || Math.abs(x - S) < 0.01, `x ${x}`), assert(Math.abs(y) < 0.01 || Math.abs(y - S) < 0.01, `y ${y}`);
 // Held, the outline is a six-sided shape inside the window at any angle.
 for (const [rx, ry] of [[-24, -34], [-85, 200], [60, 45], [-35, 45]]) {
-  const outline = box.hull(box.corners(rx, ry, box.holdZ(S), S, box.PERSPECTIVE * S, S / 2, S / 2));
+  const outline = box.hull(box.corners(rx, ry, box.fitZ(rx, ry, S), S, box.PERSPECTIVE * S, S / 2, S / 2));
   assert(outline.length >= 4 && outline.length <= 6, `outline of ${outline.length}`);
   for (const [x, y] of outline) assert(x >= 0 && x <= S && y >= 0 && y <= S, `(${x}, ${y}) at ${rx}/${ry}`);
 }
+assert(box.fitZ(-24, -34, S) > -2.2 * S, 'held as close as it fits, large enough to read');
 assert.equal(box.shade([0, 0, 1], 0, 0), 0, 'the side facing you is not darkened');
 assert(box.shade([1, 0, 0], -24, -34) > box.shade([0, 0, 1], -24, -34), 'a side turned away is darker');
 
@@ -39,6 +40,9 @@ const js = read('web/cube-box.js');
 assert.match(js, /post\(`box:poly:/, 'the window is cut to the outline');
 assert.match(js, /post\('box:round'\)/);
 assert.match(js, /function setFlat\(on\)/, 'at rest no transform remains');
+assert.match(js, /const nav=el\('nav','gd-box-nav'\)/, 'a side bar is always visible');
+assert.match(js, /actions:w\?\[\{label:t\('Fetch'\)/, 'the held cube can fetch, pull and push');
+assert.doesNotMatch(js, /gd-box-turn/, 'nothing pops up over the scrollbar at the window edge');
 const css = read('web/cube-box.css');
 assert.match(css, /body\.gd-box-flat \.gd-box-real \{ transform: none !important;/);
 assert.match(css, /body\.gd-box-on:not\(\.gd-box-flat\) \.gd-box-real \* \{ -webkit-app-region: no-drag !important;/, 'a moving cube does not drag the window');

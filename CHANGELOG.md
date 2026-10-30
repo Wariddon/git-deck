@@ -6,10 +6,9 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 - **The program is a cube** (Appearance › Shape › Cube, now the default; GitDeck.exe). Not a window with a cube in it: the window is square and cut to the cube's outline, so the desktop shows around it and clicks there go through.
   - Six sides: Changes, History, Branches, Stashes and tags, Today (top), Repositories (bottom). The side facing you is the real, flat Git Deck.
-  - **Turn** with Ctrl+Alt+arrows or the pill at the middle of an edge (hovering it leans the cube so you peek at the next side).
-  - **Hold** with Esc or the cube button: the whole cube at an angle; drag to turn, click a side to fly in.
-  - **Put away** with the minimize button: a small cube in the corner with what waits for you. **Full window** with the maximize button: the wide layout for long diffs.
-  - Compare, Recovery, Tools and Settings are in Ctrl+K and the menus while a side is square; the side rail returns in the full window.
+  - **Side bar** under the toolbar: every side with what waits on it, one click turns straight there (Ctrl+Alt+1-6, Ctrl+Alt+arrows). **More views** holds the rest: Compare, Conflicts, Recovery, Report, Tools, Settings, Full window.
+  - **Hold** with the small cube in the side bar (Ctrl+Alt+0): the whole cube, large, at an angle. Drag to turn it. Every side works from here: click a file, commit or repository to fly straight to it, or use its buttons (Commit, Fetch, Pull, Push). Esc goes back.
+  - **Put away** with the minimize button: a small cube in the corner with what waits for you. **Full window** with the maximize button: the wide layout with the side rail and branch tree, for long diffs.
 - Every button was checked for contrast in all five themes, overlaps and clipped text. The status sentence no longer gets cut short (it keeps its width; less important status items shorten with an ellipsis), and the pinned buttons of the repository tab row (Worksets, Repos, +) have a solid face so scrolled tabs slide under them instead of showing through.
 
 ## 1.7.1 — 2026-10-29

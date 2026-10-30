@@ -544,6 +544,8 @@ internal sealed class AppWindow : Form
     [DllImport("gdi32.dll")] private static extern IntPtr CreatePolygonRgn(int[] points, int count, int mode);
     [DllImport("gdi32.dll")] private static extern IntPtr CreateRoundRectRgn(int left, int top, int right, int bottom, int width, int height);
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr window);
+    [DllImport("user32.dll")] private static extern bool ReleaseCapture();
+    [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
     private bool boxOn;
 
     private double BoxScale() { try { return GetDpiForWindow(Handle) / 96.0; } catch { return 1.0; } }
@@ -564,6 +566,7 @@ internal sealed class AppWindow : Form
     {
         if (message == "box:on") { boxOn = true; var area = Screen.FromControl(this).WorkingArea; SizeClient(Math.Min(area.Width, area.Height) - 24, false); SendState(); }
         else if (message == "box:small") SizeClient((int)(190 * BoxScale()), true);
+        else if (message == "box:drag") { ReleaseCapture(); SendMessage(Handle, 0x00A1, (IntPtr)2, IntPtr.Zero); } // WM_NCLBUTTONDOWN, HTCAPTION
         else if (message == "box:off") { boxOn = false; SetWindowRgn(Handle, IntPtr.Zero, true); MinimumSize = new Size(760, 520); WindowState = FormWindowState.Maximized; }
         else if (!boxOn || WindowState == FormWindowState.Maximized) return;
         else if (message == "box:round")

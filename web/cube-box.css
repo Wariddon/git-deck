@@ -6,12 +6,19 @@
 .gd-box-real { position: absolute; inset: 0; backface-visibility: hidden; overflow: hidden; background: var(--canvas, var(--paper, #1c1f24)); }
 .gd-box-side { position: absolute; left: calc(50% - var(--box-half)); top: calc(50% - var(--box-half)); width: var(--box-size); height: var(--box-size); overflow: hidden; border-radius: 10px; backface-visibility: hidden; background: var(--surface, #1c1f24); color: var(--text-primary, #e8eaed); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-primary, #e8eaed) 12%, transparent); }
 .gd-box-side.is-real { visibility: hidden; }
-.gd-box-side-body { height: 100%; box-sizing: border-box; padding: 5% 6%; display: flex; flex-direction: column; gap: 3%; font-size: calc(var(--box-size) / 56); }
-.gd-box-side-head { display: grid; gap: .3em; }
-.gd-box-side-head small { color: var(--text-secondary, #aab1ba); font-size: 1em; }
-.gd-box-side-head strong { font-size: 2.4em; font-weight: 600; }
-.gd-box-side-rows { display: grid; gap: .45em; min-height: 0; overflow: hidden; }
-.gd-box-side-rows span { padding: .55em .8em; overflow: hidden; border-radius: .45em; background: var(--surface-subtle, #24282e); text-overflow: ellipsis; white-space: nowrap; }
+.gd-box-side-body { height: 100%; box-sizing: border-box; padding: 4% 5%; display: flex; flex-direction: column; gap: 2.5%; font-size: calc(var(--box-size) / 44); }
+.gd-box-side-head { display: flex; align-items: flex-start; gap: .6em; }
+.gd-box-side-title { flex: 1; min-width: 0; display: grid; gap: .2em; }
+.gd-box-side-title small { overflow: hidden; color: var(--text-secondary, #aab1ba); font-size: .85em; text-overflow: ellipsis; white-space: nowrap; }
+.gd-box-side-title strong { font-size: 1.9em; font-weight: 600; white-space: nowrap; }
+.gd-box-side-actions { flex: none; display: flex; gap: .35em; }
+.gd-box-side-actions button { min-height: 2.3em; padding: 0 .8em; border: 0; border-radius: .45em; background: var(--surface-muted, #2c3037); color: var(--text-primary, #e8eaed); font: inherit; font-weight: 600; cursor: pointer; }
+.gd-box-side-actions button.is-primary { background: #24794b; color: #ffffff; }
+.gd-box-side-rows { flex: 1; display: grid; align-content: start; gap: .3em; min-height: 0; overflow: hidden; }
+.gd-box-side-rows button { display: flex; align-items: center; gap: .6em; min-width: 0; min-height: 2.15em; padding: 0 .7em; border: 0; border-radius: .4em; background: var(--surface-subtle, #24282e); color: var(--text-primary, #e8eaed); font: inherit; text-align: left; cursor: pointer; }
+.gd-box-side-rows button:hover, .gd-box-side-actions button:hover { filter: brightness(1.18); }
+.gd-box-side-rows span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gd-box-side-rows small { flex: none; color: var(--text-secondary, #aab1ba); font-size: .85em; }
 .gd-box-shade { position: absolute; inset: 0; z-index: 90; background: #000000; opacity: 0; pointer-events: none; }
 
 /* Work: flat, so the page behaves exactly as it does without the cube. */
@@ -26,7 +33,7 @@ body.gd-box-on:not(.gd-box-flat) .gd-box-real * { -webkit-app-region: no-drag !i
 /* Held: the sides are one surface each; dragging turns the cube, a click flies in. */
 body.gd-box-hold .gd-box-stage { cursor: grab; }
 body.gd-box-hold .gd-box-stage:active { cursor: grabbing; }
-body.gd-box-hold .gd-box-real > :not(.gd-box-shade), body.gd-box-hold .gd-box-side > * { pointer-events: none; }
+body.gd-box-hold .gd-box-real > :not(.gd-box-shade) { pointer-events: none; }
 body.gd-box-hold .gd-box-real, body.gd-box-hold .gd-box-side { cursor: pointer; }
 body.gd-box-hold :is(#command-palette, .gd-window-controls) { pointer-events: none; }
 
@@ -43,22 +50,33 @@ body.gd-box-on:not(.gd-box-full) .modern-rail, body.gd-box-on:not(.gd-box-full) 
 html.ui-modern body.gd-box-on:not(.gd-box-full) .workbench-body:has(> .modern-rail) { padding-left: 0; }
 body.gd-box-on:not(.gd-box-full) :is(.workspace-modal, .workspace-surface) { border-radius: 0; }
 
-/* Turning pills and the Stashes / Tags switch. */
-.gd-box-turn { position: fixed; z-index: 300; height: 36px; padding: 0 14px; border: 0 !important; border-radius: 18px !important; background: var(--text-primary, #1f2328) !important; color: var(--canvas, #ffffff) !important; font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap; box-shadow: 0 6px 18px rgb(0 0 0 / 35%); cursor: pointer; }
-.gd-box-turn[hidden] { display: none; }
-.gd-box-turn-left { left: 6px; top: calc(50% - 18px); }
-.gd-box-turn-left::before { content: "\2190\00a0"; }
-.gd-box-turn-right { right: 6px; top: calc(50% - 18px); }
-.gd-box-turn-right::after { content: "\00a0\2192"; }
-.gd-box-turn-up { left: 50%; top: 6px; transform: translateX(-50%); }
-.gd-box-turn-up::before { content: "\2191\00a0"; }
-.gd-box-turn-down { left: 50%; bottom: 6px; transform: translateX(-50%); }
-.gd-box-turn-down::before { content: "\2193\00a0"; }
-.gd-box-sub { position: fixed; z-index: 200; right: 16px; bottom: 44px; display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--surface-muted, #eaeef2); box-shadow: 0 4px 14px rgb(0 0 0 / 22%); }
+/* The side bar: where you are, what waits, one click to anywhere. */
+.gd-box-nav { display: none; }
+body.gd-box-on:not(.gd-box-full) .gd-box-nav { flex: none; display: flex; align-items: center; gap: 3px; padding: 2px 10px 6px; }
+.gd-box-mini { flex: none; width: 34px; height: 34px; display: grid; place-items: center; padding: 0 !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; box-shadow: none !important; cursor: pointer; perspective: 120px; }
+.gd-box-mini:hover { background: var(--surface-hover, rgb(127 127 127 / 18%)) !important; }
+.gd-box-mini-cube { position: relative; width: 20px; height: 20px; transform-style: preserve-3d; transition: transform .45s cubic-bezier(.65,0,.3,1); }
+.gd-box-mini-cube i { position: absolute; inset: 0; background: color-mix(in srgb, var(--text-primary, #e8eaed) 30%, var(--surface, #1c1f24)); box-shadow: inset 0 0 0 1px var(--surface, #1c1f24); }
+.gd-box-mini-cube i.is-here { background: #2f9e62; }
+.gd-box-nav-side { flex: 0 1 auto; min-width: 0; height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 10px !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; box-shadow: none !important; color: var(--text-secondary, #57606a) !important; font: inherit; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.gd-box-nav-side > span { overflow: hidden; text-overflow: ellipsis; }
+.gd-box-nav-side:hover { background: var(--surface-hover, rgb(127 127 127 / 14%)) !important; color: var(--text-primary, #1f2328) !important; }
+.gd-box-nav-side.is-here { background: var(--surface-muted, rgb(127 127 127 / 20%)) !important; color: var(--text-primary, #1f2328) !important; box-shadow: inset 0 -2px 0 #2f9e62 !important; }
+.gd-box-nav-side b { min-width: 16px; padding: 0 5px; border-radius: 9px; background: color-mix(in srgb, var(--text-primary, #1f2328) 16%, transparent); font-size: 11px; line-height: 18px; text-align: center; }
+.gd-box-nav-side b:empty { display: none; }
+.gd-box-nav-side.has-work b { background: #24794b; color: #ffffff; }
+.gd-box-sub { flex: none; display: flex; gap: 2px; margin-left: 4px; padding: 2px; border-radius: 8px; background: var(--surface-subtle, rgb(127 127 127 / 12%)); }
 .gd-box-sub[hidden] { display: none; }
-.gd-box-sub button { min-height: 30px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--text-primary, #1f2328); font: inherit; font-weight: 600; }
-.gd-box-sub button[aria-pressed="true"] { background: var(--surface, #ffffff); }
-.gd-box-hold-button { -webkit-app-region: no-drag; app-region: no-drag; }
+.gd-box-sub button { min-height: 28px; padding: 0 9px !important; border: 0 !important; border-radius: 6px !important; background: transparent !important; box-shadow: none !important; color: var(--text-secondary, #57606a) !important; font: inherit; }
+.gd-box-sub button[aria-pressed="true"] { background: var(--surface-muted, rgb(127 127 127 / 22%)) !important; color: var(--text-primary, #1f2328) !important; font-weight: 600; }
+.gd-box-more { position: relative; flex: none; margin-left: auto; }
+.gd-box-more > summary { height: 34px; display: flex; align-items: center; padding: 0 10px; border-radius: 8px; color: var(--text-secondary, #57606a); font-weight: 600; white-space: nowrap; cursor: pointer; list-style: none; }
+.gd-box-more > summary::-webkit-details-marker { display: none; }
+.gd-box-more > summary::after { content: "\00a0\25BE"; }
+.gd-box-more > summary:hover { background: var(--surface-hover, rgb(127 127 127 / 14%)); }
+.gd-box-more-list { position: absolute; right: 0; top: 38px; z-index: 130; min-width: 190px; display: grid; gap: 1px; padding: 5px; border-radius: 10px; background: var(--surface, #ffffff); box-shadow: 0 12px 34px rgb(0 0 0 / 38%), 0 0 0 1px var(--border-default, #d0d7de); }
+.gd-box-more-list button { min-height: 34px; padding: 0 10px !important; border: 0 !important; border-radius: 6px !important; background: transparent !important; box-shadow: none !important; color: var(--text-primary, #1f2328) !important; font: inherit; text-align: left; }
+.gd-box-more-list button:hover { background: var(--surface-hover, rgb(127 127 127 / 14%)) !important; }
 
 /* A square side has one column: the view takes the whole width. */
 body.gd-box-on:not(.gd-box-full) .workbench-body { grid-template-columns: minmax(0, 1fr) !important; }
@@ -68,7 +86,13 @@ body.gd-box-on:not(.gd-box-full) .gd-window-controls { position: fixed; top: 0; 
 body.gd-box-on:not(.gd-box-full) .gd-window-controls button { width: 40px !important; }
 body.gd-box-on:not(.gd-box-full) #repo-tabs { padding-right: 176px !important; }
 body.gd-box-on:not(.gd-box-full) #repo-tabs > :is(.repo-tab-search:not(.gd-ticket-start), .repo-tab-add) { display: none !important; }
-/* The toolbar fits a side: shorter name tiles, no scrollbar on the action row. */
-body.gd-box-on:not(.gd-box-full) :is(.modern-tb-repo, .modern-tb-branch) { max-width: 150px; min-width: 0; }
-body.gd-box-on:not(.gd-box-full) .modern-actions { scrollbar-width: none; }
-body.gd-box-on:not(.gd-box-full) .modern-actions::-webkit-scrollbar { display: none; }
+/* The toolbar fits a side and keeps every action: compact name tiles, icon-size quiet actions. The
+   Dashboard button is gone because Today and Repositories are sides. */
+html.ui-modern body.gd-box-on:not(.gd-box-full) :is(#dashboard-button, .toolbar-dashboard) { display: none !important; }
+body.gd-box-on:not(.gd-box-full) :is(.modern-tb-repo, .modern-tb-branch) { flex: 0 1 92px; max-width: 92px; min-width: 0; padding-inline: 8px !important; }
+body.gd-box-on:not(.gd-box-full) :is(.modern-tb-repo, .modern-tb-branch) :is(.modern-tb-icon, small) { display: none !important; }
+html.ui-modern body.gd-box-on:not(.gd-box-full) .modern-act-group { display: flex !important; }
+/* Git-flow, Terminal and Explorer wait in More and Ctrl+K; every daily action stays. */
+html.ui-modern body.gd-box-on:not(.gd-box-full) .modern-actions > .modern-act-group:nth-child(4) { display: none !important; }
+body.gd-box-on:not(.gd-box-full) .modern-actions { flex: 1 1 auto; min-width: 0; }
+body.gd-box-on:not(.gd-box-full) .modern-actions button[data-act] { min-width: 30px !important; padding-inline: 2px !important; }

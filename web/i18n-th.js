@@ -2183,7 +2183,11 @@ GitDeckI18n.register('th',{
   "The program is a 3D cube: every side is a view, turn it to change view":"โปรแกรมเป็นลูกบาศก์ 3D แต่ละด้านคือหนึ่งมุมมอง หมุนเพื่อเปลี่ยนมุมมอง",
   "Stashes and tags":"Stash และ Tag",
   "Open Git Deck":"เปิด Git Deck",
-  "Hold the cube (Esc)":"ถือลูกบาศก์ (Esc)",
-  "Working tree clean":"ไม่มีไฟล์ค้าง",
   "Put the cube away":"เก็บลูกบาศก์",
+  "New branch":"สร้าง branch",
+  "current":"ปัจจุบัน",
+  "Sides of the cube":"ด้านของลูกบาศก์",
+  "Hold the cube (Ctrl+Alt+0)":"ถือลูกบาศก์ (Ctrl+Alt+0)",
+  "More views":"หน้าอื่น ๆ",
+  "Repository list":"รายการ repository",
 });
