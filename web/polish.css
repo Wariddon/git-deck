@@ -454,3 +454,24 @@ html.ui-modern body .log-locate-exceptions { font: 600 12px/1.5 var(--modern-mon
 #repo-tabs > :is(.repo-tab-search, .repo-tab-add) { background-color: var(--surface-subtle, var(--surface, #ffffff)) !important; }
 #repo-tabs > :is(.repo-tab-search, .repo-tab-add):not(.gd-ticket-start) { box-shadow: -12px 0 10px -6px var(--canvas, var(--surface, #ffffff)), var(--gd-sticker, none) !important; }
 #repo-tabs > .gd-ticket-start { box-shadow: 12px 0 10px -6px var(--canvas, var(--surface, #ffffff)), var(--gd-sticker, none) !important; }
+
+/* ---- run tests before pushing (web/test-run.js) --------------------------------------------------- */
+.gd-test-chip { min-height: 0; white-space: nowrap; }
+.gd-test-chip[hidden] { display: none !important; }
+.gd-test-chip[data-verdict="passed"] { color: var(--st-green, #1a7f37) !important; }
+.gd-test-chip[data-verdict="failed"] { color: var(--st-red, #cf222e) !important; font-weight: 700; }
+.gd-test-chip[data-verdict="dirty"], .gd-test-chip[data-verdict="no-tests"] { color: var(--st-yellow, #9a6700) !important; }
+.gd-test-body { display: grid; gap: 10px; min-width: min(640px, 80vw); }
+.gd-test-command { display: grid; gap: 4px; }
+.gd-test-command input { font-family: ui-monospace, Consolas, monospace; }
+.gd-test-verdict { margin: 0; font-weight: 700; }
+.gd-test-verdict.is-passed { color: var(--st-green, #1a7f37); }
+.gd-test-verdict.is-failed { color: var(--st-red, #cf222e); }
+.gd-test-verdict:is(.is-dirty, .is-no-tests) { color: var(--st-yellow, #9a6700); }
+.gd-test-failures { margin: 0; padding: 0 0 0 18px; max-height: 30vh; overflow: auto; font: 12px/1.6 ui-monospace, Consolas, monospace; }
+.gd-test-output { margin: 0; max-height: 30vh; overflow: auto; padding: 10px; border-radius: 8px; background: var(--code-bg, #f3f5f8); font: 12px/1.45 ui-monospace, Consolas, monospace; white-space: pre-wrap; }
+.push-tests { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 16px; padding: 8px 12px; border-radius: 10px; background: var(--surface-subtle, #f6f8fa); font-size: 13px; }
+.push-tests[hidden] { display: none; }
+.push-tests[data-verdict="passed"] { box-shadow: inset 3px 0 0 var(--st-green, #1a7f37); }
+.push-tests[data-verdict="failed"] { box-shadow: inset 3px 0 0 var(--st-red, #cf222e); }
+.push-tests:is([data-verdict="none"], [data-verdict="stale"], [data-verdict="dirty"], [data-verdict="no-tests"]) { box-shadow: inset 3px 0 0 var(--st-yellow, #9a6700); }

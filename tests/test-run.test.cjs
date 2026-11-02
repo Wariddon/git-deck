@@ -1,0 +1,51 @@
+'use strict';
+// Tests before push and the usage counter: what a remembered run may claim, wiring; counting on this computer.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+
+const run = require('../web/test-run.js');
+const good = { head: 'abc', passed: true, noTests: false, dirty: false };
+assert.equal(run.verdict(null, 'abc'), 'none');
+assert.equal(run.verdict(good, ''), 'none');
+assert.equal(run.verdict(good, 'abc'), 'passed');
+assert.equal(run.verdict(good, 'def'), 'stale', 'a pass counts only for the commit it ran on');
+assert.equal(run.verdict({ ...good, passed: false }, 'abc'), 'failed');
+assert.equal(run.verdict({ ...good, noTests: true }, 'abc'), 'no-tests', 'no tests is no pass');
+assert.equal(run.verdict({ ...good, dirty: true }, 'abc'), 'dirty', 'uncommitted changes were part of what ran');
+assert.equal(run.verdict({ ...good, passed: false, dirty: true }, 'abc'), 'failed', 'a failure says so whatever else is true');
+assert.equal(run.verdict({ ...good, head: '' }, 'abc'), 'stale', 'a commit made during the run belongs to no commit');
+assert.equal(run.duration(12000), '12s');
+assert.equal(run.duration(65000), '1m 05s');
+let kept = {};
+for (let i = 0; i < 4; i++) kept = run.remember(kept, `C:/R${i}`, { at: `2026-11-0${i + 1}T00:00:00Z` }, 3);
+assert.deepEqual(Object.keys(kept).sort(), ['c:/r1', 'c:/r2', 'c:/r3'], 'the oldest result goes first');
+
+const usage = require('../web/usage.js');
+let counted = usage.count(null, 'view:history', '2026-11-03T01:00:00Z');
+counted = usage.count(counted, 'view:history', '2026-11-03T02:00:00Z');
+counted = usage.count(counted, 'dashboard:inbox', '2026-11-03T03:00:00Z');
+assert.equal(counted.since, '2026-11-03T01:00:00Z');
+assert.deepEqual(usage.ranked(counted).map((item) => `${item.key}:${item.n}`), ['view:history:2', 'dashboard:inbox:1']);
+assert.deepEqual(usage.unused(counted, ['dashboard:inbox', 'dashboard:desks']), ['dashboard:desks']);
+
+const js = read('web/test-run.js');
+assert.doesNotMatch(js, /blockers/, 'tests advise, they never block a push');
+assert.match(js, /action:'repo-test',path:repo\.path,command:customFor\(repo\.path\)/);
+const usageJs = read('web/usage.js');
+assert.doesNotMatch(usageJs, /fetch\(|api\(|XMLHttpRequest|sendBeacon/, 'usage counts never leave this computer');
+assert.match(usageJs, /entry\.fallback\?t\('Ask AI'\)/, 'what was typed to the AI is never kept in the counts');
+assert.match(read('web/app.js'), /\.sort\(\(a,b\)=>Boolean\(a\.fallback\)-Boolean\(b\.fallback\)\)\.slice\(0,50\)/, 'Ask AI stays below real commands, so Enter runs the command that was typed');
+assert.match(read('web/ai-features.js'), /fallback:true/);
+assert.match(js, /querySelector\('#push-form \.push-preview'\)/, 'the Push row does not wait for the checks box, which appears later');
+const server = read('git-dashboard-server.ps1');
+assert(server.includes("'repo-test' {"), 'the action exists');
+assert(server.includes("'/api/repo/test-info'"), 'the route exists');
+assert.match(server, /return Start-GitJob @\{action='repo-test'/, 'tests run in a background job, never on the serial action thread');
+const worker = read('git-job-worker.ps1');
+assert.match(worker, /lib\\GitDeck\.TestRun\.ps1/);
+assert.match(worker, /head = \$\(if \(\$after\.head -eq \$before\.head\)/, 'a commit made during the run is not credited');
+const html = read('web/index.html');
+for (const name of ['test-run.js', 'usage.js']) assert(html.includes(`<script src="/${name}" defer></script>`), name);
+console.log('PASS: tests before push (verdicts, wiring) and usage counter (local only)');

@@ -29,6 +29,7 @@ $script:Root = $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Cockpit.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.CustomActions.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Power.ps1')
+. (Join-Path $PSScriptRoot 'lib\GitDeck.TestRun.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.Ai.ps1')
 . (Join-Path $PSScriptRoot 'lib\GitDeck.SelfUpdate.ps1')
 $script:WebRoot = Join-Path $PSScriptRoot 'web'
@@ -1404,6 +1405,14 @@ function Invoke-Action($Body) {
             try{[IO.File]::WriteAllLines($planFile,$lines,(New-Object Text.UTF8Encoding($false)));[IO.File]::WriteAllText($editorFile,("@echo off`r`ncopy /Y `"$planFile`" `"%~1`" >nul`r`n"),(New-Object Text.ASCIIEncoding));$oldEditor=$env:GIT_SEQUENCE_EDITOR;$env:GIT_SEQUENCE_EDITOR='"'+$editorFile+'"';$result=Invoke-GitCapture $path @('rebase','-i',$plan.baseHash)}finally{$env:GIT_SEQUENCE_EDITOR=$oldEditor;Remove-Item -LiteralPath $planFile,$editorFile -Force -ErrorAction SilentlyContinue}
             if($result.Code -ne 0){$operation=Get-GitOperationState $path;if($operation.active){throw "Interactive rebase paused. Resolve conflicts in Conflict Center, then Continue or Abort.`n$($result.Output)"};throw $result.Output};return @{message='Interactive rebase completed.';output=$result.Output}
         }
+        'repo-test' {
+            $active=Get-ActiveRepoJob 'repo-test' $path;if($active){return @{async=$true;jobId=[string]$active.id;action='repo-test';message='Tests are already running for this repository.'}}
+            $found=Get-GitDeckTestCommand $path;$command=([string]$Body.command).Trim();$kind=''
+            if(-not $command){if(-not $found){throw 'No test command found for this repository. Type one in Test results.'};$command=$found.command;$kind=$found.kind}
+            elseif($found -and $found.command -eq $command){$kind=$found.kind}
+            Assert-GitDeckTestCommand $command
+            return Start-GitJob @{action='repo-test';path=$path;command=$command;kind=$kind} 'Tests queued. You can keep using Git Deck.'
+        }
         'fetch' {
             $active=Get-ActiveRepoJob 'fetch' $path;if($active){return @{async=$true;jobId=[string]$active.id;action='fetch';message='Fetch is already running for this repository.'}}
             return Start-GitJob @{action='fetch';path=$path} 'Fetch queued. You can keep using Git Deck.'
@@ -1836,6 +1845,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/gitlab/pipelines' { $project=$query['project']; Write-Json $context @{pipelines=@(Get-GitLabPipelines $project)} }
         '/api/gitlab/inbox' { $repoPath=$query['path'];Write-Json $context @{inbox=(Get-GitLabInbox $repoPath)} }
         '/api/repo/push-checks' { Write-Json $context @{pushChecks=(Get-PushChecks $query['path'] $query['remote'] $query['local'] $query['target'] ($query['force'] -eq 'true'))} }
+        '/api/repo/test-info' { Assert-Registered $query['path'];$found=Get-GitDeckTestCommand $query['path'];$now=Get-GitDeckTestState $query['path'];Write-Json $context @{test=[ordered]@{command=$(if($found){$found.command}else{''});kind=$(if($found){$found.kind}else{''});head=$now.head;dirty=$now.dirty}} }
         '/api/journal/recent' { $minutes=30;[void][int]::TryParse([string]$query['minutes'],[ref]$minutes);Write-Json $context @{journal=@(Get-GitDeckRecentJournal $minutes)} }
         '/api/repo/commit-patch' { Write-Json $context @{patch=(Get-GitDeckCommitPatch $query['path'] $query['commit'])} }
         '/api/repo/pull-preview' { Write-Json $context @{pull=(Get-GitDeckPullPreview $query['path'] ([string]$query['remote']) ([string]$query['branch']))} }

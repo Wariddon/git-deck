@@ -149,7 +149,7 @@
     commandPaletteEntries=function(){
       const entries=basePalette();const term=(document.getElementById('command-search')?.value||'').trim();
       if(term.length<4)return entries;
-      return [...entries,{label:t('✨ Ask AI: "{text}"',{text:term.slice(0,60)}),group:t('AI'),shortcut:'',search:term,run:()=>askPalette(term,entries)}];
+      return [...entries,{label:t('✨ Ask AI: "{text}"',{text:term.slice(0,60)}),group:t('AI'),shortcut:'',search:term,fallback:true,run:()=>askPalette(term,entries)}];
     };
   }
   async function askPalette(text,entries){

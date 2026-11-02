@@ -11,6 +11,7 @@ $specPath = Join-Path $jobsPath ($JobId + '.spec.json')
 $statusPath = Join-Path $jobsPath ($JobId + '.status.json')
 $cancelPath = Join-Path $jobsPath ($JobId + '.cancel')
 $utf8 = New-Object Text.UTF8Encoding($false)
+. (Join-Path $PSScriptRoot 'lib\GitDeck.TestRun.ps1')
 
 function Write-JobStatus([string]$State,[int]$Progress,[string]$Message,[string]$Output='',[hashtable]$Result=$null) {
     $payload = [ordered]@{
@@ -185,6 +186,33 @@ try {
             if ($git.Code -ne 0) { throw $(if ($git.Output) { $git.Output } else { 'Git fetch failed.' }) }
             $output = if ($git.Output) { $git.Output } else { 'Already up to date.' }
             Write-JobStatus 'completed' 100 'Fetch completed.' $output @{path=$repo}
+        }
+        'repo-test' {
+            $repo = [string]$script:Spec.path; $command = [string]$script:Spec.command; $kind = [string]$script:Spec.kind
+            if (-not (Test-GitRepo $repo)) { throw 'Repository folder is missing or invalid.' }
+            Assert-GitDeckTestCommand $command
+            $before = Get-GitDeckTestState $repo
+            $log = Join-Path $jobsPath ($JobId + '.test.log')
+            $clock = [Diagnostics.Stopwatch]::StartNew()
+            Write-JobStatus 'running' 10 "Running $command"
+            try {
+                $tick = {
+                    Assert-NotCancelled
+                    Write-JobStatus 'running' 50 ("Running $command (" + [int]$clock.Elapsed.TotalSeconds + 's)')
+                }
+                $code = Invoke-GitDeckTestProcess $repo $command $log 30 $tick
+                $text = Read-GitDeckTestLog $log
+            } finally { Remove-Item -LiteralPath $log -Force -ErrorAction SilentlyContinue }
+            $after = Get-GitDeckTestState $repo
+            $passed = ($code -eq 0)
+            $missing = Test-GitDeckTestsMissing $text $kind
+            # A commit made during the run was not what ran: the result belongs to no commit.
+            $result = @{
+                path = $repo; command = $command; head = $(if ($after.head -eq $before.head) { $before.head } else { '' })
+                dirty = [bool]$before.dirty; passed = $passed; noTests = [bool]$missing; exitCode = $code
+                durationMs = [int]$clock.ElapsedMilliseconds; failures = @(Get-GitDeckTestFailures $text); tail = (Get-GitDeckOutputTail $text 40)
+            }
+            Write-JobStatus 'completed' 100 $(if (-not $passed) { "Tests failed (exit code $code)." } elseif ($missing) { 'The test command found no tests.' } else { 'Tests passed.' }) $text $result
         }
         'submodule-update' {
             $repo=[string]$script:Spec.path
