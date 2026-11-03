@@ -18,11 +18,38 @@ function Get-GitDeckStaticPath([string]$Route) {
 
 function Write-GitDeckStatic($Context, [string]$Route) {
     $name = Get-GitDeckStaticPath $Route
-    if (-not $name) { return $false }
-    $full = Join-Path $script:WebRoot $name
-    if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { return $false }
+    if (-not $name -or -not (Get-GitDeckStaticEntry $name)) { return $false }
     Write-StaticFile $Context $name $script:StaticTypes[[IO.Path]::GetExtension($name).ToLowerInvariant()]
     return $true
+}
+
+# Web files are kept in memory and read again only when the file changes (time or size), so serving one
+# costs about a millisecond. Version is what index.html writes into each address (?v=), Tag the ETag.
+function Get-GitDeckStaticEntry([string]$Name) {
+    if (-not $script:StaticCache) { $script:StaticCache = @{} }
+    $info = New-Object IO.FileInfo (Join-Path $script:WebRoot $Name)
+    if (-not $info.Exists) { return $null }
+    $version = $info.LastWriteTimeUtc.Ticks.ToString('x') + '-' + $info.Length.ToString('x')
+    $entry = $script:StaticCache[$Name]
+    if (-not $entry -or $entry.Version -ne $version) {
+        $entry = @{ Version = $version; Tag = '"' + $version + '"'; Bytes = [IO.File]::ReadAllBytes($info.FullName) }
+        $script:StaticCache[$Name] = $entry
+    }
+    return $entry
+}
+
+# index.html with a version on every script, stylesheet and image address. The browser then keeps those
+# files for good and asks for none of them on the next start; a changed file gets a new address.
+function Get-GitDeckVersionedIndex([byte[]]$Bytes) {
+    $html = [Text.Encoding]::UTF8.GetString($Bytes)
+    $evaluator = [Text.RegularExpressions.MatchEvaluator]{
+        param($match)
+        $entry = Get-GitDeckStaticEntry $match.Groups['name'].Value
+        if (-not $entry) { return $match.Value }
+        return $match.Groups['attr'].Value + '/' + $match.Groups['name'].Value + '?v=' + $entry.Version + '"'
+    }
+    $html = [regex]::Replace($html, '(?<attr>(?:src|href)=")/(?<name>[A-Za-z0-9][A-Za-z0-9_-]*\.(?:js|css|svg|png|ico))"', $evaluator)
+    return [Text.Encoding]::UTF8.GetBytes($html)
 }
 
 # ---------------------------------------------------------------------------

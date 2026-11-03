@@ -369,6 +369,39 @@ function Invoke-GitOrThrow([string]$Path, [string[]]$Arguments) {
     return $result.Output
 }
 
+# One argument for a Windows command line, quoted the way the C runtime reads it back.
+function ConvertTo-GitDeckCommandArgument([string]$Value) {
+    if ($Value -eq '') { return '""' }
+    if ($Value -notmatch '[\s"]') { return $Value }
+    return '"' + (($Value -replace '(\\*)"', '$1$1\"') -replace '(\\+)$', '$1$1') + '"'
+}
+
+# Several read-only Git commands at once: they take as long as the slowest instead of their sum (each Git
+# start costs ~50 ms on Windows). Returns name -> @{Code; Output} like Invoke-GitCapture; error text is
+# added to Output only when the command fails, so warnings never land among the parsed lines.
+function Invoke-GitBatch([string]$Path, [Collections.IDictionary]$Commands) {
+    $running = [ordered]@{}
+    foreach ($name in $Commands.Keys) {
+        $info = New-Object Diagnostics.ProcessStartInfo 'git'
+        $info.Arguments = (@('-c', 'core.quotepath=false', '-C', $Path) + @($Commands[$name]) | ForEach-Object { ConvertTo-GitDeckCommandArgument ([string]$_) }) -join ' '
+        $info.UseShellExecute = $false; $info.CreateNoWindow = $true
+        $info.RedirectStandardOutput = $true; $info.RedirectStandardError = $true
+        $info.StandardOutputEncoding = [Text.Encoding]::UTF8; $info.StandardErrorEncoding = [Text.Encoding]::UTF8
+        $process = [Diagnostics.Process]::Start($info)
+        # Both streams are read as they come, so a large output can never fill a pipe and stall Git.
+        $running[$name] = @{ Process = $process; Out = $process.StandardOutput.ReadToEndAsync(); Err = $process.StandardError.ReadToEndAsync() }
+    }
+    $results = @{}
+    foreach ($name in $running.Keys) {
+        $item = $running[$name]; $item.Process.WaitForExit()
+        $code = $item.Process.ExitCode; $text = $item.Out.Result.TrimEnd()
+        if ($code -ne 0) { $text = ($text + "`n" + $item.Err.Result).Trim() }
+        $item.Process.Dispose()
+        $results[$name] = @{ Code = $code; Output = $text }
+    }
+    return $results
+}
+
 function Assert-CleanWorkingTree([string]$Path, [string]$Message='Commit or stash local changes first.') {
     $status = Invoke-GitCapture $Path @('status','--porcelain')
     if ($status.Code -ne 0) { throw $status.Output }
@@ -397,8 +430,8 @@ function Assert-StashRef([string]$Ref) {
     if ($Ref -notmatch '^stash@\{\d+\}$') { throw 'Invalid stash reference.' }
 }
 
-function Get-GitOperationState([string]$Path) {
-    $gitDirResult = Invoke-GitCapture $Path @('rev-parse','--git-dir')
+function Get-GitOperationState([string]$Path, $GitDirResult = $null) {
+    $gitDirResult = if ($GitDirResult) { $GitDirResult } else { Invoke-GitCapture $Path @('rev-parse','--git-dir') }
     if ($gitDirResult.Code -ne 0) { return [ordered]@{active=$false;type='';conflicts=@()} }
     $gitDir = $gitDirResult.Output.Trim()
     if (-not [IO.Path]::IsPathRooted($gitDir)) { $gitDir = Join-Path $Path $gitDir }
@@ -473,8 +506,24 @@ function Get-PushPreview([string]$Path,[string]$Remote,[string]$Local,[string]$T
 function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
     Assert-Registered $Path
     # Opening a repository asks Git many questions; each Git start costs ~50 ms on Windows, so the
-    # branch, its upstream and ahead/behind come from the status header instead of four more commands.
-    $statusResult = Invoke-GitCapture $Path @('status','--porcelain=v1','--branch')
+    # branch, its upstream and ahead/behind come from the status header instead of four more commands,
+    # and the questions that do not depend on each other are asked together (~0.9 s became ~0.45 s).
+    $git = Invoke-GitBatch $Path ([ordered]@{
+        status = @('status','--porcelain=v1','--branch')
+        heads = @('for-each-ref','--format=%(refname:short)|%(HEAD)|%(upstream:short)|%(upstream:track)','refs/heads')
+        remotes = @('for-each-ref','--format=%(refname:short)|%(objectname:short)','refs/remotes')
+        log = @('log','--all','--topo-order','-250','--date=short','--format=%h%x1f%H%x1f%P%x1f%ad%x1f%an%x1f%s%x1f%D%x1f%at')
+        tags = @('for-each-ref','--sort=-creatordate','--format=%(refname:short)|%(objectname:short)|%(*objectname:short)|%(creatordate:short)|%(contents:subject)','refs/tags')
+        stash = @('stash','list','--format=%gd%x1f%s')
+        urls = @('remote','-v')
+        outgoing = @('log','--format=%h %s','-8','@{u}..HEAD')
+        incoming = @('log','--format=%h %s','-8','HEAD..@{u}')
+        message = @('log','-1','--format=%B')
+        user = @('config','--get-regexp','^user\.(name|email)$')
+        previous = @('rev-parse','--symbolic-full-name','@{-1}')
+        gitDir = @('rev-parse','--git-dir')
+    })
+    $statusResult = $git.status
     if ($statusResult.Code -ne 0) { throw $statusResult.Output }
     $files = New-Object 'System.Collections.Generic.List[object]'
     $protectedPaths = New-Object 'System.Collections.Generic.List[string]'
@@ -488,7 +537,8 @@ function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
     }
     $branch = Get-GitDeckHeaderBranch $statusHeader
     $branches = New-Object 'System.Collections.Generic.List[object]'
-    $branchText = Invoke-GitOrThrow $Path @('for-each-ref','--format=%(refname:short)|%(HEAD)|%(upstream:short)|%(upstream:track)','refs/heads')
+    if ($git.heads.Code -ne 0) { throw $(if ($git.heads.Output) { $git.heads.Output } else { 'Git command failed.' }) }
+    $branchText = $git.heads.Output
     foreach ($line in @($branchText -split "`r?`n" | Where-Object { $_ })) {
         $parts = $line -split '\|',4
         $track=if($parts.Count -gt 3){$parts[3]}else{''};$ahead=0;$behind=0
@@ -496,14 +546,15 @@ function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
         $branches.Add([ordered]@{name=$parts[0];current=($parts[1] -eq '*');upstream=$(if($parts.Count -gt 2){$parts[2]}else{''});ahead=$(if($track -match 'gone'){$null}else{$ahead});behind=$(if($track -match 'gone'){$null}else{$behind})})
     }
     $remoteBranches = New-Object 'System.Collections.Generic.List[object]'
-    $remoteBranchText = Invoke-GitOrThrow $Path @('for-each-ref','--format=%(refname:short)|%(objectname:short)','refs/remotes')
+    if ($git.remotes.Code -ne 0) { throw $(if ($git.remotes.Output) { $git.remotes.Output } else { 'Git command failed.' }) }
+    $remoteBranchText = $git.remotes.Output
     foreach ($line in @($remoteBranchText -split "`r?`n" | Where-Object { $_ })) {
         $parts=$line -split '\|',2
         if ($parts[0] -like '*/HEAD' -or $parts[0] -notmatch '/') { continue }
         $remoteBranches.Add([ordered]@{name=$parts[0];hash=$(if($parts.Count -gt 1){$parts[1]}else{''})})
     }
     $history = New-Object 'System.Collections.Generic.List[object]'
-    $historyText = Invoke-GitCapture $Path @('log','--all','--topo-order','-250','--date=short','--format=%h%x1f%H%x1f%P%x1f%ad%x1f%an%x1f%s%x1f%D%x1f%at')
+    $historyText = $git.log
     if ($historyText.Code -eq 0) {
         foreach ($line in @($historyText.Output -split "`r?`n" | Where-Object { $_ })) {
             $parts = $line -split ([char]31),8
@@ -511,7 +562,7 @@ function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
         }
     }
     $tagDetails = New-Object 'System.Collections.Generic.List[object]'
-    $tagText = (Invoke-GitCapture $Path @('for-each-ref','--sort=-creatordate','--format=%(refname:short)|%(objectname:short)|%(*objectname:short)|%(creatordate:short)|%(contents:subject)','refs/tags')).Output
+    $tagText = $git.tags.Output
     foreach ($line in @($tagText -split "`r?`n" | Where-Object { $_ } | Select-Object -First 200)) {
         $parts=$line -split '\|',5
         $peeled=$(if($parts.Count -gt 2){$parts[2]}else{''})
@@ -519,7 +570,7 @@ function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
     }
     $tags = @($tagDetails | ForEach-Object { $_.name })
     $stashes = New-Object 'System.Collections.Generic.List[object]'
-    $stashText = (Invoke-GitCapture $Path @('stash','list','--format=%gd%x1f%s')).Output
+    $stashText = $git.stash.Output
     foreach ($line in @($stashText -split "`r?`n" | Where-Object { $_ })) {
         $parts=$line -split ([char]31),2
         $stashes.Add([ordered]@{ref=$parts[0];message=$(if($parts.Count -gt 1){$parts[1]}else{''})})
@@ -527,7 +578,7 @@ function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
     # Every remote's fetch and push URL from one `git remote -v` (insteadOf rewrites applied, like get-url).
     $remotes = New-Object 'System.Collections.Generic.List[object]'
     $remoteUrls = [ordered]@{}
-    foreach ($line in @((Invoke-GitCapture $Path @('remote','-v')).Output -split "`r?`n" | Where-Object { $_ })) {
+    foreach ($line in @($git.urls.Output -split "`r?`n" | Where-Object { $_ })) {
         if ($line -notmatch '^(\S+)\s+(.*?)\s+\((fetch|push)\)$') { continue }
         if (-not $remoteUrls.Contains($Matches[1])) { $remoteUrls[$Matches[1]] = @{ fetch = ''; push = '' } }
         $remoteUrls[$Matches[1]][$Matches[3]] = $Matches[2]
@@ -540,13 +591,13 @@ function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
         $sync.upstream=$Matches[1]
         if($statusHeader -match 'ahead (\d+)'){$sync.ahead=[int]$Matches[1]}
         if($statusHeader -match 'behind (\d+)'){$sync.behind=[int]$Matches[1]}
-        if($sync.ahead){$sync.outgoing=@((Invoke-GitCapture $Path @('log','--format=%h %s','-8','@{u}..HEAD')).Output -split "`r?`n" | Where-Object {$_})}
-        if($sync.behind){$sync.incoming=@((Invoke-GitCapture $Path @('log','--format=%h %s','-8','HEAD..@{u}')).Output -split "`r?`n" | Where-Object {$_})}
+        if($sync.ahead -and $git.outgoing.Code -eq 0){$sync.outgoing=@($git.outgoing.Output -split "`r?`n" | Where-Object {$_})}
+        if($sync.behind -and $git.incoming.Code -eq 0){$sync.incoming=@($git.incoming.Output -split "`r?`n" | Where-Object {$_})}
     }
-    $headMessage=(Invoke-GitCapture $Path @('log','-1','--format=%B')).Output.Trim()
-    $operation=Get-GitOperationState $Path
+    $headMessage=$git.message.Output.Trim()
+    $operation=Get-GitOperationState $Path $git.gitDir
     $userName='';$userEmail=''
-    foreach($line in @((Invoke-GitCapture $Path @('config','--get-regexp','^user\.(name|email)$')).Output -split "`r?`n" | Where-Object { $_ })){ if($line -match '^user\.name (.*)$'){$userName=$Matches[1].Trim()} elseif($line -match '^user\.email (.*)$'){$userEmail=$Matches[1].Trim()} }
+    foreach($line in @($git.user.Output -split "`r?`n" | Where-Object { $_ })){ if($line -match '^user\.name (.*)$'){$userName=$Matches[1].Trim()} elseif($line -match '^user\.email (.*)$'){$userEmail=$Matches[1].Trim()} }
     $ignorePath=Join-Path $Path '.gitignore';$gitignore='';if(Test-Path -LiteralPath $ignorePath -PathType Leaf){$info=Get-Item -LiteralPath $ignorePath;if($info.Length -le 200000){$gitignore=[IO.File]::ReadAllText($ignorePath)}}
     $submodules=New-Object 'System.Collections.Generic.List[object]'
     $lfsVersion=@{Code=1;Output=''};$lfsCount=0
@@ -560,7 +611,7 @@ function Get-WorkspaceDetails([string]$Path,[bool]$IncludeExtras=$true) {
         $usesLfs=(Test-Path -LiteralPath $attributes -PathType Leaf) -and ([IO.File]::ReadAllText($attributes) -match 'filter=lfs')
         if($lfsVersion.Code -eq 0 -and $usesLfs){$lfsCount=@((Invoke-GitCapture $Path @('lfs','ls-files','--name-only')).Output -split "`r?`n"|Where-Object{$_}).Count}
     }
-    $previousResult=Invoke-GitCapture $Path @('rev-parse','--symbolic-full-name','@{-1}')
+    $previousResult=$git.previous
     $previousBranch='';if($previousResult.Code -eq 0 -and $previousResult.Output.Trim().StartsWith('refs/heads/')){$previousBranch=$previousResult.Output.Trim().Substring(11)}
     return [ordered]@{previousBranch=$previousBranch;branch=$branch;files=$files.ToArray();protectedUntracked=[ordered]@{count=$protectedPaths.Count;paths=$protectedPaths.ToArray()};branches=$branches.ToArray();remoteBranches=$remoteBranches.ToArray();history=$history.ToArray();tags=@($tags);tagDetails=$tagDetails.ToArray();stashes=$stashes.ToArray();remotes=$remotes.ToArray();remote=$originUrl;sync=$sync;lastFetchAt=(Get-GitDeckLastFetchAt $Path);operation=$operation;headMessage=$headMessage;settings=[ordered]@{extrasLoaded=$IncludeExtras;userName=$userName;userEmail=$userEmail;gitignore=$gitignore;submodules=$submodules.ToArray();lfsAvailable=($lfsVersion.Code -eq 0);lfsVersion=$lfsVersion.Output.Trim();lfsFiles=$lfsCount}}
 }
@@ -894,14 +945,16 @@ function Get-GitDeckVersionState {
     return @{ web = [string]$web; serverStale = ([int64]$server -gt [int64]$script:ServerStamp) }
 }
 
-function Write-Response($Context, [byte[]]$Bytes, [string]$ContentType, [int]$StatusCode=200, [string]$ETag='') {
+function Write-Response($Context, [byte[]]$Bytes, [string]$ContentType, [int]$StatusCode=200, [string]$ETag='', [string]$CacheControl='') {
     $response = $Context.Response
     try {
         $response.StatusCode = $StatusCode
         $response.ContentType = $ContentType
         $response.ContentEncoding = [Text.Encoding]::UTF8
         # Web files carry an ETag and are revalidated (304 when unchanged); API answers are never stored.
+        # A versioned web file (?v= from index.html) is kept without asking (CacheControl).
         if ($ETag) { $response.Headers['Cache-Control'] = 'no-cache'; $response.Headers['ETag'] = $ETag } else { $response.Headers['Cache-Control'] = 'no-store' }
+        if ($CacheControl) { $response.Headers['Cache-Control'] = $CacheControl }
         $response.Headers['X-Content-Type-Options'] = 'nosniff'
         $response.Headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'"
         $response.ContentLength64 = $Bytes.Length
@@ -923,18 +976,23 @@ function Write-Json($Context, $Data, [int]$StatusCode=200) {
 }
 
 function Write-StaticFile($Context, [string]$Name, [string]$ContentType) {
-    $path = Join-Path $script:WebRoot $Name
-    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { Write-Json $Context @{error='File not found'} 404; return }
-    # The browser keeps web files and asks again with If-None-Match; unchanged files cost a 304 and no body.
-    $info = Get-Item -LiteralPath $path
-    $tag = '"' + $info.LastWriteTimeUtc.Ticks.ToString('x') + '-' + $info.Length.ToString('x') + '"'
+    $entry = Get-GitDeckStaticEntry $Name
+    if (-not $entry) { Write-Json $Context @{error='File not found'} 404; return }
+    # index.html is built fresh each time (it carries every file's version) and is never stored.
+    if ($Name -eq 'index.html') { Write-Response $Context (Get-GitDeckVersionedIndex $entry.Bytes) $ContentType 200; return }
+    # The addresses in index.html carry the file's version, so the browser keeps those files for good.
+    # Any other address is revalidated: unchanged files cost a 304 and no body.
+    if ([string]$Context.Request.RawUrl -match '[?&]v=([0-9a-f]+-[0-9a-f]+)$' -and $Matches[1] -eq $entry.Version) {
+        Write-Response $Context $entry.Bytes $ContentType 200 $entry.Tag 'public, max-age=31536000, immutable'; return
+    }
+    $tag = $entry.Tag
     if ([string]$Context.Request.Headers['If-None-Match'] -eq $tag) {
         $response = $Context.Response
         try { $response.StatusCode = 304; $response.Headers['ETag'] = $tag; $response.Headers['Cache-Control'] = 'no-cache'; $response.ContentLength64 = 0 } catch {}
         finally { try { $response.Close() } catch {} }
         return
     }
-    Write-Response $Context ([IO.File]::ReadAllBytes($path)) $ContentType 200 $tag
+    Write-Response $Context $entry.Bytes $ContentType 200 $tag
 }
 
 # Query string decoded as UTF-8 (HttpListener's QueryString uses the ANSI code page for %-escapes).
@@ -1902,8 +1960,10 @@ try {
             $route = $request.Url.AbsolutePath
             if ($request.HttpMethod -eq 'GET' -and $route -eq '/api/events') { Add-GitDeckEventClient $context }
             elseif ($request.HttpMethod -eq 'GET') {
-                # API reads and web files run in parallel in the pool (the page asks for ~100 files at start).
-                if ($pool -and ($route.StartsWith('/api/') -or $route -eq '/' -or $route -match '^/[A-Za-z0-9][A-Za-z0-9_-]*\.(js|css|html|svg|png|ico|json)$')) { Start-GitDeckPooledRequest $pool $context }
+                # Web files come from memory right here (about a millisecond each). Sending them through the
+                # pool cost ~25 ms each and kept the start-up API calls waiting behind ~100 of them.
+                if (Get-GitDeckStaticPath $route) { if (-not (Write-GitDeckStatic $context $route)) { Write-Json $context @{error='Not found'} 404 } }
+                elseif ($pool -and $route.StartsWith('/api/')) { Start-GitDeckPooledRequest $pool $context }
                 else { Invoke-GitDeckRequest $context }
             } elseif ($request.HttpMethod -eq 'POST' -and $route -eq '/api/action') {
                 if ($request.Headers['X-Git-Deck'] -ne '1') { Write-Json $context @{error='Invalid local request'} 403; continue }

@@ -260,6 +260,9 @@ try {
             Write-JobStatus 'completed' 100 $message ($lines -join "`r`n") @{success=$success;total=$targets.Count}
         }
         'refresh-repos' {
+            # Checking every repository is not waited on, so it gives way to what you are doing: Git
+            # processes started from here inherit the lower priority (Windows passes BelowNormal on).
+            try { [Diagnostics.Process]::GetCurrentProcess().PriorityClass = [Diagnostics.ProcessPriorityClass]::BelowNormal } catch {}
             $targets = @($script:Spec.repositories)
             $cachePath = [IO.Path]::GetFullPath([string]$script:Spec.cachePath)
             $items = New-Object 'System.Collections.Generic.List[object]'
