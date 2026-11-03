@@ -35,6 +35,9 @@ const css = read('web/soft.css');
 assert.match(css, /html\.gd-hosted :is\(\.repo-tabs[^)]*\) \{ -webkit-app-region: drag; app-region: drag; \}/);
 assert.match(css, /:is\(button, a, input[^)]*\) \{ -webkit-app-region: no-drag; app-region: no-drag; \}/);
 assert(read('web/index.html').includes('<script src="/window-frame.js" defer></script>'));
+const polish = read('web/polish.css');
+assert.match(polish, /html\.gd-hosted #repo-tabs > \.gd-window-controls \{ position: sticky; right: 0;/, 'the window buttons stay in reach when the tabs overflow');
+assert.match(polish, /html\.gd-hosted #repo-tabs > \.repo-tab-add \{ right: var\(--gd-win-w\); \}/, 'the pinned tab buttons make room for them');
 console.log('PASS: frameless window (WebView2 host, fallback, build and package, window buttons and drag areas)');
 
 // Scrolling in the top bar: the wheel scrolls the tab row and action bar sideways; scroll boxes are no-drag.

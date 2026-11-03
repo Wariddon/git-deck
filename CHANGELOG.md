@@ -4,6 +4,7 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- The minimize, maximize and close buttons no longer disappear when the window is narrower than the repository tabs: they stay at the top right, and the tabs scroll under them.
 - **Run tests before pushing**: Ctrl+K › Run tests, or the Tests button in the status bar. Git Deck finds the command (Maven, Gradle, Go, npm, Cargo, pytest, dotnet; you can change it per repository), runs it in the background and lists the failing tests. The Push dialog shows the result for this commit. It advises and never blocks. A pass counts only for the commit it ran on, with no uncommitted changes and at least one test.
 - **What do I actually use?** (Ctrl+K): counts which views, buttons and commands you use, on this computer only, and which Dashboard views you never open. Nothing is hidden yet.
 - The start-up animation is off by default; choose one in Appearance › Opening.

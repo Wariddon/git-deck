@@ -56,7 +56,7 @@
     }
   }
   const scanSoon=()=>{if(scanTimer)return;scanTimer=setTimeout(scan,Math.max(0,500-(Date.now()-scanned)));};
-  window.addEventListener('resize',scanSoon);
+  window.addEventListener('resize',()=>schedule());
   let queued=false;
   const schedule=()=>{scanSoon();if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;place();});};
   const start=()=>{place();new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});};

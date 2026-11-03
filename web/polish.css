@@ -455,6 +455,17 @@ html.ui-modern body .log-locate-exceptions { font: 600 12px/1.5 var(--modern-mon
 #repo-tabs > :is(.repo-tab-search, .repo-tab-add):not(.gd-ticket-start) { box-shadow: -12px 0 10px -6px var(--canvas, var(--surface, #ffffff)), var(--gd-sticker, none) !important; }
 #repo-tabs > .gd-ticket-start { box-shadow: 12px 0 10px -6px var(--canvas, var(--surface, #ffffff)), var(--gd-sticker, none) !important; }
 
+/* The window buttons stay in reach at any window width: they are pinned like the buttons beside them, which
+   move left by their width. */
+html.gd-hosted { --gd-win-w: 132px; }
+html.gd-hosted.gd-rubik { --gd-win-w: 134px; }
+html.gd-hosted #repo-tabs > .gd-window-controls { position: sticky; right: 0; z-index: 3; background-color: var(--canvas, var(--surface-subtle, var(--surface, #ffffff))); }
+html.gd-hosted #repo-tabs > .repo-tab-add { right: var(--gd-win-w); }
+html.gd-hosted #repo-tabs > .repo-tab-search { right: calc(var(--gd-win-w) + 28px); }
+html.gd-hosted #repo-tabs > .repo-tab-search.repo-tab-worksets { right: calc(var(--gd-win-w) + 104px); }
+html.gd-hosted body.workbench-mode #repo-tabs > .repo-tab-search { right: calc(var(--gd-win-w) + 26px); }
+html.gd-hosted body.workbench-mode #repo-tabs > .repo-tab-search.repo-tab-worksets { right: calc(var(--gd-win-w) + 98px); }
+
 /* ---- run tests before pushing (web/test-run.js) --------------------------------------------------- */
 .gd-test-chip { min-height: 0; white-space: nowrap; }
 .gd-test-chip[hidden] { display: none !important; }
