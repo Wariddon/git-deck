@@ -151,3 +151,8 @@ assert.ok(fs.readFileSync(path.join(__dirname, '../lib/GitDeck.Runtime.ps1'), 'u
 // Your own tags are not "new"; the table moves with j/k and acts with c/p/u.
 assert.match(web('multi-repo.js'), /const isNewTag=\(item\)=>\{[^}]*!isMine\(item\)/);
 assert.match(web('multi-repo.js'), /if\(key==='j'\|\|key==='ArrowDown'\)/);
+// Column headers sort the table (same choices as the Sort menu); a second click reverses it.
+assert.match(web('multi-repo.js'), /const columnSorts=\['name','branch','tag','recent','pending','changes'\];/);
+assert.match(web('multi-repo.js'), /const result=orderBy\(a,b\);return reversed\?-result:result;/, 'reversing keeps the typed-name order first');
+assert.match(web('multi-repo.js'), /if\(by==='branch'\)return String\(a\.pending\?\.branch/);
+assert.match(web('multi-repo.js'), /th\.setAttribute\('aria-sort',active\?\(descending\?'descending':'ascending'\):'none'\)/, 'screen readers hear the direction');

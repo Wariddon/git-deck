@@ -2210,4 +2210,5 @@ GitDeckI18n.register('th',{
   "Dashboard views never opened: {count} of {total}":"หน้า Dashboard ที่ยังไม่เคยเปิด: {count} จาก {total}",
   "What do I actually use?":"ฉันใช้อะไรจริงบ้าง?",
   "Ask AI":"ถาม AI",
+  "Branch A–Z":"Branch A–Z",
 });

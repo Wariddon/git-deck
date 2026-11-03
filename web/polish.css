@@ -534,3 +534,10 @@ html.gd-hosted #startup-splash button { -webkit-app-region: no-drag; app-region:
 .push-tests[data-verdict="passed"] { box-shadow: inset 3px 0 0 var(--st-green, #1a7f37); }
 .push-tests[data-verdict="failed"] { box-shadow: inset 3px 0 0 var(--st-red, #cf222e); }
 .push-tests:is([data-verdict="none"], [data-verdict="stale"], [data-verdict="dirty"], [data-verdict="no-tests"]) { box-shadow: inset 3px 0 0 var(--st-yellow, #9a6700); }
+
+/* Dashboard › Pending work: column headers sort the table (web/multi-repo.js). */
+.multi-repo-table.pending-table th.pending-sortable { cursor: pointer; user-select: none; }
+.multi-repo-table.pending-table th.pending-sortable:hover { color: var(--text-primary, inherit); background: var(--surface-hover, rgba(127,127,127,.08)); }
+.multi-repo-table.pending-table th.pending-sortable:focus-visible { outline: 2px solid var(--green, #1a7f37); outline-offset: -2px; }
+.multi-repo-table.pending-table th[aria-sort="ascending"], .multi-repo-table.pending-table th[aria-sort="descending"] { color: var(--green, #1a7f37); }
+.pending-sort-mark { margin-left: 5px; font-size: .75em; }

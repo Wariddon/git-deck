@@ -247,7 +247,7 @@
     const bar=el('div','operations-toolbar');const folder=folderSelect();
     const search=el('input','workflow-input pending-search');search.type='search';search.placeholder=t('Names, branches or tags: several at once, separated by commas');search.setAttribute('aria-label',t('Filter by names, branches or tags'));search.title=t('Type several names to see only those repositories, in the order you typed them. Example: billing-svc-common, deploy-config-2, ledger');
     const sort=document.createElement('select');sort.className='workflow-input';sort.setAttribute('aria-label',t('Sort'));
-    [['pending',t('Most pending first')],['name',t('Name A–Z')],['family',t('By family (aml-, crs-…)')],['push',t('Most to push')],['changes',t('Most uncommitted')],['tag',t('Newest tag first')],['recent',t('Recently changed first')]].forEach(([value,label])=>sort.append(new Option(label,value)));
+    [['pending',t('Most pending first')],['name',t('Name A–Z')],['branch',t('Branch A–Z')],['family',t('By family (aml-, crs-…)')],['push',t('Most to push')],['changes',t('Most uncommitted')],['tag',t('Newest tag first')],['recent',t('Recently changed first')]].forEach(([value,label])=>sort.append(new Option(label,value)));
     const run=el('button','primary',t('Check'));run.type='button';
     const more=document.createElement('details');more.className='pending-more';const moreLabel=el('summary','',t('Bulk actions'));more.append(moreLabel);
     const menu=el('div','pending-more-menu');more.append(menu);
@@ -357,10 +357,16 @@
         chip.onclick=()=>{filter=id;remember('gitdeck.pendingFilter',id);drawChips();draw();};chips.append(chip);
       }
     };
+    // A second click on the same column header reverses the order (remembered with the sort).
+    let reversed=recall('gitdeck.pendingSortReversed','')==='1';
     const order=(a,b)=>{
-      const by=sort.value;const ca=a.counts,cb=b.counts;
       // Several names typed: keep the order they were typed in.
       const terms=parseTerms(search.value);if(terms.length>1){const diff=termRank(a,terms)-termRank(b,terms);if(diff)return diff;}
+      const result=orderBy(a,b);return reversed?-result:result;
+    };
+    const orderBy=(a,b)=>{
+      const by=sort.value;const ca=a.counts,cb=b.counts;
+      if(by==='branch')return String(a.pending?.branch||'').localeCompare(String(b.pending?.branch||''))||a.repo.name.localeCompare(b.repo.name);
       if(by==='name')return a.repo.name.localeCompare(b.repo.name);
       if(by==='family')return groupOf(a).localeCompare(groupOf(b))||(cb.score-ca.score)||a.repo.name.localeCompare(b.repo.name);
       if(by==='recent')return String(b.pending?.lastCommitDate||'').localeCompare(String(a.pending?.lastCommitDate||''))||a.repo.name.localeCompare(b.repo.name);
@@ -558,6 +564,19 @@
       const grid=table([t('Repository'),t('Branch'),t('Latest tag'),t('Last commit'),t('What to do'),t('State')]);
       grid.classList.add('pending-table','pending-table-compact');
       grid.querySelectorAll('th').forEach(th=>{if(headerHelp[th.textContent]){th.title=headerHelp[th.textContent];th.classList.add('pending-has-help');}});
+      // Click a column header to sort by it; click it again to reverse. Same choices as the Sort menu.
+      const columnSorts=['name','branch','tag','recent','pending','changes'];
+      [...grid.rows[0].cells].forEach((th,index)=>{
+        const by=columnSorts[index];if(!by)return;
+        const active=sort.value===by;th.classList.add('pending-sortable');th.tabIndex=0;
+        // Names start A–Z; dates and counts start with the newest or largest.
+        const descending=['tag','recent','pending','changes'].includes(by)!==reversed;
+        th.setAttribute('aria-sort',active?(descending?'descending':'ascending'):'none');
+        if(active)th.append(el('span','pending-sort-mark',descending?'▼':'▲'));
+        const choose=()=>{if(sort.value===by)reversed=!reversed;else{sort.value=by;reversed=false;}remember('gitdeck.pendingSort',sort.value);remember('gitdeck.pendingSortReversed',reversed?'1':'');draw();out.querySelector(`.pending-table th:nth-child(${index+1})`)?.focus();};
+        th.addEventListener('click',(event)=>{if(event.target.closest?.('.pending-col-grip'))return;choose();});
+        th.addEventListener('keydown',(event)=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();choose();}});
+      });
       let lastFamily=null;
       for(const item of rows.slice(0,300)){
         const c=item.counts,p=item.pending,key=item.repo.path;
@@ -655,7 +674,7 @@
       document.querySelectorAll('.multi-repo-panel select[aria-label]').forEach(select=>{if(select.options[0]?.value==='all'&&!select.querySelector(`option[value="set:${CSS.escape(name)}"]`)){let group=select.querySelector('optgroup');if(!group){group=document.createElement('optgroup');group.label=t('Worksets');select.append(group);}group.append(new Option(`${name} (${shownRepos.length})`,'set:'+name));}});
     };
     menu.append(markSeen,saveSet);
-    run.onclick=start;folder.addEventListener('change',start);sort.onchange=()=>{remember('gitdeck.pendingSort',sort.value);draw();};tagFilter.onchange=()=>{remember('gitdeck.pendingTag',tagFilter.value);drawChips();draw();};search.oninput=()=>{drawChips();draw();};
+    run.onclick=start;folder.addEventListener('change',start);sort.onchange=()=>{reversed=false;remember('gitdeck.pendingSort',sort.value);remember('gitdeck.pendingSortReversed','');draw();};tagFilter.onchange=()=>{remember('gitdeck.pendingTag',tagFilter.value);drawChips();draw();};search.oninput=()=>{drawChips();draw();};
     const bulk=async(kind)=>{
       more.removeAttribute('open');
       const todo=results.filter(item=>kind==='push'?pendingActions(item.pending).includes('push'):(item.counts.pull&&!item.pending?.operation));
