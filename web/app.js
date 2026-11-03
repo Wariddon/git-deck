@@ -6,6 +6,19 @@ let workspaceLoadVersion=0;
 const workspaceSnapshots=new Map();
 try{const saved=JSON.parse(localStorage.getItem('git-deck-workspaces-v2')||'[]');for(const [key,value] of saved.slice(-6)){if(value?.data&&Array.isArray(value.data.files)&&Date.now()-value.checkedAt<7*86400000)workspaceSnapshots.set(key,value);}}catch{}
 function persistWorkspaceSnapshots(){try{const values=[...workspaceSnapshots].slice(-6);const json=JSON.stringify(values);if(json.length<3000000)localStorage.setItem('git-deck-workspaces-v2',json);else localStorage.removeItem('git-deck-workspaces-v2');}catch{}}
+// The first page of commits per history view, shown at once while the live list loads (same rules).
+const historyFirstPages=new Map();
+try{for(const [key,value] of JSON.parse(localStorage.getItem('git-deck-history-v1')||'[]').slice(-8)){if(value?.response&&Date.now()-value.checkedAt<7*86400000)historyFirstPages.set(key,value);}}catch{}
+function persistHistoryFirstPages(){try{const json=JSON.stringify([...historyFirstPages].slice(-8));if(json.length<2000000)localStorage.setItem('git-deck-history-v1',json);else localStorage.removeItem('git-deck-history-v1');}catch{}}
+function rememberHistoryFirstPage(url,response){historyFirstPages.delete(url);historyFirstPages.set(url,{response,checkedAt:Date.now()});while(historyFirstPages.size>8)historyFirstPages.delete(historyFirstPages.keys().next().value);persistHistoryFirstPages();}
+// Actions that change no repository: the saved views stay. Any other action drops the saved views of
+// its repository, or of every repository when it names none.
+const READ_ONLY_ACTIONS=new Set(['ui-state-save','ui-state-clear','prefs-save','refresh-repos','cancel-job','repo-test','notify-toast','open-url','open-editor','choose-folder','custom-actions-save','catalog-save','traps-save','ai-work-summary','ai-commit-message','self-update']);
+function forgetSavedViews(path){
+  if(path){const key=String(path).toLowerCase();workspaceSnapshots.delete(key);for(const url of [...historyFirstPages.keys()])if(new URLSearchParams(url.split('?')[1]||'').get('path')?.toLowerCase()===key)historyFirstPages.delete(url);}
+  else{workspaceSnapshots.clear();historyFirstPages.clear();}
+  persistWorkspaceSnapshots();persistHistoryFirstPages();
+}
 let workspaceReadInFlight=null;
 function rememberWorkspace(repo,data){
   const key=repoKey(repo);workspaceSnapshots.delete(key);
@@ -294,8 +307,10 @@ function renderWorkbenchTree(data){
 async function api(path, options = {}) {
   // Never reuse a display snapshot across a write, including failed/partial writes.
   if(options.method&&options.method.toUpperCase()!=='GET'){
-    let action='';try{action=JSON.parse(options.body||'{}').action;}catch{}
-    if(!['ui-state-save','ui-state-clear','prefs-save'].includes(action)){workspaceSnapshots.clear();persistWorkspaceSnapshots();}
+    let body={};try{body=JSON.parse(options.body||'{}')||{};}catch{}
+    // Before this, every action (even refreshing the repository list) dropped all saved views, so a
+    // new start never had one and always waited for Git.
+    if(!READ_ONLY_ACTIONS.has(body.action))forgetSavedViews(body.path);
   }
   const response = await fetch(path, {
     ...options,
@@ -1126,8 +1141,9 @@ function renderHistoryView(content,data) {
     if(!append)list.replaceChildren(el('div','diff-loading','Loading commits from the selected branch…'));
     try{
       const params=new URLSearchParams({path:historyRepo,scope:mode,ref,includeRemote:String(includeRemote),order:sortOrder,skip:String(offset),q:query});
-      const response=await api('/api/repo/history?'+params);if(!current())return;
-      if(!append){const target=Math.min(2000,position.value.loaded||250);while(response.hasMore&&Number.isInteger(response.nextSkip)&&response.nextSkip<target){params.set('skip',String(response.nextSkip));const next=await api('/api/repo/history?'+params);if(!current())return;if(!next.history?.length||next.nextSkip<=response.nextSkip)break;response.history.push(...next.history);response.nextSkip=next.nextSkip;response.hasMore=next.hasMore;}}
+      const url='/api/repo/history?'+params;const savable=!append&&!query;
+      const show=async(response,fromCache)=>{
+      if(!append&&!fromCache){const target=Math.min(2000,position.value.loaded||250);while(response.hasMore&&Number.isInteger(response.nextSkip)&&response.nextSkip<target){params.set('skip',String(response.nextSkip));const next=await api('/api/repo/history?'+params);if(!current())return;if(!next.history?.length||next.nextSkip<=response.nextSkip)break;response.history.push(...next.history);response.nextSkip=next.nextSkip;response.hasMore=next.hasMore;}}
       const seen=new Set(append?history.map(item=>item.fullHash):[]);
       const incoming=(response.history||[]).filter(item=>{if(seen.has(item.fullHash))return false;seen.add(item.fullHash);return true;});
       history=append?history.concat(incoming):incoming;nextSkip=response.nextSkip??(offset+response.history.length);hasMore=response.hasMore===true;position.save({loaded:history.length});
@@ -1142,6 +1158,14 @@ function renderHistoryView(content,data) {
       findAll.disabled=!pagingSupported;searchMode.options[1].disabled=!pagingSupported;clearAll.disabled=!pagingSupported;
       pageStatus.textContent=!pagingSupported?'Outdated server. Restart Git Deck and its server to load more commits or search full history.':`Local · Checked ${new Date().toLocaleTimeString('en-US')} · ${history.length} loaded · ${hasMore?'More available':'End of matching history'}`;
       heading.text.querySelector('p').textContent+=pagingSupported?` · Local checked ${new Date().toLocaleTimeString('en-US')}`:' · ⚠ Server update required (restart)';
+      };
+      const saved=savable?historyFirstPages.get(url)?.response:null;
+      if(saved){await show(saved,true);if(!current())return;pageStatus.textContent='Saved list · checking Git…';}
+      const response=await api(url);if(!current())return;
+      if(savable)rememberHistoryFirstPage(url,response);
+      // The same commits as the saved list: keep what is on screen (selection, scroll), only restamp it.
+      if(saved&&JSON.stringify(saved.history)===JSON.stringify(response.history)&&saved.hasMore===response.hasMore)pageStatus.textContent=`Local · Checked ${new Date().toLocaleTimeString('en-US')} · ${history.length} loaded · ${hasMore?'More available':'End of matching history'}`;
+      else await show(response,false);
     }catch(error){if(!current())return;pageStatus.textContent='Load failed — retry';if(!append)list.replaceChildren(workspaceEmpty('History unavailable',error.message));setNotice(error.message);}
     finally{if(current()){loading=false;more.disabled=!hasMore;jump.disabled=false;}}
   };

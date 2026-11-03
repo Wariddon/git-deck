@@ -61,7 +61,7 @@ async function showSafeReport(){
   }catch{ui.body.textContent='Local service unavailable. No personal data is attached';}
 }
 for(const panel of document.querySelectorAll('.help-menu-panel')){
-  for(const [label,action] of [['Readiness check',showReadiness],['Report issue (redacted)',showSafeReport],['Clear workspace cache',()=>{workspaceSnapshots.clear();persistWorkspaceSnapshots();setNotice('Saved workspace cache cleared');}]]){const button=el('button','',label);button.type='button';button.onclick=()=>{panel.closest('details')?.removeAttribute('open');action();};panel.append(button);}
+  for(const [label,action] of [['Readiness check',showReadiness],['Report issue (redacted)',showSafeReport],['Clear workspace cache',()=>{forgetSavedViews();setNotice('Saved workspace cache cleared');}]]){const button=el('button','',label);button.type='button';button.onclick=()=>{panel.closest('details')?.removeAttribute('open');action();};panel.append(button);}
 }
 let preflightBusy=false,approvedPush=null;
 let pushReviewVersion=0;

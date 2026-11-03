@@ -50,6 +50,10 @@ assert.match(server, /\$response\.Headers\['Cache-Control'\] = 'no-cache'; \$res
 assert(server.includes("if (Get-GitDeckStaticPath $route) { if (-not (Write-GitDeckStatic $context $route))"), 'web files are served from memory, not through the pool');
 assert(server.includes("elseif ($pool -and $route.StartsWith('/api/')) { Start-GitDeckPooledRequest $pool $context }"), 'API reads run in parallel');
 assert(server.includes("'public, max-age=31536000, immutable'"), 'versioned web files are kept without asking');
+const appJs = read('web/app.js');
+assert.match(appJs, /if\(!READ_ONLY_ACTIONS\.has\(body\.action\)\)forgetSavedViews\(body\.path\);/, 'only actions that change a repository drop its saved views');
+assert.match(appJs, /'refresh-repos'/, 'refreshing the repository list keeps the saved views');
+assert.match(appJs, /if\(saved\)\{await show\(saved,true\);/, 'the saved first page of commits shows at once');
 for (const file of ['day-cube.js', 'desktop-bridge.js', 'lessons.js', 'cube-room.js']) assert.match(read('web/' + file), /document\.hidden/, `${file} pauses when hidden`);
 assert.doesNotMatch(read('web/cube-room.js'), /new MutationObserver/, 'cube room does not watch the whole page');
 assert.match(read('web/cube-play.js'), /if\(framed\)return;framed=true;/, 'tilt once per frame');
