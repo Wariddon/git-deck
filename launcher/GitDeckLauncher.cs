@@ -74,6 +74,10 @@ internal static class GitDeckLauncher
 
     // Set by StartAndOpen when Git Deck opens in its own frameless window instead of Edge.
     private static string hostedUrl;
+    // True when the server was started here and is still starting: the window prepares WebView2 (about
+    // a second) meanwhile and opens the page once the server answers, instead of one after the other.
+    internal static bool ServerStarting;
+    internal static bool WaitForServer() { return WaitUntilReady(TimeSpan.FromSeconds(20)); }
 
     // Starts the server when needed, opens the window and waits for it; returns an error message or null.
     private static string StartAndOpen(string root, string server, string[] args)
@@ -86,7 +90,9 @@ internal static class GitDeckLauncher
                 if (!IsReady())
                 {
                     if (ownsMutex) StartServer(root, server);
-                    if (!WaitUntilReady(TimeSpan.FromSeconds(20)))
+                    bool ownWindow = Hosted.Available(AppDomain.CurrentDomain.BaseDirectory) && FindAppWindow() == IntPtr.Zero;
+                    if (ownWindow) ServerStarting = true;
+                    else if (!WaitUntilReady(TimeSpan.FromSeconds(20)))
                         return "Git Deck local service did not start within 20 seconds\n\nRun git-dashboard.bat --console to inspect the error";
                 }
                 // Frameless window when the WebView2 files are next to GitDeck.exe and the runtime is
@@ -438,6 +444,12 @@ internal sealed class AppWindow : Form
                     var queued = waiting.ToArray(); waiting.Clear();
                     foreach (string message in queued) Post(message);
                 };
+                if (GitDeckLauncher.ServerStarting && !await System.Threading.Tasks.Task.Run(() => GitDeckLauncher.WaitForServer()))
+                {
+                    MessageBox.Show("Git Deck local service did not start within 20 seconds\n\nRun git-dashboard.bat --console to inspect the error", "Git Deck", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Close();
+                    return;
+                }
                 core.Navigate(url);
             }
             catch (Exception ex)

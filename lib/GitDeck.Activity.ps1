@@ -75,8 +75,11 @@ function ConvertFrom-GitDeckActivityLog([string]$Text) {
 }
 
 function Get-GitDeckIdentity {
-    $name = (& git config --global user.name 2>$null | Out-String).Trim()
-    $email = (& git config --global user.email 2>$null | Out-String).Trim()
+    # One Git start instead of two.
+    $name = ''; $email = ''
+    foreach ($line in @(& git config --global --get-regexp '^user\.(name|email)$' 2>$null)) {
+        if ($line -match '^user\.name (.*)$') { $name = $Matches[1].Trim() } elseif ($line -match '^user\.email (.*)$') { $email = $Matches[1].Trim() }
+    }
     return @{ name = $name; email = $email }
 }
 

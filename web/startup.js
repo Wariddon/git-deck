@@ -13,6 +13,8 @@
       // The splash fades out instead of vanishing (no fade for reduced motion or without Web Animations).
       const finish=()=>{
         if(finished)return;finished=true;clearTimeout(timer);
+        // When the app shows, for measuring start-up (performance.getEntriesByName('gitdeck-shown')).
+        try{performance.mark('gitdeck-shown');}catch{}
         let closed=false;
         const done=()=>{if(closed)return;closed=true;if(splash.open)splash.close();document.getElementById('startup-background')?.remove();};
         const still=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;

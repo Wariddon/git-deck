@@ -69,6 +69,17 @@ function Get-GitDeckImmutable([string]$Key, [scriptblock]$Producer) {
 
 function Test-GitDeckFullHash([string]$Value) { return ($Value -match '^[0-9a-fA-F]{40}$') }
 
+# Answers that change rarely but cost a search or a Git start (installed editors, your Git name), kept
+# for $Seconds and shared by every request runspace. The page asks for some of them several times at start.
+if (-not $script:TimedCache) { $script:TimedCache = [hashtable]::Synchronized(@{}) }
+function Get-GitDeckTimed([string]$Key, [int]$Seconds, [scriptblock]$Producer) {
+    $entry = $script:TimedCache[$Key]
+    if ($entry -and ([DateTime]::UtcNow - $entry.At).TotalSeconds -lt $Seconds) { return $entry.Value }
+    $value = & $Producer
+    $script:TimedCache[$Key] = @{ At = [DateTime]::UtcNow; Value = $value }
+    return $value
+}
+
 # ---------------------------------------------------------------------------
 # Request pool. GET requests only read Git state, so they run in parallel in a
 # RunspacePool. POST actions stay on the main thread and remain serial.

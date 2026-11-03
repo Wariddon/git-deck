@@ -56,7 +56,7 @@ $script:BaseUrl = "http://127.0.0.1:$Port/"
 [void](New-Item -ItemType Directory -Path $script:JobsRoot -Force)
 [void](New-Item -ItemType Directory -Path $script:ExportsRoot -Force)
 # Script variables copied into each parallel request runspace.
-$script:SharedVariableNames = @('TrapRulesFile','PrefsFile','PrefKeys','AgentCommands','PushRiskRules','PushTrapRules','ConfigResourceDirs','ValidRepoChecks','Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
+$script:SharedVariableNames = @('TimedCache','TrapRulesFile','PrefsFile','PrefKeys','AgentCommands','PushRiskRules','PushTrapRules','ConfigResourceDirs','ValidRepoChecks','Root','WebRoot','RepoList','ScanList','RepoCache','Glab','JobsRoot','JobWorker','ActionJournal','UiState','ExportsRoot','BaseUrl','Port','ImmutableCache','StaticTypes','ServerStamp','SecretRules','CustomActionsFile','CustomActionTargets','ProtectedBranches','AiPolicies','AiSendLimit','GitDeckActionGuide','GitDeckGitleaks','GitDeckToastApp','CatalogFile','CockpitFile')
 
 function Get-Repositories {
     if (-not (Test-Path -LiteralPath $script:RepoList -PathType Leaf)) { return @() }
@@ -1867,7 +1867,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/effective-config' { Write-Json $context @{config=(Get-GitDeckEffectiveConfigSources $query['path'] $query['env'] $query['ref'] $query['deploy'] $query['deployRef'] $query['name'])} }
         '/api/repo/deploy-map' { Write-Json $context @{deploy=(Get-GitDeckDeployMap $query['path'] $query['ref'])} }
         '/api/repo/mrs' { Write-Json $context @{mergeRequests=@(Get-GitDeckMergeRequests $query['path'])} }
-        '/api/editors' { Write-Json $context @{editors=(Get-GitDeckEditors)} }
+        '/api/editors' { Write-Json $context @{editors=(Get-GitDeckTimed 'editors' 600 { Get-GitDeckEditors })} }
         '/api/catalog' { Write-Json $context @{services=@(Get-GitDeckServiceCatalog)} }
         '/api/tasks' { Write-Json $context (Get-GitDeckTaskStore) }
         '/api/repo/task-snapshot' { Write-Json $context @{snapshot=(Get-GitDeckTaskSnapshot $query['path'])} }
@@ -1876,7 +1876,7 @@ function Invoke-GitDeckRequest($context) {
         '/api/repo/mr-readiness' { Write-Json $context @{readiness=(Get-GitDeckMrReadiness $query['path'] $query['iid'])} }
         '/api/repo/latest-tag' { Assert-Registered $query['path']; Write-Json $context @{tag=(Get-GitDeckLatestTag $query['path'])} }
         '/api/repo/find-branch' { Write-Json $context @{branch=(Find-GitDeckBranch $query['path'] $query['name'])} }
-        '/api/activity/me' { Write-Json $context @{identity=(Get-GitDeckIdentity)} }
+        '/api/activity/me' { Write-Json $context @{identity=(Get-GitDeckTimed 'identity' 60 { Get-GitDeckIdentity })} }
         '/api/repo/activity' { $activityPath=$query['path'];$activity=@(Get-GitDeckActivity $activityPath $query['since'] $query['until'] $query['author'] ($query['merges'] -eq 'true'));Write-Json $context @{commits=$activity;mainline=$(if($activity.Count){Get-GitDeckMainline $activityPath}else{''})} }
         '/api/repo/details' { $repoPath=$query['path']; Write-Json $context @{details=(Get-RepositoryDetails $repoPath)} }
         '/api/repo/workspace' { $repoPath=$query['path']; Write-Json $context @{workspace=(Get-WorkspaceDetails $repoPath ($query['extras'] -eq 'true'))} }
