@@ -466,6 +466,54 @@ html.gd-hosted #repo-tabs > .repo-tab-search.repo-tab-worksets { right: calc(var
 html.gd-hosted body.workbench-mode #repo-tabs > .repo-tab-search { right: calc(var(--gd-win-w) + 26px); }
 html.gd-hosted body.workbench-mode #repo-tabs > .repo-tab-search.repo-tab-worksets { right: calc(var(--gd-win-w) + 98px); }
 
+/* ---- every window size (measured at 125% display scale, where the smallest window is 608 x 416) ------- */
+/* A hidden ticket chip was still drawn: an empty coloured line across the whole window. */
+html.ui-modern body .gd-ticket-chip[hidden] { display: none; }
+/* The gap in the status bar is only a gap, not an empty button. */
+#workspace-statusbar > .status-spacer { flex: 1 1 0; min-width: 0; padding: 0 !important; background: transparent !important; box-shadow: none !important; border: 0 !important; }
+/* Status bar: small indicators keep their size; the two sentences give way, so nothing falls off the edge. */
+#workspace-statusbar > :is(.gd-lessons, .gd-status-live, .gd-bell, .gd-mini-open, .day-cube-mini, #status-commands, .gd-test-chip) { flex: none; }
+#workspace-statusbar > :is(.gd-sentence, #status-activity) { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 900px) { #workspace-statusbar > .day-cube-mini { display: none !important; } }
+@media (max-width: 760px) { #workspace-statusbar > :is(#status-commands, .gd-lessons, .gd-mini-open) { display: none !important; } }
+/* Side rail: buttons keep their height and the rail scrolls, instead of squeezing labels onto the icons. */
+html.ui-modern body .modern-rail { overflow: hidden auto; scrollbar-width: none !important; }
+html.ui-modern body .modern-rail > :not(.gd-liquid), html.ui-modern body .modern-rail-bottom > * { flex: none; }
+@media (max-height: 700px) {
+  html.ui-modern body .modern-rail, html.ui-modern body .modern-rail-bottom { gap: 2px !important; }
+  html.ui-modern body .modern-rail-item { height: 36px !important; min-height: 36px !important; }
+}
+/* Action bar: the wheel scrolls it, so it needs no scrollbar eating its height; More tools stays in reach. */
+html.ui-modern body .modern-actions, html.gd-rubik.gd-soft.ui-modern body .modern-actions { scrollbar-width: none !important; }
+html.ui-modern body .modern-actions > .modern-toolbar-tools { position: sticky; right: 0; z-index: 1; }
+html.ui-modern body .modern-actions > .modern-toolbar-tools:not(:hover) { background: var(--surface-subtle, var(--surface, #ffffff)) !important; }
+@media (max-width: 1500px) { html.ui-modern body .modern-actions { padding-right: 0 !important; } }
+/* Repository and branch names get the room of their icons when the toolbar is tight. */
+@media (max-width: 1100px) { html.ui-modern body .modern-tb .modern-tb-icon { display: none; } }
+/* Dark themes painted a block behind More; it is a row of buttons, not a panel. */
+html.ui-modern body.theme-dark .workspace-modal-head > .sync-actions { background: transparent !important; }
+/* The History header: its title block is empty when narrow, but kept a 150px blank above the list. */
+@media (max-width: 1180px) {
+  html.ui-modern body .modern-history-head { flex-direction: row !important; align-items: center; }
+  html.ui-modern body .modern-history-head > div:not(.history-controls, .modern-moved) { flex: 0 0 auto; }
+  html.ui-modern body .modern-history-head > .history-controls { flex: 1 1 100%; }
+}
+/* The line between the branch tree and the content follows the theme (it was white on dark themes). */
+html.ui-modern body .tree-resizer:not(:hover, :focus-visible, .dragging)::before { background: var(--border-default, #d5ddd7); }
+/* Narrow: the second toolbar row is as tall as its smaller buttons and no longer covers what is below it. */
+@media (max-width: 760px) {
+  html.ui-modern body .workspace-modal-head { grid-template-rows: auto auto !important; height: auto !important; min-height: 0 !important; row-gap: 4px; padding-bottom: 4px !important; }
+  html.ui-modern body .workspace-modal-head :is(#dashboard-button, .sync-more > summary, .workbench-secondary > summary) { height: 32px !important; min-height: 32px !important; }
+  html.ui-modern body .workspace-modal-head :is(.sync-actions, .workbench-secondary) { height: 32px; }
+}
+/* Narrowest: the content gets the window. Branches stay one click away (toolbar Branch, side rail Branches). */
+@media (max-width: 680px) {
+  html.ui-modern body .workspace-modal .workbench-tree { display: none; }
+}
+/* While Git Deck starts, the window can still be moved and closed. */
+html.gd-hosted #startup-splash { -webkit-app-region: drag; app-region: drag; }
+html.gd-hosted #startup-splash button { -webkit-app-region: no-drag; app-region: no-drag; }
+
 /* ---- run tests before pushing (web/test-run.js) --------------------------------------------------- */
 .gd-test-chip { min-height: 0; white-space: nowrap; }
 .gd-test-chip[hidden] { display: none !important; }

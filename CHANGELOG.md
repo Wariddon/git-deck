@@ -4,6 +4,9 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- **Small windows work**: checked from full screen down to the smallest window at 125% display scale. Side rail buttons keep their height and the rail scrolls, instead of labels landing on icons. The status bar no longer pushes items off the edge. The toolbar's second row no longer covers the side rail, and in the narrowest windows the content gets the whole window. The open tab stays visible when the window shrinks, and so does the current view.
+- Removed what was drawn by mistake: a thin coloured line under the tabs, an empty button in the status bar, a scrollbar in the action bar, a dark block behind More, and a blank area above the commit list in narrow windows. The line beside the branch tree follows the theme.
+- The window can be moved, minimized and closed while Git Deck is starting.
 - The minimize, maximize and close buttons no longer disappear when the window is narrower than the repository tabs: they stay at the top right, and the tabs scroll under them.
 - **Run tests before pushing**: Ctrl+K › Run tests, or the Tests button in the status bar. Git Deck finds the command (Maven, Gradle, Go, npm, Cargo, pytest, dotnet; you can change it per repository), runs it in the background and lists the failing tests. The Push dialog shows the result for this commit. It advises and never blocks. A pass counts only for the commit it ran on, with no uncommitted changes and at least one test.
 - **What do I actually use?** (Ctrl+K): counts which views, buttons and commands you use, on this computer only, and which Dashboard views you never open. Nothing is hidden yet.
