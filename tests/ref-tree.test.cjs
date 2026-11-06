@@ -47,3 +47,6 @@ all().find(n=>n.tag==='button'&&n.text==='All').onclick();assert.equal(all().fil
 all().find(n=>n.tag==='button'&&n.text==='1/13 ›').onclick();assert(branch('item-80'));assert(!branch('item-0'));
 elements['tree-search'].value='item-999';render();assert(branch('item-999'));assert.equal(all().filter(n=>n.cls==='ref-view').length,1);
 console.log('PASS: summary default, 1000-branch pagination, off-page search');
+// The branch you are on stands out: a class on its row (bar, tint, check mark in web/polish.css).
+assert.match(source, /if\(branch\.current\)\{row\.classList\.toggle\('is-current',true\);view\.append\(el\('small','ref-current','Current'\)\);\}/);
+assert.match(fs.readFileSync(require('node:path').join(__dirname,'../web/polish.css'),'utf8'), /#tree-content \.ref-branch-row\.is-current \{[^}]*box-shadow: inset 3px 0 0 var\(--green/);

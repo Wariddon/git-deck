@@ -234,7 +234,7 @@ function renderWorkbenchTree(data){
     row.classList.toggle('viewing',viewing);
     const view=el('button','ref-view');view.type='button';view.title=branch.name+' · Click: History · Double-click: Checkout';
     view.setAttribute('aria-label',branch.name);
-    view.append(el('span','ref-name',label));if(branch.current)view.append(el('small','ref-current','● Current'));
+    view.append(el('span','ref-name',label));if(branch.current){row.classList.toggle('is-current',true);view.append(el('small','ref-current','Current'));}
     const viewed=el('small','ref-viewed','Viewing');viewed.hidden=!viewing;view.append(viewed);
     selectionUpdates.push(()=>{const selected=state.meta.historyViews[key]?.scope==='ref:'+branch.name;row.classList.toggle('viewing',selected);viewed.hidden=!selected;});
     if(branch.upstream){
