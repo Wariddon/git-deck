@@ -50,3 +50,9 @@ console.log('PASS: summary default, 1000-branch pagination, off-page search');
 // The branch you are on stands out: a class on its row (bar, tint, check mark in web/polish.css).
 assert.match(source, /if\(branch\.current\)\{row\.classList\.toggle\('is-current',true\);view\.append\(el\('small','ref-current','Current'\)\);\}/);
 assert.match(fs.readFileSync(require('node:path').join(__dirname,'../web/polish.css'),'utf8'), /#tree-content \.ref-branch-row\.is-current \{[^}]*box-shadow: inset 3px 0 0 var\(--green/);
+// The branch you are on is brought into view when a repository opens (its folders opened and saved at
+// once, on the page that holds it) and by the "Current" button, which also leaves a hiding search.
+assert.match(source, /if\(revealCurrentNext\|\|\(changedRepo&&!term\)\)\{const flash=revealCurrentNext;revealCurrentNext=false;revealCurrent\(flash\);\}/);
+assert.match(source, /box\.open=true;if\(!term&&box\.foldId\)folds\[box\.foldId\]=true;\}/, 'opened folders are saved before a second drawing can fold them');
+assert.match(source, /if\(changedRepo&&!term\)\{const at=allRefs\.indexOf\('local:'\+data\.branch\);if\(at>=0\)\{saved\.page=Math\.floor\(at\/80\)/);
+assert.match(source, /toCurrent\.onclick=\(\)=>\{if\(revealCurrent\(true\)\)return;input\.value='';saved\.search='';saved\.filter='all';/);

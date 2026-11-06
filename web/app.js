@@ -170,6 +170,8 @@ function moveViewHistory(delta){const next=state.viewIndex+delta;if(next<0||next
 function openTagCreator(commit=''){state.tagCreateOpen=true;state.tagTargetCommit=commit;selectWorkspaceTab('tags');setTimeout(()=>showTagDialog(commit),0);}
 
 let activeTreeRepo='';
+// Set by "Go to current" when the branch you are on is on another page or hidden by the search.
+let revealCurrentNext=false;
 function historyMemory(repo=state.workspaceRepo){
   const key='git-deck-history-position:'+repoKey(repo);
   let value={};try{value=JSON.parse(localStorage.getItem(key)||'{}')||{};}catch{}
@@ -205,12 +207,26 @@ function renderWorkbenchTree(data){
   save();
   const matches=value=>!term||String(value).toLowerCase().includes(term);
   const section=(id,title,count,defaultOpen=false)=>{
-    const box=el('details','ref-section');box.open=term?true:(folds[id]??defaultOpen);
+    const box=el('details','ref-section');box.open=term?true:(folds[id]??defaultOpen);box.foldId=id;
     const head=el('summary');head.append(el('span','',title),el('small','',String(count)));box.append(head);
     box.addEventListener('toggle',()=>{if(!term&&box.isConnected){folds[id]=box.open;save();}});return box;
   };
   const top=el('div','ref-tree-options'),emptyLabel=el('label'),empty=document.createElement('input');empty.type='checkbox';empty.checked=saved.showEmpty===true;
   emptyLabel.append(empty,document.createTextNode('Show empty groups'));empty.onchange=()=>{saved.showEmpty=empty.checked;save();renderWorkbenchTree(data);};top.append(emptyLabel);content.append(top);
+  // The branch you are on: open the folders around it and bring it into view, when a repository opens
+  // and on "Go to current" (which also leaves a search or filter that hides it, and turns the page).
+  const revealCurrent=(flash)=>{
+    const row=typeof content.querySelector==='function'?content.querySelector('.ref-branch-row.is-current'):null;if(!row)return false;
+    // Saved at once: the toggle event comes later, after a quick second drawing would have folded it again.
+    for(let box=row.parentElement?.closest('details');box;box=box.parentElement?.closest('details')){box.open=true;if(!term&&box.foldId)folds[box.foldId]=true;}
+    save();
+    row.scrollIntoView({block:'center'});
+    if(flash){row.classList.toggle('ref-flash',false);void row.offsetWidth;row.classList.toggle('ref-flash',true);}
+    return true;
+  };
+  const toCurrent=el('button','ref-go-current','◎ Current');toCurrent.type='button';toCurrent.title='Go to the branch you are on';toCurrent.setAttribute('aria-label','Go to the branch you are on');toCurrent.disabled=!data.branch;
+  toCurrent.onclick=()=>{if(revealCurrent(true))return;input.value='';saved.search='';saved.filter='all';const at=(data.branches||[]).findIndex(b=>b.name===data.branch);saved.pageKey='all|';saved.page=at<0?0:Math.floor(at/80);save();revealCurrentNext=true;renderWorkbenchTree(data);};
+  top.append(toCurrent);
   const filter=['home','all','pinned','recent'].includes(saved.filter)?saved.filter:'all'; // Branches / Remotes / Tags / Stashes tree first, like Sourcetree's sidebar
   const recent=Array.isArray(saved.recent)?saved.recent.filter(id=>typeof id==='string').slice(0,20):[];
   const filters=el('div','ref-filter-tabs');filters.setAttribute('aria-label','Branch filters');
@@ -277,6 +293,8 @@ function renderWorkbenchTree(data){
   const accepts=(b,kind)=>matches(b.name)&&(['all','home'].includes(filter)||filter==='pinned'&&pins.has(kind+':'+b.name)||filter==='recent'&&recent.includes(kind+':'+b.name));
   const allRefs=[...(data.branches||[]).filter(b=>accepts(b,'local')).map(b=>'local:'+b.name),...(data.remoteBranches||[]).filter(b=>accepts(b,'remote')).map(b=>'remote:'+b.name),...(data.tags||[]).filter(matches).map(t=>'tag:'+t),...(data.stashes||[]).filter(s=>matches(s.ref+' '+s.message)).map(s=>'stash:'+s.ref)];
   const pageKey=filter+'|'+term;if(saved.pageKey!==pageKey){saved.pageKey=pageKey;saved.page=0;}
+  // A repository opens on the page that holds the branch you are on.
+  if(changedRepo&&!term){const at=allRefs.indexOf('local:'+data.branch);if(at>=0){saved.page=Math.floor(at/80);save();}}
   const pages=Math.max(1,Math.ceil(allRefs.length/80)),page=Math.min(Math.max(0,Number(saved.page)||0),pages-1),visibleIds=new Set(allRefs.slice(page*80,(page+1)*80)),paged=['home','all'].includes(filter);
   if(paged&&pages>1){const pager=el('div','ref-filter-tabs');for(const [label,delta] of [['‹',-1],[`${page+1}/${pages} ›`,1]]){const button=el('button','',label);button.type='button';button.disabled=page+delta<0||page+delta>=pages;button.onclick=()=>{saved.page=page+delta;save();renderWorkbenchTree(data);};pager.append(button);}content.append(pager);}
   const local=(data.branches||[]).filter(b=>accepts(b,'local')&&(!paged||visibleIds.has('local:'+b.name))),remote=(data.remoteBranches||[]).filter(b=>accepts(b,'remote')&&(!paged||visibleIds.has('remote:'+b.name)));
@@ -302,6 +320,7 @@ function renderWorkbenchTree(data){
   if(term)top.append(el('span','ref-result-count',resultCount+' matches'));
   if(term&&!resultCount){content.append(el('p','ref-empty','No local Git matches. The remote may have newer data.'));const fetch=el('button','ref-manage','Fetch and search again');fetch.disabled=state.busy;fetch.onclick=()=>runWorkspaceAction('fetch',{},'Fetch remote data and search again?');content.append(fetch);}
   const hint=el('small','ref-help','Click: History · Double-click: Checkout · Right-click: actions · ↑↓ local tracking refs');content.append(hint);
+  if(revealCurrentNext||(changedRepo&&!term)){const flash=revealCurrentNext;revealCurrentNext=false;revealCurrent(flash);}
 }
 
 async function api(path, options = {}) {

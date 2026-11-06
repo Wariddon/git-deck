@@ -4,7 +4,7 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
-- **The branch you are on is easy to find** in the branch tree: a coloured bar, a tint, a bold name and a check mark (it was only a little bolder than the others).
+- **The branch you are on is easy to find** in the branch tree: a coloured bar, a tint, a bold name and a check mark (it was only a little bolder than the others). When a repository opens, the tree opens the folders around it and scrolls to it, and **◎ Current** above the tree brings it back at any time (leaving a search or filter that hides it).
 - **Dashboard › Pending work: click a column header to sort** (Repository, Branch, Latest tag, Last commit, What to do, State); click it again to reverse. The sorted column shows an arrow, and the choice is remembered. The Sort menu also has Branch A–Z.
 - **Start-up, measured in the real window** (repository list of 201): from launch to the app shown about 1.3 s when the local service is already running (was about 4 s) and about 4.2 s from cold (was 7–8 s). The start-up screen now closes as soon as the kept view is drawn, instead of waiting for Git; GitDeck.exe prepares its window while the local service starts; installed editors and your Git name are looked up once a minute or less instead of on every request.
 - **The open repository shows at once**: its last view and first page of commits are kept between starts and shown immediately (about 0.5 s after launch instead of 4.3 s), then checked against Git. Before, any action, even refreshing the repository list, dropped every kept view, so a start always waited for Git. Now only an action that changes a repository drops that repository's views.

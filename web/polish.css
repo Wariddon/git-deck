@@ -551,3 +551,11 @@ html.ui-modern body #tree-content .ref-branch-row.is-current svg { color: var(--
 /* A check, not a word: the name keeps its room (a "Current" badge cut long names short). */
 html.ui-modern body #tree-content .ref-branch-row.is-current .ref-current { display: inline-flex !important; align-items: center; justify-content: center; flex: none; width: 16px !important; height: 16px !important; margin-left: 4px; padding: 0 !important; border-radius: 50%; background: var(--green, #1a7f37) !important; color: transparent !important; font-size: 0 !important; }
 html.ui-modern body #tree-content .ref-branch-row.is-current .ref-current::before { content: "\2713"; color: var(--accent-contrast, #ffffff); font-size: 11px; font-weight: 800; line-height: 1; }
+
+/* "Go to current" in the branch tree, and the flash on the row it brings into view. */
+html.ui-modern body #tree-content .ref-go-current { margin-left: auto; padding: 2px 8px !important; min-height: 0 !important; border-radius: 999px !important; font-size: 11px !important; white-space: nowrap; }
+#tree-content .ref-tree-options { display: flex; flex-wrap: nowrap !important; align-items: center; gap: 8px; }
+#tree-content .ref-tree-options > label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes gd-ref-flash { 0%, 40% { box-shadow: inset 3px 0 0 var(--green, #1a7f37), 0 0 0 2px var(--green, #1a7f37); } 100% { box-shadow: inset 3px 0 0 var(--green, #1a7f37), 0 0 0 2px transparent; } }
+html.ui-modern body #tree-content .ref-branch-row.is-current.ref-flash { animation: gd-ref-flash 1.4s ease-out; }
+@media (prefers-reduced-motion: reduce) { html.ui-modern body #tree-content .ref-branch-row.is-current.ref-flash { animation: none; } }
