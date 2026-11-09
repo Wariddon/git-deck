@@ -162,3 +162,8 @@ assert.match(web('multi-repo.js'), /chip\.setAttribute\('aria-pressed',String\(f
 assert.match(web('multi-repo.js'), /const hidden=results\.filter\(shown\)\.length-rows\.length;/);
 assert.match(fs.readFileSync(path.join(__dirname, '../web/polish.css'), 'utf8'), /:is\(#operations-backdrop, #workspace-backdrop\) \.pending-filters > \.pending-filter\.active \{ background: var\(--green/);
 assert.match(fs.readFileSync(path.join(__dirname, '../web/rubik.css'), 'utf8'), /:not\(\.pending-filter\.active\) \{ border-color: transparent !important; background-color: var\(--surface-muted\)/, 'the Rubik look does not paint over the chosen filter');
+// Sorting by tag or commit date shows every repository (the newest is often one with nothing to do), and
+// dates are compared as moments: the text of +00:00 and +07:00 times sorts the wrong way round.
+assert.match(web('multi-repo.js'), /const showAllForDates=\(\)=>\{if\(\['tag','recent'\]\.includes\(sort\.value\)&&filter==='any'\)\{filter='all';/);
+assert.match(web('multi-repo.js'), /if\(by==='tag'\)return momentOf\(b\.pending\?\.latestTagDate\)-momentOf\(a\.pending\?\.latestTagDate\)/);
+assert.match(web('multi-repo.js'), /if\(by==='recent'\)return momentOf\(b\.pending\?\.lastCommitDate\)-momentOf\(a\.pending\?\.lastCommitDate\)/);

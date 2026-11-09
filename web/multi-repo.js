@@ -359,18 +359,24 @@
     };
     // A second click on the same column header reverses the order (remembered with the sort).
     let reversed=recall('gitdeck.pendingSortReversed','')==='1';
+    // Sorting by a date asks "what changed last?": the newest tag or commit is often on a repository with
+    // nothing to do, which "Anything pending" hides. Such a sort shows every repository instead.
+    const showAllForDates=()=>{if(['tag','recent'].includes(sort.value)&&filter==='any'){filter='all';remember('gitdeck.pendingFilter','all');drawChips();}};
     const order=(a,b)=>{
       // Several names typed: keep the order they were typed in.
       const terms=parseTerms(search.value);if(terms.length>1){const diff=termRank(a,terms)-termRank(b,terms);if(diff)return diff;}
       const result=orderBy(a,b);return reversed?-result:result;
     };
+    // Dates carry the time zone of whoever made them (+07:00 here, +00:00 from GitLab): compare the moment,
+    // not the text, or a tag made on GitLab today sorts below one made here yesterday evening.
+    const momentOf=(value)=>{const at=Date.parse(value||'');return Number.isFinite(at)?at:0;};
     const orderBy=(a,b)=>{
       const by=sort.value;const ca=a.counts,cb=b.counts;
       if(by==='branch')return String(a.pending?.branch||'').localeCompare(String(b.pending?.branch||''))||a.repo.name.localeCompare(b.repo.name);
       if(by==='name')return a.repo.name.localeCompare(b.repo.name);
       if(by==='family')return groupOf(a).localeCompare(groupOf(b))||(cb.score-ca.score)||a.repo.name.localeCompare(b.repo.name);
-      if(by==='recent')return String(b.pending?.lastCommitDate||'').localeCompare(String(a.pending?.lastCommitDate||''))||a.repo.name.localeCompare(b.repo.name);
-      if(by==='tag')return String(b.pending?.latestTagDate||'').localeCompare(String(a.pending?.latestTagDate||''))||a.repo.name.localeCompare(b.repo.name);
+      if(by==='recent')return momentOf(b.pending?.lastCommitDate)-momentOf(a.pending?.lastCommitDate)||a.repo.name.localeCompare(b.repo.name);
+      if(by==='tag')return momentOf(b.pending?.latestTagDate)-momentOf(a.pending?.latestTagDate)||a.repo.name.localeCompare(b.repo.name);
       if(by==='push')return (cb.push+cb.localOnlyCommits)-(ca.push+ca.localOnlyCommits)||a.repo.name.localeCompare(b.repo.name);
       if(by==='changes')return cb.changes-ca.changes||a.repo.name.localeCompare(b.repo.name);
       return (b.error?1e6:cb.score)-(a.error?1e6:ca.score)||a.repo.name.localeCompare(b.repo.name);
@@ -573,7 +579,7 @@
         const descending=['tag','recent','pending','changes'].includes(by)!==reversed;
         th.setAttribute('aria-sort',active?(descending?'descending':'ascending'):'none');
         if(active)th.append(el('span','pending-sort-mark',descending?'▼':'▲'));
-        const choose=()=>{if(sort.value===by)reversed=!reversed;else{sort.value=by;reversed=false;}remember('gitdeck.pendingSort',sort.value);remember('gitdeck.pendingSortReversed',reversed?'1':'');draw();out.querySelector(`.pending-table th:nth-child(${index+1})`)?.focus();};
+        const choose=()=>{if(sort.value===by)reversed=!reversed;else{sort.value=by;reversed=false;}remember('gitdeck.pendingSort',sort.value);remember('gitdeck.pendingSortReversed',reversed?'1':'');showAllForDates();draw();out.querySelector(`.pending-table th:nth-child(${index+1})`)?.focus();};
         th.addEventListener('click',(event)=>{if(event.target.closest?.('.pending-col-grip'))return;choose();});
         th.addEventListener('keydown',(event)=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();choose();}});
       });
@@ -678,7 +684,7 @@
       document.querySelectorAll('.multi-repo-panel select[aria-label]').forEach(select=>{if(select.options[0]?.value==='all'&&!select.querySelector(`option[value="set:${CSS.escape(name)}"]`)){let group=select.querySelector('optgroup');if(!group){group=document.createElement('optgroup');group.label=t('Worksets');select.append(group);}group.append(new Option(`${name} (${shownRepos.length})`,'set:'+name));}});
     };
     menu.append(markSeen,saveSet);
-    run.onclick=start;folder.addEventListener('change',start);sort.onchange=()=>{reversed=false;remember('gitdeck.pendingSort',sort.value);remember('gitdeck.pendingSortReversed','');draw();};tagFilter.onchange=()=>{remember('gitdeck.pendingTag',tagFilter.value);drawChips();draw();};search.oninput=()=>{drawChips();draw();};
+    run.onclick=start;folder.addEventListener('change',start);sort.onchange=()=>{reversed=false;remember('gitdeck.pendingSort',sort.value);remember('gitdeck.pendingSortReversed','');showAllForDates();draw();};tagFilter.onchange=()=>{remember('gitdeck.pendingTag',tagFilter.value);drawChips();draw();};search.oninput=()=>{drawChips();draw();};
     const bulk=async(kind)=>{
       more.removeAttribute('open');
       const todo=results.filter(item=>kind==='push'?pendingActions(item.pending).includes('push'):(item.counts.pull&&!item.pending?.operation));

@@ -4,6 +4,7 @@ What changed in each Git Deck release. Dates are release dates (YYYY-MM-DD).
 
 ## Unreleased
 
+- **Sorting Pending work by tag or last commit shows every repository**: the newest tag or commit is often on a repository with nothing to do, which "Anything pending" hid (a tag made today did not come first). Dates are also compared as moments: one made on GitLab (+00:00) could sort below an older one made here (+07:00).
 - **Dashboard › Pending work shows which filter is on**: the chosen filter chip is coloured again when the Dashboard opens inside the repository window (every chip looked the same there), and a line above the table says how many repositories the filter hides, with Show all. A repository with nothing to do is left out by "Anything pending", so it never appeared in a sort by last commit.
 - **The branch you are on is easy to find** in the branch tree: a coloured bar, a tint, a bold name and a check mark (it was only a little bolder than the others). When a repository opens, the tree opens the folders around it and scrolls to it, and **◎ Current** above the tree brings it back at any time (leaving a search or filter that hides it).
 - **Dashboard › Pending work: click a column header to sort** (Repository, Branch, Latest tag, Last commit, What to do, State); click it again to reverse. The sorted column shows an arrow, and the choice is remembered. The Sort menu also has Branch A–Z.
