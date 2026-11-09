@@ -156,3 +156,9 @@ assert.match(web('multi-repo.js'), /const columnSorts=\['name','branch','tag','r
 assert.match(web('multi-repo.js'), /const result=orderBy\(a,b\);return reversed\?-result:result;/, 'reversing keeps the typed-name order first');
 assert.match(web('multi-repo.js'), /if\(by==='branch'\)return String\(a\.pending\?\.branch/);
 assert.match(web('multi-repo.js'), /th\.setAttribute\('aria-sort',active\?\(descending\?'descending':'ascending'\):'none'\)/, 'screen readers hear the direction');
+// The chosen filter is plain to see in the Dashboard opened inside the repository window too, and a note
+// says how many repositories it hides (sorting by date looked wrong when the newest was hidden).
+assert.match(web('multi-repo.js'), /chip\.setAttribute\('aria-pressed',String\(filter===id\)\)/);
+assert.match(web('multi-repo.js'), /const hidden=results\.filter\(shown\)\.length-rows\.length;/);
+assert.match(fs.readFileSync(path.join(__dirname, '../web/polish.css'), 'utf8'), /:is\(#operations-backdrop, #workspace-backdrop\) \.pending-filters > \.pending-filter\.active \{ background: var\(--green/);
+assert.match(fs.readFileSync(path.join(__dirname, '../web/rubik.css'), 'utf8'), /:not\(\.pending-filter\.active\) \{ border-color: transparent !important; background-color: var\(--surface-muted\)/, 'the Rubik look does not paint over the chosen filter');

@@ -559,3 +559,10 @@ html.ui-modern body #tree-content .ref-go-current { margin-left: auto; padding: 
 @keyframes gd-ref-flash { 0%, 40% { box-shadow: inset 3px 0 0 var(--green, #1a7f37), 0 0 0 2px var(--green, #1a7f37); } 100% { box-shadow: inset 3px 0 0 var(--green, #1a7f37), 0 0 0 2px transparent; } }
 html.ui-modern body #tree-content .ref-branch-row.is-current.ref-flash { animation: gd-ref-flash 1.4s ease-out; }
 @media (prefers-reduced-motion: reduce) { html.ui-modern body #tree-content .ref-branch-row.is-current.ref-flash { animation: none; } }
+
+/* Dashboard › Pending work: the chosen filter is plain to see (the old rule skipped the Dashboard opened
+   inside the repository window, so every chip looked alike), and a note says what it hides. */
+:is(#operations-backdrop, #workspace-backdrop) .pending-filters > .pending-filter.active { background: var(--green, #1a7f37) !important; color: var(--accent-contrast, #ffffff) !important; border-color: transparent !important; box-shadow: none !important; }
+:is(#operations-backdrop, #workspace-backdrop) .pending-filters > .pending-filter.active b { opacity: .9; }
+.pending-hidden-note { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 8px; color: var(--text-secondary, inherit); font-size: 12px; }
+.pending-hidden-note button { padding: 2px 10px !important; min-height: 0 !important; font-size: 12px; }

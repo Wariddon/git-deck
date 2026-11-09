@@ -353,7 +353,7 @@
       for(const [id,label] of kinds){
         const count=results.filter(item=>shown(item)&&pendingMatches(item,id)).length;
         if(!count&&id!==filter&&!['any','all'].includes(id))continue;
-        const chip=el('button',`pending-filter${filter===id?' active':''}`);chip.type='button';chip.append(el('span','',label()),el('b','',String(count)));
+        const chip=el('button',`pending-filter${filter===id?' active':''}`);chip.type='button';chip.setAttribute('aria-pressed',String(filter===id));chip.append(el('span','',label()),el('b','',String(count)));
         chip.onclick=()=>{filter=id;remember('gitdeck.pendingFilter',id);drawChips();draw();};chips.append(chip);
       }
     };
@@ -612,6 +612,10 @@
         grid.append(tr);
         for(const kind of ['localOnly','merged','stashes'])if(expanded.has(key+'|'+kind))grid.append(detailRow(item,kind));
       }
+      // Say when the filter hides repositories: sorting by date otherwise looks wrong when a repository
+      // with nothing to do (left out by "Anything pending") is the newest.
+      const hidden=results.filter(shown).length-rows.length;
+      if(hidden>0){const note=el('p','pending-hidden-note',t('Showing {shown} of {total}: {hidden} are hidden by the filter above.',{shown:rows.length,total:rows.length+hidden,hidden}));const all=el('button','',t('Show all repositories'));all.type='button';all.onclick=()=>{filter='all';remember('gitdeck.pendingFilter','all');drawChips();draw();};note.append(all);out.append(note);}
       out.append(grid);sizeColumns(grid);
       out.append(el('p','pending-keys',t('Keys: j/k or ↑/↓ move · Enter open · c commit · p push · u pull')));
       if(focusedPath){const again=[...grid.querySelectorAll('tr.pending-row')].find(row=>row.dataset.path===focusedPath);if(again&&out.contains(document.activeElement)===false&&keyboardActive)again.focus({preventScroll:true});}

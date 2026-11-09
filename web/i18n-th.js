@@ -2211,4 +2211,5 @@ GitDeckI18n.register('th',{
   "What do I actually use?":"ฉันใช้อะไรจริงบ้าง?",
   "Ask AI":"ถาม AI",
   "Branch A–Z":"Branch A–Z",
+  "Showing {shown} of {total}: {hidden} are hidden by the filter above.":"แสดง {shown} จาก {total}: อีก {hidden} ถูกซ่อนด้วยตัวกรองด้านบน",
 });
